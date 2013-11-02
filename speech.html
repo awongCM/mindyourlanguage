@@ -1,0 +1,33 @@
+<!doctype html public>
+<!--[if lt IE 7]> <html lang="en-us" class="lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>    <html lang="en-us" class="lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>    <html lang="en-us" class="lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en-us"> <!--<![endif]-->
+<head>
+
+  <meta charset="utf-8">
+
+  <title></title>
+
+  <meta name="viewport" content="width=device-width">
+</head>
+<body>
+<script type="text/javascript">
+	if(!('webkitSpeechRecognition') in window)){
+		upgrade();
+	}
+	else{
+		var recognition = new webkitSpeechRecognition();
+		recognition.continuous = true;
+		recognition.interimResults = true;
+
+		recognition.onstart() = function() {}
+		recognition.onresult() = function(event){}
+		recognition.onerror = function(event){}
+		recognition.onend = function(){}
+	}
+</script>
+  
+
+</body>
+</html>

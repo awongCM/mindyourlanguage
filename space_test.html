@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 3.2 STRICT//EN">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<head>
+
+ <!-- <link rel="stylesheet" href="qunit-git.css" type="text/css"/> -->
+ <!-- <script type="text/javascript" src="jquery-1.9.1.js"></script> -->
+ <script src="myownbootstrap/docs/assets/js/jquery-1.9.1.js" type="text/javascript"></script>
+ <script type="text/javascript" src="space-master/space.js"></script>
+ <script type="text/javascript" src="utilities.js"></script>
+ <!-- <script type="text/javascript" src="qunit-git.js"></script>
+ <script type="text/javascript" src="tests.js"></script> -->
+    
+</head>
+<title>Space Test</title>
+<script>
+
+
+jQuery(document).ready(function() {
+ //the test file to parse into JSON
+ //var textFile = "http://localhost:8000/resource/chinesetext.txt"
+ var textFile = "http://localhost:8000/resource/cedict_1_0_ts_utf-8_mdbg.txt"
+ //var regex = /os/i
+ //the pattern to search
+ //var regex = /./gi
+ var regex = "临高"
+
+
+ //my own utility class for StringBuilder
+ var sb = new StringBuilder();
+ jQuery.get(textFile, function(data){
+     	
+        //read the file contents line by line and store each line into an array.
+        console.log(data);
+     	var lines = data.split('\n');
+     	console.log(lines);
+        var newarray=[];
+   	    
+        jQuery.each(lines, function(index, value){
+            console.log(index + ': ' + value)
+            if(lines[index].match(regex)){
+                newarray.unshift(lines[index])
+            }
+        });
+     	lines =[];
+     	console.log(lines.length)
+     	console.log(newarray)
+        console.log(newarray.length)
+
+        //Use the new resultset from above and write up a stringbuilder for the Space object to have json data
+        
+        jQuery.each(newarray, function(index, value){
+            var newline ='\n'
+
+            //create a node element for each json data element
+            sb.append(index+newline)
+
+            //pre-process json element part
+            alert("Resultset Element" + index + " :" + value)
+            
+            var row = createJSONelements(value);
+            
+            console.log(JSON.stringify(row));
+
+            //var jsonelements = JSON.stringify(row);
+
+            //iterate each element in the array
+            jQuery.each(row[0], function(key, value){
+                console.log("key:value" + key + ", " + value)
+                sb.append(" " +key+" "+ value +" "+ newline);
+            });
+
+
+            //sb.append(newline)
+            //alert(sb.toString())
+        });
+
+        console.log(sb.toString())
+
+        function createJSONelements(value){
+            var jsonarray = []
+
+            //pattern match for translation part
+            var regextranslation = /\/.+\//g
+
+            //pattern match for pinyin part
+            var regexpinyin = /\[.+\]/g
+
+            //gets translation piece
+            var translation = value.match(regextranslation)
+            
+            console.log(translation.toString());
+
+            value = value.replace(translation, '');
+
+            //gets the pinyin piece
+            var pinyin = value.match(regexpinyin);
+
+            console.log(pinyin.toString());
+
+            value = value.replace(pinyin, '');
+
+            console.log(value);
+
+            //gets the remaining character pieces
+            var temparray = value.split(/[\s\/]/g)
+
+            
+            jsonarray.push({'simplified':temparray[0], 'traditional':temparray[1], 'pinyin': pinyin.toString(), 'translation':translation.toString()});
+
+            console.log("jsonarray: "+JSON.stringify(jsonarray));
+
+            //returns the json array output for that piece of chinese translation output
+            return jsonarray;
+        }
+
+        console.log("StringBuilder jsonarray: "+ sb.toString());
+
+        var testspace = new Space(sb.toString())
+
+        console.log("testspace \n"+testspace.toJSON())
+        document.write(testspace.toJSON());
+	 });
+
+//Use the ajax method to retrieve file and read the content line by line 
+    // jQuery.ajax({
+    //     url: 'http://localhost:8000/resource/test2.txt',
+    //     datatype: "jsonp",
+    //     jsonpCallback: "_testcb",
+    //     cache: false,
+    //     timeout: 5000,
+    //     success: function(data) {
+    //         //alert("Reach Here");
+    //         //jQuery(".myDiv").text(data);
+    //         var textfile = data;
+    //         console.log(textfile.split("\n"));
+    //     },
+    //     error: function(jqXHR, textStatus, errorThrown) {
+    //         alert('error ' + textStatus + " " + errorThrown);
+    //     }
+    // });
+    
+});
+
+
+
+
+
+// Creating a Space Object
+// var osinfo = new Space('first\n simplified 㲾 \n traditional 㲾 \n pinyin [yu3] \n translation /old variant of 雨[yu3]/\nsecond\n simplified 㳮 \n traditional 㳮 \n pinyin [niao4] \n translation /old variant of 尿[niao4]/\nthird\n simplified 㵎\n traditional 涧 \n pinyin \n  [jian4] \n  translation /variant of 澗|涧[jian4]/\nfourth\n simplified 㵪 \n traditional 㵪 \n pinyin [xian2] \n translation /variant of 涎[xian2]/\n')
+
+//var osinfo = new Space(sb.toString())
+
+
+// Printing the object
+//console.log(osinfo.toJSON())
+//document.write(osinfo.toJSON())
+</script>
+<body>
+</body>
+</html>

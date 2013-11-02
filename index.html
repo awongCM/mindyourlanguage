@@ -1,0 +1,603 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>Mandarin Phrase Translator Learner</title>
+<META NAME="Author" CONTENT="text/html; charset=UTF-8">
+<META NAME="Keywords" CONTENT="text/html; charset=UTF-8">
+<META NAME="Description" CONTENT="text/html; charset=UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<!--Bootstrap(modified)-->
+<link href="myownbootstrap/docs/assets/css/bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="myownbootstrap/docs/assets/css/mystylesheet.css" rel="stylesheet" type="text/css" />
+
+<!--Bootstrap(default) -->
+<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet" type="text/css"/>
+
+<!--MyBootstrap stuff --IMPORTANT!! Must load JQuery libs first before other prototype's libs -->
+<script src="myownbootstrap/docs/assets/js/jquery-1.9.1.js" type="text/javascript"></script>
+<!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js" type="text/javascript"></script> -->
+
+<script type="text/javascript" src="space-master/space.js"></script>
+<script type="text/javascript" src="utilities.js"></script>
+
+<!--Scriptaculous-->
+<script src="scriptaculous/lib/prototype.js" type="text/javascript"></script>
+<script src="scriptaculous/src/scriptaculous.js" type="text/javascript"></script>
+
+<!-- My own libraries/APIs -->
+<script src="translation-api.js" type="text/javascript"></script>
+
+<!-- To load jsOAuth.js-->
+<script src="jsOAuth-1.3.6.min.js" type="text/javascript"></script>
+
+<!-- Google TTS Master Libraries--> 
+<!-- <script type="text/javascript" src="google-tts-master/jquery-1.9.1.min.js"></script> -->
+<script type="text/javascript" src="google-tts-master/src/google-tts.js"></script>
+<script type="text/javascript" src="google-tts-master/soundmanager2.js"></script>
+
+</head>
+
+<!--<script type="text/javascript">
+  $.noConflict();
+</script>-->
+
+<script type="text/javascript">
+
+jQuery(document).ready(function($){
+  
+  /** Basically acting as a switch/toggle button*/
+  $("#dropdown_action_01").click(function(e){
+      console.log("Handler for .click() called.");
+      var $div = $(this).parent().parent().parent();
+      var $btn = $div.find('button');
+      var $tempvar = $btn.text();
+      $btn.html($(this).text()+' <span class="caret"></span>');
+      $div.removeClass('open');
+      $div.find('#dropdown_action_01').text($tempvar);
+
+      e.preventDefault();
+      return false;
+  });
+
+  /** The tooltip on the dropdown*/
+  $("#dropdown_action_01").mouseover(function(e){
+    $(".link").tooltip('hide')
+            .attr('data-original-title', "Enter your "+$("#dropdown_action_01").text() +" words")
+            .tooltip('fixTitle')
+            .tooltip('show'); 
+  });
+
+  $("#text").keypress(function(e){
+      console.log("Handler for .keypress() called.");
+      if ($(this).is(":empty"))
+        $("#btn_search").parent().show();
+  });
+
+  
+  
+  // $("#playaudio").click(function() {
+  //    alert("hello word")
+  // });
+
+
+});
+</script>
+
+<script type="text/javascript">
+
+//var xhr = new XMLHttpRequest();
+
+/*function lookupWords(){
+  console.log("insideLookupWords");
+  //replace $ for JQuery to resolve different Jquery implementations
+  jQuery('#myDiv').load('http://google.com'); // SERIOUSLY!
+  console.log("nothing???");
+  jQuery.ajax({
+     url: 'http://news.bbc.co.uk',
+     type: 'GET',
+     success: function(res) {
+         
+         var headline = $(res.responseText).find('focus').text();
+         console.log("nothing??? again???");
+         alert(headline);
+     }
+  });
+
+}*/
+
+function TranslationObj(id, segment, translation, reference){
+  this.id = id;
+  this.segment = segment;
+  this.translation = translation;
+  this.reference = reference;
+
+}
+
+function loadData(){
+
+  console.log("in loadData...");
+
+  if(xhr.readyState == 4){
+
+    //console.log("in the if statement");
+    var JSONObject = xhr.responseText;
+
+    console.log("getting to eval statement");
+
+    //not safe!
+    var JSONData = eval('(' + JSONObject +')');
+    //var JSONData = JSON.parse(JSONObject);
+
+    console.log("before processing..");
+
+    //First approach in using json format
+    //processData(JSONData)
+
+    //Secondary approach in using declared object-oriented arrays
+    processData2(JSONData);
+
+  }
+//  lookupWords();
+
+//  xhr.update();
+
+  
+}
+
+function processData(JSONData){
+  
+  console.log("processData..", JSONData);
+  
+  //To store the key value pairs in the associative arrays that I'm interested to extract
+  var myArray = new Array();
+
+  for (var i=0; i<JSONData.matches.length; i++){
+    //alert("after loop.." + xhr.responseText);
+    
+      var obj = {
+          id: JSONData.matches[i].id, 
+          segment: JSONData.matches[i].segment,
+          translation: JSONData.matches[i].translation,
+          reference: JSONData.matches[i].reference
+      };
+
+      myArray.push(obj);
+  }
+
+    var JSONObject = xhr.responseText;
+    var JSONData = eval('(' + JSONObject +')');
+    //document.getElementById("myDiv").innerHTML = JSON.stringify(JSONData, null, '\t');
+    console.log(JSON.stringify(JSONData,null,'\t'));
+    //document.getElementById("myDiv").innerHTML = printArrayValues(myArray);
+
+    printArrayRows(myArray);
+}
+
+function processData2(JSONData){
+  //alert("in processData");
+  console.log("processData2..", JSONData);
+  
+  //To store the key value pairs in the associative arrays that I'm interested to extract
+  var myArray = new Array();
+
+  for (var i=0; i<JSONData.matches.length; i++){
+    //alert("after loop.." + xhr.responseText);
+    
+      var translationobj = new TranslationObj (
+          JSONData.matches[i].id, 
+          JSONData.matches[i].segment,
+          JSONData.matches[i].translation,
+          JSONData.matches[i].reference
+      );
+
+      myArray.push(translationobj);
+  }
+
+    var JSONObject = xhr.responseText;
+    var JSONData = eval('(' + JSONObject +')');
+    //document.getElementById("myDiv").innerHTML = JSON.stringify(JSONData, null, '\t');
+    console.log(JSON.stringify(JSONData,null,'\t'));
+    //document.getElementById("myDiv").innerHTML = printArrayValues(myArray);
+
+    console.log("document.getElementById.span10: ", document.getElementById("span10"));
+   // document.getElementById("span10").innerHTML = printArrayRows(myArray);
+
+    
+    //Effect.Fade('span10')
+
+    jQuery('#span10').empty();
+    $('span10').hide();
+    printArrayRows(myArray);
+
+    //Effect.toggle('span10', 'appear');
+    console.log("Effect.appear")
+    $('span10').appear();
+    //Effect.Appear('span10');
+
+    //Let's format the display on the frame
+    formatFrameDisplay(myArray);
+
+    //activate the Google Language Audio
+    activateLangAudio();
+
+    Effect.BlindDown('leftframe', {duration: .23, scaleX: false, scaleY:true});
+
+}
+
+function formatFrameDisplay(myArray){
+  console.log("myArray[0]: "+ JSON.stringify(myArray[0]));
+  console.log(myArray[0].segment);
+  
+  jQuery('#leftframe').find('.h5').text(myArray[0].segment);
+  console.log("leftframe.h5.text: "+jQuery('#leftframe').find('.h5').text());
+  //jQuery('#leftframe').find('.actualtranslation').text(myArray[0].translation);
+
+  //append span keyword
+  //jQuery('#leftframe').find('.actualtranslation').append('<span>'+myArray[0].translation+'</span>');
+  jQuery('#leftframe').find('.actualtranslation').empty();
+  jQuery('<span id="playaudio">'+myArray[0].translation+'</span>').appendTo(jQuery('#leftframe').find('.actualtranslation'))
+
+
+}
+
+function activateLangAudio(){
+  //Bind the click event on the newly created span item
+
+  // soundManager.setup({
+  //       url: '/',
+  //       preferFlash: false,
+  //       onready: function() {
+  //         if (!window.GoogleTTS) {
+  //           $("#error").text("Sorry, the google-tts script couldn't be loaded.");
+  //           return;
+  //         } else {
+  //           var HTML = '\
+  //           <div> \
+  //               <label for="demo_language">Language:</label> \
+  //               <select id="demo_language"> \
+  //                   <option value="" disabled="disabled">(Select language)</option> \
+  //               </select> \
+  //           </div> \
+  //           <div> \
+  //               <label for="demo_text">Text:</label> \
+  //               <textarea rows="5" cols="60" id="demo_text" /> \
+  //           </div> \
+  //           <button id="demo_play">Play!</button> \
+  //           ';
+  //           $("#tts_demo").html(HTML);
+  //         }
+
+  //         var googleTTS = new window.GoogleTTS();
+
+  // });
+
+  jQuery("#playaudio").bind("click", function(){
+    alert('test');
+    var googleTTS = new window.GoogleTTS();
+    googleTTS.play(jQuery("#playaudio").text(), 'zh-cn', function(err) {
+      if (err) {
+      console.log(err.toString());
+      }
+      console.log('Finished playing');
+    });
+  })
+}
+
+function printArrayValues(myArray){
+    var result="";
+    for (var i = 0; i<myArray.length; i++){
+      var obj = myArray[i];
+      result += "{ id="+obj.id+", segment="+obj.segment+", translation="+obj.translation+", reference="+obj.reference+";}";
+    }
+    return result;
+}
+
+function printArrayRows(myArray){
+    //print header first
+    var result = "";
+    for (var i =0; i<myArray.length; i++){
+      
+      //access the first element of the array
+      var obj = myArray[i];
+
+      console.log("myArray's obj: ", obj);
+
+      //total number of elements in the array
+      console.log("myArray.length: ", myArray.length);
+
+      //total number of properties in an array element
+      console.log("Object.keys(myArray[i]).length: ", Object.keys(myArray[i]).length)
+
+      //Test Div Row1
+      //createdivrows(obj);
+      //Test Div Row2
+      //createdivrows2(obj);
+      //Test Format Row
+
+      formatrowcontent(obj);
+    }
+
+}
+
+function loadXMLDoc()
+{
+ 
+  console.log("start loadXMLDoc here");
+  
+  
+  var textparam = document.getElementById("text").value;
+
+  //Consume MyMemory Rest APIs
+  //useMyMemoryREST(textparam);
+  //var MyMemoryService = new webServices("http://mymemory.translated.net/api/get", textparam)
+
+  //Consume MS Bing Translate REST APIs
+  //useBingTranslatorREST(textparam);
+
+  //Test CEDICT resource
+  useCedictresource(function(output){
+    //console.log(output);
+    var lines = output.split('\n');
+    //console.log(lines);
+    var newarray = [];
+
+    //the char or word to do match search pattern
+    var regex = textparam;
+
+    var sb = new StringBuilder();
+
+    jQuery.each(lines, function(index, value){
+            //console.log(index + ': ' + value)
+            if(lines[index].match(regex)){
+                newarray.unshift(lines[index])
+            }
+        });
+    lines =[];
+    //console.log(lines.length)
+    //console.log(newarray)
+    //console.log(newarray.length)
+
+    jQuery.each(newarray, function(index, value){
+            var newline ='\n'
+
+            //create a node element for each json data element
+            sb.append(index+newline)
+
+            //pre-process json element part
+            alert("Resultset Element" + index + " :" + value)
+            
+            var row = createJSONelements(value);
+            
+            //console.log(JSON.stringify(row));
+
+            //var jsonelements = JSON.stringify(row);
+
+            //iterate each element in the array
+            jQuery.each(row[0], function(key, value){
+            //    console.log("key:value" + key + ", " + value)
+                sb.append(" " +key+" "+ value +" "+ newline);
+            });
+
+
+        //sb.append(newline)
+        //alert(sb.toString())
+    });
+
+     console.log(sb.toString());
+
+     var testspace = new Space(sb.toString());
+
+     console.log("testspace \n"+testspace.toJSON())
+
+  });
+
+  //console.log("Found the text file");
+
+  //var MyMemoryService = new webServices("http://mymemory.translated.net/api/get", textparam)
+
+}
+
+function createJSONelements(value){
+  var jsonarray = []
+
+  //pattern match for translation part
+  var regextranslation = /\/.+\//g
+
+  //pattern match for pinyin part
+  var regexpinyin = /\[.+\]/g
+
+  //gets translation piece
+  var translation = value.match(regextranslation)
+            
+  console.log(translation.toString());
+
+  value = value.replace(translation, '');
+
+  //gets the pinyin piece
+  var pinyin = value.match(regexpinyin);
+
+  console.log(pinyin.toString());
+
+  value = value.replace(pinyin, '');
+
+  console.log(value);
+
+  //gets the remaining character pieces
+  var temparray = value.split(/[\s\/]/g)
+
+            
+  jsonarray.push({'simplified':temparray[0], 'traditional':temparray[1], 'pinyin': pinyin.toString(), 'translation':translation.toString()});
+
+  console.log("jsonarray: "+JSON.stringify(jsonarray));
+
+  //returns the json array output for that piece of chinese translation output
+  return jsonarray;
+}
+
+function createdivrows(myArrayElement){
+  var newdiv = document.createElement('div');
+  newdiv.setAttribute('class', 'row-fluid show-grid');
+  var newchilddiv = document.createElement('div');
+  newchilddiv.setAttribute('class','span2');
+  //alert("createddivros: "+myArrayElement.id);
+  console.log("createddivros: ", myArrayElement.id)
+  newchilddiv.innerHTML = "{ id="+myArrayElement.id+", segment="+myArrayElement.segment+", translation="+myArrayElement.translation+", reference="+myArrayElement.reference+";}";
+  //alert(newchilddiv.innerHTML);
+  console.log("newchilddiv.innerHTML: ", newchilddiv.innerHTML);
+  newdiv.appendChild(newchilddiv);
+  document.getElementById('container-span10').appendChild(newdiv);
+
+}
+
+function createdivrows2(myArrayElement){
+  var newdiv = document.createElement('div');
+  //newdiv.setAttribute('id', 'row-fluid show-grid');
+  newdiv.setAttribute('class', 'row-fluid show-grid');
+  console.log("myArrayElement object ", myArrayElement);
+  for (var key in myArrayElement){
+    console.log("myArrayElement.key ", key);
+    console.log("myArrayElement.key.value ", myArrayElement[key]);
+    
+    var newchilddiv = document.createElement('div');
+    newchilddiv.setAttribute('class','span8');
+
+    //newchilddiv.setAttribute('id','span2');
+
+    //to set up coloring effect of the div tag
+    //newchilddiv.setAttribute('style', 'border: 1px solid #333');
+
+    newchilddiv.innerHTML = key + ": " + myArrayElement[key];
+    console.log("newchilddv.innerHTML, ", newchilddiv.innerHTML);
+    newdiv.appendChild(newchilddiv);
+
+    Effect.toggle('span2', 'appear', { duration: 10.0});
+
+    //$('span2').appear({duration: 3.0});
+  }  
+   document.getElementById('span10').appendChild(newdiv);
+   //Effect.toggle('span10', 'appear');
+}
+
+function formatrowcontent(myArrayElement){
+   var newdiv = document.createElement('div');
+  //newdiv.setAttribute('id', 'row-fluid show-grid');
+  newdiv.setAttribute('class', 'row-fluid show-grid');
+  console.log("myArrayElement object ", myArrayElement);
+  var newchilddiv = document.createElement('div');
+  newchilddiv.setAttribute('class','span10 bubble');
+  
+  var idheading = "<h4>"+ "ID: " + myArrayElement.id + "</h4>";
+  var segmentheading = "<p>" + "English: " + myArrayElement.segment + "</p>";
+  var translationheading = "<p>" + "Chinese: " + myArrayElement.translation + "</p>";
+ // var hrline = "";
+
+  newchilddiv.innerHTML = idheading + segmentheading + translationheading;
+  console.log("newchilddv.innerHTML, ", newchilddiv.innerHTML);
+  newdiv.appendChild(newchilddiv);
+
+  document.getElementById('span10').appendChild(newdiv);
+  console.log("span10.innerHTML, ", $('span10').innerHTML);
+  //Effect.toggle('span10 bubble', 'appear');
+  //$('span10').appear();
+}
+</script>
+
+
+<body>
+
+<div class="navbar">
+  <div class="navbar-inner">
+    <a class="brand" href="#">Mind Your Language</a>
+    <ul class="nav">
+      <li><a href="#">About</a></li>
+      <li><a href="#">Products</a></li>
+      <li><a href="#">Services</a></li>
+      <li><a href="#">Contact Us</a></li>
+    </ul>
+  </div>
+</div>
+<div class="btn-group clearfix">
+  <button class="btn dropdown-toggle link" data-toggle="dropdown" data-original-title="Enter your english words" style="margin-top:-10px;">English<span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu">
+    <li>
+      <a id="dropdown_action_01">Chinese</a>
+    </li>
+  </ul>
+</div>
+
+<input id="text" type="text" name="text" style="margin-left: 10px; height: 29px;">
+<!-- <button class="btn" type="button" onclick="loadXMLDoc()"></button> -->
+
+<div id="btn" style="display:none">
+  <button class="btn" type="button" id="btn_search" onclick="loadXMLDoc()" >SEARCH</button> 
+</div>
+<div id="myDiv" class="myDiv"></div>
+<HR ALIGN="center" WIDTH="100%">
+
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div class="span2">
+      
+      <div class="leftframe" id="leftframe" style="display:none">
+        <div class="h5">纪律</div>
+        <div class="headertranslation">Translation</div>
+        <div class="pinyinheader">Jilu</div>
+        <div class="actualtranslation"></div>
+        <div class="dictionarycontent">
+            <div class="nountype">Noun:
+              <ul>
+                <li>纪律</li>
+                <li>纪律</li>
+                <li>纪律</li>
+              </ul>
+            </div>
+            <div class="verbtype">Verb:
+              <ul>
+                <li>纪律</li>
+                <li>纪律</li>
+                <li>纪律</li>
+              </ul>
+            </div>
+        </div>
+
+
+      </div>
+      <!-- Right Sidebar Content-->
+    </div>
+    <div id="span10" class="span10">
+    </div>
+  </div>
+</div>
+
+<!--Except  'Control state', other buttons require only jquery.js and bootstrap-button.js JavaScript files--> 
+
+<!--MyownBootstrap javascript to load-->      
+<!-- <script src="myownbootstrap/docs/assets/js/jquery.js"></script>-->
+<script src="myownbootstrap/docs/assets/js/bootstrap-transition.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-alert.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-modal.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-dropdown.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-scrollspy.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-tab.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-tooltip.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-popover.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-button.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-carousel.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-typeahead.js"></script>
+<!-- <script src="myownbootstrap/docs/assets/js/application.js"></script> -->
+
+<!--Scriptaculous-->
+<script src="scriptaculous/src/builder.js"></script>
+<script src="scriptaculous/src/dragdrop.js"></script>
+<script src="scriptaculous/src/controls.js"></script>
+<script src="scriptaculous/src/effects.js"></script>
+<script src="scriptaculous/src/slider.js"></script>
+<script src="scriptaculous/src/sound.js"></script>
+<script src="scriptaculous/src/unittest.js"></script>
+
+</body>
+
+</html>

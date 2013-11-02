@@ -1,0 +1,14 @@
+name space
+version 0.1.13
+description A lightweight language for data
+main ./space.js
+scripts
+ test node tests/node-index.js
+repository
+ type git
+ url git://github.com/nudgepad/space
+keywords space json xml
+devDependencies
+ qunit ~0.5.1
+author Breck Yunits, Ben Zulauf
+license Public Domain

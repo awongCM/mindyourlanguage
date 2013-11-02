@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE></TITLE>
+<META NAME="Generator" CONTENT="TextPad 4.6">
+<META NAME="Author" CONTENT="text/html; charset=UTF-8">
+<META NAME="Keywords" CONTENT="text/html; charset=UTF-8">
+<META NAME="Description" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<script type="text/javascript">
+
+var segment;
+var translation;
+
+function List(obj) {
+
+  if (this instanceof List) {
+   var t     = this,
+       keys  = [];
+
+    /* inititalize: add the properties of [obj] to the list, 
+       and store the keys of [obj] in the private keys array */
+    for (var l in obj) {
+       keys.push(l);
+       t[l] = obj[l];
+    }
+    /* public:
+       add a property to the list 
+    */
+     t.add = 
+         function(key, value) {
+              t[key] = value;
+              keys.push(key);
+              return t; /* allows method chaining */
+            };
+
+    /* public:
+       return raw or sorted list as string, separated by [separator] 
+       Without [sort] the order of properties is the order in which 
+       the properties are added to the list
+    */
+     t.iterate =
+       function(sort,separator){
+         separator = separator || '\n';
+         var ret   = [],
+             lkeys = sort ? keys.slice().sort() : keys;
+
+         for (var i=0;i<lkeys.length;i++){
+           ret.push(lkeys[i]+': '+t[lkeys[i]]);
+         }
+       return ret.join(separator);
+      };
+
+  } else if (obj && obj instanceof Object) {
+     return new List(obj);
+
+  } else if (arguments.length === 2) { 
+     var a    = {};
+     a[String(arguments[0])] = arguments[1];
+     return new List(a);
+
+  } else { return true; }
+
+ /* the 'if (this instanceof List)' pattern makes
+    the use of the 'new' operator obsolete. The 
+    constructor also allows to be initialized with
+    2 parameters => 'List(key,value)' 
+ */
+}
+
+
+
+function loadXMLDoc()
+{
+	var xhr = new XMLHttpRequest();
+	var placeholder = "&";
+	var q = "q="+document.getElementById("text").value;
+	var langpair = "langpair=en|zh-cn";
+	var key = "key=etn.Z4ia4g/yo";
+
+	var params = q.concat(placeholder,langpair);
+
+	alert(params);
+
+	xhr.open("POST", "http://mymemory.translated.net/api/get", true);
+	xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+	///xhr.send("q=Hello%20World!&langpair=en|it");
+	xhr.send(params);
+
+
+	xhr.onreadystatechange = function() {
+	  if (xhr.readyState == 4) {
+
+	    var JSONObject = xhr.responseText;
+
+	    var obj = eval('(' + JSONObject +')');
+
+		//The encapsulated List approach
+		var myList = new List();
+
+		var myArray = [];
+
+		for (var i=0; i<obj.matches.length; i++){
+			var object = obj.matches[i];
+			for (var property in object)
+			{
+					if(property=='segment')
+						alert('segment: '+object[property]);
+					if(property=='translation')
+						alert('translation: '+object[property]);
+
+					myArray[property] = object[property];
+			
+			}
+		}
+
+	    document.getElementById("myDiv").innerHTML = xhr.responseText;
+		
+
+//		for (var property in myArray)
+//		{
+//			alert('Property: '+ property +'; value ='+myArray[property]);
+//		}
+	  }
+	}
+
+
+}
+
+function retrieveAllArrayObjects(object) {
+	for (var property in object)
+	{
+		alert('item ' + i + ': '+ property + '=' +object[property]);
+	}
+}
+</script>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#FF0000" VLINK="#800000" ALINK="#FF00FF" BACKGROUND="?">
+
+<HR ALIGN="center" WIDTH="100%">
+<input type="text" name="text">
+<button type="button" onclick="loadXMLDoc()">Return data</button>
+<div id="myDiv"></div>
+
+</BODY>
+</HTML>

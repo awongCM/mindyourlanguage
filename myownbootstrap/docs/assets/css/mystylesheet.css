@@ -1,0 +1,235 @@
+/*
+My Stylesheet
+*/
+
+.leftframe{
+	border: 2px solid;border-top-left-radius: 50px;
+	border-top-right-radius: 10px;
+	border-bottom-right-radius: 50px;
+	border-bottom-left-radius: 2px;
+	box-shadow: 9px 9px 15px #000000;
+
+}
+
+.leftframe .h5{
+	display: compact;
+	-webkit-margin-before: 1em;
+	-webkit-margin-after: 1em;
+	-webkit-margin-start: 0px;
+	-webkit-margin-end: 0px;
+	text-align: left;
+	padding-left: 20px;
+	padding-bottom: 5px;
+	font-size: 25.5px;
+	font-weight: bold;
+	margin-top: 20px;
+	margin-bottom: 0;
+	line-height: 1;
+	word-spacing: -1;
+	font-family: inherit;
+	color: inherit;
+	text-rendering: optimizelegibility;
+}
+
+.headertranslation{
+	-webkit-margin-before: 1em;
+	-webkit-margin-after: 1em;
+	-webkit-margin-start: 0px;
+	-webkit-margin-end: 0px;
+	font-weight: bold;
+	color: rgb(6, 28, 143);
+	margin: 0 0 6px 0;
+	padding-left: 5px;
+}
+
+.actualtranslation{
+	-webkit-margin-before: 1em;
+	-webkit-margin-after: 1em;
+	-webkit-margin-start: 0px;
+	-webkit-margin-end: 0px;
+	display:block;
+	padding-left: 5px;
+}
+
+.pinyinheader{
+	display:block;
+	padding-left: 5px;
+	-webkit-margin-before: 1em;
+	-webkit-margin-after: 1em;
+	-webkit-margin-start: 0px;
+	-webkit-margin-end: 0px;
+}
+
+.dictionarycontent{
+	-webkit-margin-before: 1em;
+	-webkit-margin-after: 1em;
+	-webkit-margin-start: 0px;
+	-webkit-margin-end: 0px;
+	display: block;
+	padding-left: 5px;
+}
+
+.main-header{
+	background-color: #FFFFFF;
+  	color: #000000;
+  	padding: 18px 14px 10px;
+  	font-family: verdana;
+  	font-weight: bold;
+  	font-size: 30px;
+}
+
+.pinyin-header{
+	background-color: #FFFFFF;
+	color: #000000;
+	padding: 6px 17px 16px;
+	font-family: verdana;
+	font-weight: normal;
+	font-size: 14px;
+	font-style: italic;
+	text-transform: lowercase;
+}
+
+.voice-speaker{
+   	background-image: url("/myownbootstrap/img/speaker.png");
+	background-repeat: no-repeat;
+	color: #000000;
+	padding: 17px;
+	margin: 11px;
+	position: absolute;
+	-webkit-transform: translate(116px, -126px);
+	border: 1px solid #000;
+
+}
+
+.add-character-favourite{
+	background-image: url("/myownbootstrap/img/star.png");
+	background-repeat: no-repeat;
+	color: #000000;
+	padding: 17px;
+	margin: 11px;
+	position: absolute;
+	-webkit-transform: translate(116px, -84px);
+	border: 1px solid #000;
+
+}
+
+.header-translation{
+	 background-color: #FFFFFF;
+  color: #102C9E;
+  font-family: cursive;
+  font-style: normal;
+  font-weight: bold;
+  font-variant: normal;
+  font-size: 16px;
+
+}
+
+.actual-translation{
+	color: #190E97;
+	font-weight:bolder;
+	font-size:20px;
+}
+
+.examples-link{
+
+	font-style: italic;
+}
+
+/*.bubble{
+    height: 150px;
+    width:  275px;
+
+    opacity: 3;
+
+    margin-top: 41px;
+
+    float: right;
+
+    background-color: #F2F2F2;
+
+    -webkit-border-radius: 5px;
+    -webkit-box-shadow: 0px 0px 6px #B2B2B2;
+}
+
+.bubble::after {
+        height: 0px;
+        width:  0px;
+
+        content: "\00a0";
+
+        display: block;
+
+        margin-left: -10px;
+        margin-top:   28px;
+
+        border-width: 10px 10px 10px 0;
+        border-style: solid;
+        border-color: transparent #F2F2F2 transparent transparent;
+
+        -webkit-box-shadow: 0px 0px 6px #B2B2B2;
+ }
+ */
+
+.bubble {
+	
+	position: relative;
+	width: 305px;
+	height: 120px;
+	
+	padding: 5px;
+	
+	margin-bottom: 41px;
+
+	background: #F2F2F2;
+	border: #7F7F7F solid 5px;
+	-webkit-border-radius: 10px;
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+}
+
+.bubble:after {
+content: "";
+position: absolute;
+top: 22px;
+left: -14px;
+border-style: solid;
+border-width: 12px 14px 12px 0;
+border-color: transparent #F2F2F2 transparent;
+display: block;
+width: 0;
+z-index: 1;
+}
+
+.bubble:before {
+content: "";
+position: absolute;
+top: 18px;
+left: -23px;
+border-style: solid;
+border-width: 16px 18px 16px 0;
+border-color: transparent #7F7F7F;
+display: block;
+width: 0;
+z-index: 0;
+}
+
+
+.translation-border {
+  background-color: #FFFFFF;
+  color: #000000;
+  border: 2px double #000000;
+  padding: 12px;
+  font-family: helvetica;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: capitalize;
+  border-radius: 3px;
+  box-shadow: 0px 0px 10px #000000;
+
+}
+
+.examples-border{
+	border: 2px solid;
+	padding: 10px 10px;
+}

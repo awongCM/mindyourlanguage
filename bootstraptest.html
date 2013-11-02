@@ -1,0 +1,447 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>Example of Fixed Layout with Twitter Bootstrap version 2.0 from w3resource.com</title>
+<META NAME="Author" CONTENT="text/html; charset=UTF-8">
+<META NAME="Keywords" CONTENT="text/html; charset=UTF-8">
+<META NAME="Description" CONTENT="text/html; charset=UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<!--Bootstrap(modified)-->
+<link href="myownbootstrap/docs/assets/css/bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="myownbootstrap/docs/assets/css/mystylesheet.css" rel="stylesheet" type="text/css" />
+
+<!--Bootstrap(default) -->
+<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet" type="text/css"/>
+
+<!--MyBootstrap stuff --IMPORTANT!! Must load JQuery libs first before other prototype's libs -->
+<script src="myownbootstrap/docs/assets/js/jquery-1.9.1.js" type="text/javascript"></script>
+
+<!--Scriptaculous-->
+<script src="scriptaculous/lib/prototype.js" type="text/javascript"></script>
+<script src="scriptaculous/src/scriptaculous.js" type="text/javascript"></script>
+
+<!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+<!--[if lt IE 9]>
+<script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+<!-- Le fav and touch icons -->
+<!--<link rel="shortcut icon" href="myownbootstrap/docs/examples/images/favicon.ico">
+<link rel="apple-touch-icon" href="myownbootstrap/docs/examples/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="72x72" href="myownbootstrap/docs/examples/images/apple-touch-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="114x114" href="myownbootstrap/docs/examples/images/apple-touch-icon-114x114.png">-->
+
+<script src="myownbootstrap/docs/assets/js/jquery-1.9.1.js" type="text/javascript"></script>
+
+</head>
+
+<script type="text/javascript">
+  $.noConflict();
+</script>
+
+<!--<script type="text/javascript">
+jQuery(document).ready(function(){
+	$("#dropdown_action_01").click(function(e){
+   		var $div = $(this).parent().parent().parent();
+   		var $btn = $div.find('button');
+  		$btn.html($(this).text()+' <span class="caret"></span>');
+   		$div.removeClass('open');
+   		e.preventDefault();
+  		return false;
+	});
+});
+</script>-->
+
+<script type="text/javascript">
+
+var xhr = new XMLHttpRequest();
+
+function List(obj) {
+
+  if (this instanceof List) {
+   var t     = this,
+       keys  = [];
+
+    /* inititalize: add the properties of [obj] to the list, 
+       and store the keys of [obj] in the private keys array */
+    for (var l in obj) {
+       keys.push(l);
+       t[l] = obj[l];
+    }
+    /* public:
+       add a property to the list 
+    */
+     t.add = 
+         function(key, value) {
+              t[key] = value;
+              keys.push(key);
+              return t; /* allows method chaining */
+            };
+
+    /* public:
+       return raw or sorted list as string, separated by [separator] 
+       Without [sort] the order of properties is the order in which 
+       the properties are added to the list
+    */
+     t.iterate =
+       function(sort,separator){
+         separator = separator || '\n';
+         var ret   = [],
+             lkeys = sort ? keys.slice().sort() : keys;
+
+         for (var i=0;i<lkeys.length;i++){
+           ret.push(lkeys[i]+': '+t[lkeys[i]]);
+         }
+       return ret.join(separator);
+      };
+
+  } else if (obj && obj instanceof Object) {
+     return new List(obj);
+
+  } else if (arguments.length === 2) { 
+     var a    = {};
+     a[String(arguments[0])] = arguments[1];
+     return new List(a);
+
+  } else { return true; }
+
+ /* the 'if (this instanceof List)' pattern makes
+    the use of the 'new' operator obsolete. The 
+    constructor also allows to be initialized with
+    2 parameters => 'List(key,value)' 
+ */
+}
+
+function lookupWords(){
+  console.log("insideLookupWords");
+  //replace $ for JQuery to resolve different Jquery implementations
+  jQuery('#myDiv').load('http://google.com'); // SERIOUSLY!
+  console.log("nothing???");
+  jQuery.ajax({
+     url: 'http://news.bbc.co.uk',
+     type: 'GET',
+     success: function(res) {
+         
+         var headline = $(res.responseText).find('focus').text();
+         console.log("nothing??? again???");
+         alert(headline);
+     }
+  });
+
+}
+
+function TranslationObj(id, segment, translation, reference){
+  this.id = id;
+  this.segment = segment;
+  this.translation = translation;
+  this.reference = reference;
+
+}
+
+function loadData(){
+
+  console.log("in loadData...");
+
+  if(xhr.readyState == 4){
+
+    console.log("in the if statement");
+    var JSONObject = xhr.responseText;
+
+    console.log("getting to eval statement");
+
+    //not safe!
+    var JSONData = eval('(' + JSONObject +')');
+    //var JSONData = JSON.parse(JSONObject);
+
+    console.log("before processing..");
+
+    //processData(JSONData)
+    processData2(JSONData);
+
+  }
+//  lookupWords();
+
+//  xhr.update();
+
+  
+}
+
+function processData(JSONData){
+  
+  console.log("processData..", JSONData);
+  
+  //To store the key value pairs in the associative arrays that I'm interested to extract
+  var myArray = new Array();
+
+  for (var i=0; i<JSONData.matches.length; i++){
+    //alert("after loop.." + xhr.responseText);
+    
+      var obj = {
+          id: JSONData.matches[i].id, 
+          segment: JSONData.matches[i].segment,
+          translation: JSONData.matches[i].translation,
+          reference: JSONData.matches[i].reference
+      };
+
+      myArray.push(obj);
+  }
+
+    var JSONObject = xhr.responseText;
+    var JSONData = eval('(' + JSONObject +')');
+    //document.getElementById("myDiv").innerHTML = JSON.stringify(JSONData, null, '\t');
+    console.log(JSON.stringify(JSONData,null,'\t'));
+    //document.getElementById("myDiv").innerHTML = printArrayValues(myArray);
+
+    //document.getElementById("container-span10").innerHTML = printArrayRows(myArray);
+    printArrayRows(myArray);
+}
+
+function processData2(JSONData){
+  //alert("in processData");
+  console.log("processData2..", JSONData);
+  
+  //To store the key value pairs in the associative arrays that I'm interested to extract
+  var myArray = new Array();
+
+  for (var i=0; i<JSONData.matches.length; i++){
+    //alert("after loop.." + xhr.responseText);
+    
+      var translationobj = new TranslationObj (
+          JSONData.matches[i].id, 
+          JSONData.matches[i].segment,
+          JSONData.matches[i].translation,
+          JSONData.matches[i].reference
+      );
+
+      myArray.push(translationobj);
+  }
+
+    var JSONObject = xhr.responseText;
+    var JSONData = eval('(' + JSONObject +')');
+    //document.getElementById("myDiv").innerHTML = JSON.stringify(JSONData, null, '\t');
+    console.log(JSON.stringify(JSONData,null,'\t'));
+    //document.getElementById("myDiv").innerHTML = printArrayValues(myArray);
+
+    console.log("document.getElementById.span10: ", document.getElementById("span10"));
+   // document.getElementById("span10").innerHTML = printArrayRows(myArray);
+
+    document.getElementById("span10").setAttribute('style','display:none');
+    printArrayRows(myArray);
+}
+
+function printArrayValues(myArray){
+    var result="";
+    for (var i = 0; i<myArray.length; i++){
+      var obj = myArray[i];
+      result += "{ id="+obj.id+", segment="+obj.segment+", translation="+obj.translation+", reference="+obj.reference+";}";
+    }
+    return result;
+}
+
+function printArrayRows(myArray){
+    //print header first
+    var result = "";
+    for (var i =0; i<myArray.length; i++){
+      
+      //access the first element of the array
+      var obj = myArray[i];
+
+      console.log("myArray's obj: ", obj);
+
+      //total number of elements in the array
+      console.log("myArray.length: ", myArray.length);
+
+      //total number of properties in an array element
+      console.log("Object.keys(myArray[i]).length: ", Object.keys(myArray[i]).length)
+
+      //Test Div Row1
+      //createdivrows(obj);
+      //Test Div Row2
+      //createdivrows2(obj);
+      //Test Format Row
+      formatrowcontent(obj);
+    }
+
+}
+
+function loadXMLDoc()
+{
+ 
+  console.log("start loadXMLDoc here");
+  var placeholder = "&";
+	var q = "q=" + document.getElementById("text").value;
+	console.log("Found the text file");
+  var langpair = "langpair=en|zh-cn";
+	
+  var key = "key=etn.Z4ia4g/yo";
+  
+	var params = q.concat(placeholder,langpair);
+
+	
+  console.log("params:", params);
+
+	xhr.open("POST", "http://mymemory.translated.net/api/get", true);
+	xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+	xhr.send(params);
+
+	xhr.onreadystatechange = loadData;
+
+  //<!-- Effect animation here-->
+  //Effect.BlindDown('myborder', {duration: .23, scaleX: false, scaleY:true});
+
+}
+
+function createdivrows(myArrayElement){
+  var newdiv = document.createElement('div');
+  newdiv.setAttribute('class', 'row-fluid show-grid');
+  var newchilddiv = document.createElement('div');
+  newchilddiv.setAttribute('class','span2');
+  //alert("createddivros: "+myArrayElement.id);
+  console.log("createddivros: ", myArrayElement.id)
+  newchilddiv.innerHTML = "{ id="+myArrayElement.id+", segment="+myArrayElement.segment+", translation="+myArrayElement.translation+", reference="+myArrayElement.reference+";}";
+  //alert(newchilddiv.innerHTML);
+  console.log("newchilddiv.innerHTML: ", newchilddiv.innerHTML);
+  newdiv.appendChild(newchilddiv);
+  document.getElementById('container-span10').appendChild(newdiv);
+
+}
+
+function createdivrows2(myArrayElement){
+  var newdiv = document.createElement('div');
+  //newdiv.setAttribute('id', 'row-fluid show-grid');
+  newdiv.setAttribute('class', 'row-fluid show-grid');
+  console.log("myArrayElement object ", myArrayElement);
+  for (var key in myArrayElement){
+    console.log("myArrayElement.key ", key);
+    console.log("myArrayElement.key.value ", myArrayElement[key]);
+    
+    var newchilddiv = document.createElement('div');
+    newchilddiv.setAttribute('class','span8');
+
+    //newchilddiv.setAttribute('id','span2');
+
+    //to set up coloring effect of the div tag
+    //newchilddiv.setAttribute('style', 'border: 1px solid #333');
+
+    newchilddiv.innerHTML = key + ": " + myArrayElement[key];
+    console.log("newchilddv.innerHTML, ", newchilddiv.innerHTML);
+    newdiv.appendChild(newchilddiv);
+
+    //Effect.toggle('span2', 'appear', { duration: 10.0});
+
+    //$('span2').appear({duration: 3.0});
+  }  
+   document.getElementById('span10').appendChild(newdiv);
+   //Effect.toggle('span10', 'appear');
+}
+
+function formatrowcontent(myArrayElement){
+   var newdiv = document.createElement('div');
+  //newdiv.setAttribute('id', 'row-fluid show-grid');
+  newdiv.setAttribute('class', 'row-fluid show-grid');
+  console.log("myArrayElement object ", myArrayElement);
+  var newchilddiv = document.createElement('div');
+  newchilddiv.setAttribute('class','span10');
+  
+  var idheading = "<h4>"+ "ID: " + myArrayElement.id + "</h4>";
+  var segmentheading = "<p>" + "English: " + myArrayElement.segment + "</p>";
+  var translationheading = "<p>" + "Chinese: " + myArrayElement.translation + "</p>";
+  var hrline = "<hr>";
+
+  newchilddiv.innerHTML = idheading + segmentheading + translationheading + hrline;
+  console.log("newchilddv.innerHTML, ", newchilddiv.innerHTML);
+  newdiv.appendChild(newchilddiv);
+
+  document.getElementById('span10').appendChild(newdiv);
+  //Effect.toggle('span10', 'appear');
+
+}
+</script>
+
+
+
+<body>
+
+<div class="navbar">
+  <div class="navbar-inner">
+    <a class="brand" href="#">Mind Your Language</a>
+    <ul class="nav">
+      <li><a href="#">About</a></li>
+      <li><a href="#">Services</a></li>
+      <li><a href="#">Contact Us</a></li>
+    </ul>
+  </div>
+</div>
+
+<input id="text" type="text" name="text" class="input-xxlarge search-query">
+<button class="btn" type="button" onclick="loadXMLDoc()">Translate</button>
+
+
+<div id="myDiv" class="myDiv"></div>
+<HR ALIGN="center" WIDTH="100%">
+
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div class="span2 translation-border">
+      
+        <div class="main-header">纪律</div>
+        <div class="pinyin-header">ji lu</div>
+        <!--<div class="header-translation">Translation</div>-->
+        <div class="actual-translation">Discipline</div>
+        <div class="voice-speaker"></div>
+        <div class="add-character-favourite"></div>
+        <div class="examples-link">See Examples</div>
+        <div class="dropdown">
+          <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+            <li><a tabindex="-1" href="#">Action</a></li>
+            <li><a tabindex="-1" href="#">Another action</a></li>
+            <li><a tabindex="-1" href="#">Something else here</a></li>
+            <li class="divider"></li>
+            <li><a tabindex="-1" href="#">Separated link</a></li>
+          </ul>
+        </div>
+      <!-- Sidebar Content-->
+    </div>
+    <div class="span10 examples-border">
+     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus sed dui a orci vehicula adipiscing ac consectetur est. Phasellus sit amet egestas enim, quis cursus felis. Sed nibh libero, fermentum a convallis tempor, auctor a orci. Aenean id quam a ligula rutrum malesuada. Praesent congue a justo eu posuere. Maecenas massa diam, interdum id suscipit in, porttitor sit amet quam. Duis bibendum gravida bibendum. Nunc ut metus in libero lobortis ornare sit amet non dui. Etiam luctus aliquam augue ac convallis. Aliquam erat volutpat. Maecenas a justo eu tortor convallis adipiscing sit amet cursus nibh. Nunc auctor est enim.
+    <p>
+      Nam et libero nec arcu tincidunt pellentesque in nec massa. Morbi euismod elit eu mauris fermentum lacinia. Curabitur ullamcorper bibendum diam, interdum eleifend turpis laoreet at. Donec tortor metus, semper non iaculis id, commodo at sem. Vestibulum eu quam eleifend est commodo dapibus ac a sem. Vivamus auctor, velit vitae rutrum ultrices, justo mi sollicitudin ipsum, eget volutpat massa enim sit amet tortor. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Cras at nisi id tortor faucibus ultrices. Donec fringilla turpis sit amet sapien accumsan egestas. Fusce quis dolor dolor. Fusce dapibus elit nec rhoncus tincidunt. Vestibulum accumsan eros id sapien tincidunt mattis. Mauris libero magna, consectetur a odio nec, elementum vestibulum dolor. Mauris erat massa, mollis varius mi sed, feugiat condimentum libero.
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- Le javascript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="myownbootstrap/docs/assets/js/jquery.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-transition.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-alert.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-modal.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-dropdown.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-scrollspy.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-tab.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-tooltip.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-popover.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-button.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-collapse.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-carousel.js"></script>
+<script src="myownbootstrap/docs/assets/js/bootstrap-typeahead.js"></script>
+
+
+<!--Scriptaculous-->
+
+<script src="scriptaculous/src/builder.js"></script>
+<script src="scriptaculous/src/dragdrop.js"></script>
+<script src="scriptaculous/src/controls.js"></script>
+<script src="scriptaculous/src/effects.js"></script>
+<script src="scriptaculous/src/slider.js"></script>
+<script src="scriptaculous/src/sound.js"></script>
+<script src="scriptaculous/src/unittest.js"></script>
+
+</body>
+</html>
+            
