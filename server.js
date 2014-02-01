@@ -56,8 +56,8 @@ http.createServer(function(request, response){
  //  		}
 	// });
 
- 	// Code to test in displaying the resource file onto the browser
-	 // fs.exists(filename, function(exists) {
+// Code to test in displaying the resource file onto the browser
+// fs.exists(filename, function(exists) {
   //  		if (exists) {
   //   		fs.readFile(filename, function(err, data){
   //   			if(err) throw err;	
