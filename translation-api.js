@@ -194,7 +194,7 @@ function useCedictresource(handleData)
         	datatype: "jsonp",
         	jsonpCallback: "_testcb",
         	cache: false,
-        	timeout: 50000,
+        	timeout: 5000000,
         	success: function(data) {
         		handleData(data);
         	},
