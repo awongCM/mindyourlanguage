@@ -1,0 +1,13 @@
+.simplified{
+	padding-left: 70px;
+	font-weight: bolder;
+	font-size: 50px;
+	padding-top: 20px;
+}
+
+.traditional{
+	padding-top: 40px;
+	font-weight: bolder;
+	font-size: 50px;
+	padding-left: 70px;
+}

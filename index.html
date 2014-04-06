@@ -7,7 +7,12 @@
 <META NAME="Description" CONTENT="text/html; charset=UTF-8">
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
-<!--<link rel=stylesheet href="css/reset.css">-->
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.21/jquery-ui.min.js"></script>
+
+<link rel="canonical" href="http://www.chinese-ime.com" />
+<link rel="stylesheet" type="text/css" href="chinese-ime/ime.css" />
+
 
 <!--Bootstrap(modified)-->
 <link href="myownbootstrap/docs/assets/css/bootstrap.css" rel="stylesheet" type="text/css" />
@@ -18,15 +23,25 @@
 <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet" type="text/css"/>
 
 <!--MyBootstrap stuff --IMPORTANT!! Must load JQuery libs first before other prototype's libs -->
-<script src="myownbootstrap/docs/assets/js/jquery-1.9.1.js" type="text/javascript"></script>
-<!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js" type="text/javascript"></script> -->
+<!--<script src="myownbootstrap/docs/assets/js/jquery-1.9.1.js" type="text/javascript"></script> -->
 
-<script type="text/javascript" src="space-master/space.modified.js"></script>
+<!-- Load Space JS utilities-->
+<script type="text/javascript" src="space-master/space.js"></script>
+
 <script type="text/javascript" src="utilities.js"></script>
 
-<!--Scriptaculous-->
-<script src="scriptaculous/lib/prototype.js" type="text/javascript"></script>
-<script src="scriptaculous/src/scriptaculous.js" type="text/javascript"></script>
+<!-- Time to replace scriptaculous with Jquery libraries instead-->
+<!-- <script src="scriptaculous/lib/prototype.js" type="text/javascript"></script> -->
+<!-- <script src="scriptaculous/src/scriptaculous.js" type="text/javascript"></script> -->
+
+<!-- Load this script if you want traditional character support -->
+<script type="text/javascript" charset="utf-8" src="chinese-ime/trad_chars.js"></script>
+<!-- Load this script if you want support for adding the text at the caret position -->
+<script type="text/javascript" src="chinese-ime/caret.js"></script>
+<!-- The actual script -->
+<script type="text/javascript" src="chinese-ime/jQuery.chineseIME.js"></script>
+
+
 
 <!-- My own libraries/APIs -->
 <script src="translation-api.js" type="text/javascript"></script>
@@ -51,13 +66,18 @@ jQuery(document).ready(function($){
   
   /** Basically acting as a switch/toggle button*/
   $("#dropdown_action_01").click(function(e){
-      console.log("Handler for .click() called.");
+      //console.log("Handler for .click() called.");
       var $div = $(this).parent().parent().parent();
       var $btn = $div.find('button');
       var $tempvar = $btn.text();
       $btn.html($(this).text()+' <span class="caret"></span>');
       $div.removeClass('open');
       $div.find('#dropdown_action_01').text($tempvar);
+
+      if ($(".btn.dropdown-toggle.link").text().trim() == "English")
+        console.log("Must be English");
+      else 
+        console.log("Must be Chinese");
 
       e.preventDefault();
       return false;
@@ -71,10 +91,20 @@ jQuery(document).ready(function($){
             .tooltip('show'); 
   });
 
-  $("#text").keypress(function(e){
+  $("#input_text").keypress(function(e){
       console.log("Handler for .keypress() called.");
       if ($(this).is(":empty"))
         $("#btn_search").parent().show();
+  });
+
+  $("#input_text.chinese").chineseInput({
+      debug: true, // print debug messages
+      input: {
+          initial: 'traditional', // or 'traditional'
+          allowChange: true // allow transition between traditional and simplified
+      },
+      allowHide: true, // allow the chinese input to be switched off
+      active: true // whether or not the plugin should be active by default
   });
 
   
@@ -329,7 +359,7 @@ function loadXMLDoc()
   console.log("start loadXMLDoc here");
   
   
-  var textparam = document.getElementById("text").value;
+  var textparam = document.getElementById("input_text").value;
 
   //Consume MyMemory Rest APIs
   //useMyMemoryREST(textparam);
@@ -340,9 +370,9 @@ function loadXMLDoc()
 
   //Test CEDICT resource
   useCedictresource(function(output){
-    //console.log(output);
+    
     var lines = output.split('\n');
-    //console.log(lines);
+    
     var newarray = [];
 
     //the char or word to do match search pattern
@@ -351,16 +381,13 @@ function loadXMLDoc()
     var sb = new StringBuilder();
 
     jQuery.each(lines, function(index, value){
-            //console.log(index + ': ' + value)
+            
             if(lines[index].match(regex)){
                 newarray.unshift(lines[index])
             }
         });
     lines =[];
-    //console.log(lines.length)
-    //console.log(newarray)
-    //console.log(newarray.length)
-
+    
     jQuery.each(newarray, function(index, value){
             var newline ='\n'
 
@@ -368,7 +395,7 @@ function loadXMLDoc()
             sb.append(index+newline)
 
             //pre-process json element part
-            alert("Resultset Element" + index + " :" + value)
+            
             
             var row = createJSONelements(value);
             
@@ -391,13 +418,36 @@ function loadXMLDoc()
 
      var testspace = new Space(sb.toString());
 
-     console.log("testspace \n"+testspace.toJSON())
+     console.log("testspace \n"+testspace.toJSON());
+
+     extractJSONfromCedict(testspace.toJSON());
+
 
   });
 
-  //console.log("Found the text file");
+}
 
-  //var MyMemoryService = new webServices("http://mymemory.translated.net/api/get", textparam)
+/*
+Catered function that specifically extracts JSON data objects from Space Object
+*/
+function extractJSONfromCedict(JSONData){
+    var parsedJSONObjects = JSON.parse(JSONData);
+
+    //Store first translated JSON object for the left frame to display
+    var leftframeJSON = parsedJSONObjects[0];
+
+    $(".leftframe").ready(function(e){
+        $(this).find(".simplified").empty();
+        $(this).find(".simplified").html("<span>(Simplified)</span>"+leftframeJSON["simplified"]);
+        $(this).find(".traditional").empty();
+        $(this).find(".traditional").html("<span>(Traditional)  </span>"+leftframeJSON["traditional"]);
+        $(this).find(".pinyin").text(leftframeJSON["pinyin"]);
+        $(this).find(".translation").text(leftframeJSON["translation"]);
+
+    });
+
+    $(".leftframe").slideDown('slow');
+
 
 }
 
@@ -429,7 +479,6 @@ function createJSONelements(value){
   //gets the remaining character pieces
   var temparray = value.split(/[\s\/]/g)
 
-            
   jsonarray.push({'simplified':temparray[0], 'traditional':temparray[1], 'pinyin': pinyin.toString(), 'translation':translation.toString()});
 
   console.log("jsonarray: "+JSON.stringify(jsonarray));
@@ -493,7 +542,7 @@ function formatrowcontent(myArrayElement){
   var idheading = "<h4>"+ "ID: " + myArrayElement.id + "</h4>";
   var segmentheading = "<p>" + "English: " + myArrayElement.segment + "</p>";
   var translationheading = "<p>" + "Chinese: " + myArrayElement.translation + "</p>";
- // var hrline = "";
+ 
 
   newchilddiv.innerHTML = idheading + segmentheading + translationheading;
   console.log("newchilddv.innerHTML, ", newchilddiv.innerHTML);
@@ -520,56 +569,51 @@ function formatrowcontent(myArrayElement){
     </ul>
   </div>
 </div>
-<div class="btn-group clearfix">
-  <button class="btn dropdown-toggle link" data-toggle="dropdown" data-original-title="Enter your english words" style="margin-top:-10px;">English<span class="caret"></span>
-  </button>
-  <ul class="dropdown-menu">
-    <li>
-      <a id="dropdown_action_01">Chinese</a>
-    </li>
-  </ul>
+
+<div class="translation-container" style="overflow:hidden;height:70px;">
+  <div class="btn-group clearfix" style="float:left;">
+    <button class="btn dropdown-toggle link" data-toggle="dropdown" data-original-title="Enter your english words">English<span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu">
+      <li>
+        <a id="dropdown_action_01">Chinese</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="input_container" style="display:block;float:left;">
+    <input id="input_text" class="chinese" type="text" name="input_text" style="margin-left: 10px; height: 29px;margin-right:10px;">
+  </div>
+
+  <div id="btn" style="display:none">
+    <button class="btn" type="button" id="btn_search" onclick="loadXMLDoc()" >SEARCH</button> 
+  </div>
+
 </div>
 
-<input id="text" type="text" name="text" style="margin-left: 10px; height: 29px;">
-<!-- <button class="btn" type="button" onclick="loadXMLDoc()"></button> -->
-
-<div id="btn" style="display:none">
-  <button class="btn" type="button" id="btn_search" onclick="loadXMLDoc()" >SEARCH</button> 
-</div>
 <div id="myDiv" class="myDiv"></div>
-<HR ALIGN="center" WIDTH="100%">
-
+<hr align="center" width="100%">
 <div class="container-fluid">
   <div class="row-fluid">
-    <div class="span2">
+    <div class="span3">
       
       <div class="leftframe" id="leftframe" style="display:none">
-        <div class="h5">纪律</div>
-        <div class="headertranslation">Translation</div>
-        <div class="pinyinheader">Jilu</div>
-        <div class="actualtranslation"></div>
-        <div class="dictionarycontent">
-            <div class="nountype">Noun:
-              <ul>
-                <li>纪律</li>
-                <li>纪律</li>
-                <li>纪律</li>
-              </ul>
-            </div>
-            <div class="verbtype">Verb:
-              <ul>
-                <li>纪律</li>
-                <li>纪律</li>
-                <li>纪律</li>
-              </ul>
-            </div>
+        <div class="simplified"></div>
+        <div class="traditional"></div>
+        <div class="pinyinheader">
+            <h2>Pinyin</h2>
+            <div class="pinyin"></div>
         </div>
-
-
+        <div class="translationheader">
+            <h2>Translation</h2>
+            <div class="translation"></div>
+        </div>
+        <div class="dictionarycontent"></div>
       </div>
-      <!-- Right Sidebar Content-->
+      
     </div>
-    <div id="span10" class="span10">
+    <!-- Right Sidebar Content-->
+    <div id="span9" class="span9">
     </div>
   </div>
 </div>
@@ -592,6 +636,7 @@ function formatrowcontent(myArrayElement){
 <!-- <script src="myownbootstrap/docs/assets/js/application.js"></script> -->
 
 <!--Scriptaculous-->
+<!--
 <script src="scriptaculous/src/builder.js"></script>
 <script src="scriptaculous/src/dragdrop.js"></script>
 <script src="scriptaculous/src/controls.js"></script>
@@ -599,6 +644,7 @@ function formatrowcontent(myArrayElement){
 <script src="scriptaculous/src/slider.js"></script>
 <script src="scriptaculous/src/sound.js"></script>
 <script src="scriptaculous/src/unittest.js"></script>
+-->
 
 </body>
 

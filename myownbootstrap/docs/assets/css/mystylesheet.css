@@ -42,22 +42,54 @@ My Stylesheet
 	padding-left: 5px;
 }
 
-.actualtranslation{
-	-webkit-margin-before: 1em;
-	-webkit-margin-after: 1em;
-	-webkit-margin-start: 0px;
-	-webkit-margin-end: 0px;
-	display:block;
-	padding-left: 5px;
+.simplified{
+	padding-left: 40px;
+	font-weight: bolder;
+	font-size: 50px;
+	padding-top: 20px;
+}
+
+.simplified span{
+	font-size: 9px;
+	font-style: italic;
+}
+
+.traditional{
+	padding-top: 40px;
+	font-weight: bolder;
+	font-size: 50px;
+	padding-left: 40px;
+}
+
+.traditional span{
+	font-size: 9px;
+	font-style: italic;
+}
+
+.translationheader{
+	display:inline-block;
+	padding-left: 15px;
+	margin-top: 12px;
+}
+
+.translation{
+	min-width: 10%;
+	float:right;
 }
 
 .pinyinheader{
 	display:block;
 	padding-left: 5px;
-	-webkit-margin-before: 1em;
-	-webkit-margin-after: 1em;
-	-webkit-margin-start: 0px;
-	-webkit-margin-end: 0px;
+	margin-top: 30px;
+	margin-left: 10px;
+	border: 2px solid #000;
+	width: 127px;
+}
+
+.pinyin{
+	font-style: italic;
+	color:	darkblue;
+	font-weight: bolder;
 }
 
 .dictionarycontent{
