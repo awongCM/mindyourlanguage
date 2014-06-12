@@ -382,11 +382,13 @@ var _callbacks_ = {
             if (!$toolbar){
                 $toolbar = self.$toolbar;
             }
-            $toolbar.css({'padding': '0 0 10px 5px'}).
-                     position({my: 'left bottom',
-                                at: 'left bottom',
-                                of: self.$el,
-                                collision: "none"});
+            //Code commented out yto remove positioning the toolbar for now
+            // $toolbar.css({'padding': '0 0 10px 5px'}).
+            //          position({my: 'left bottom',
+            //                     at: 'left bottom',
+            //                     of: self.$el,
+            //                     collision: "none"});
+            $toolbar.css({'padding': '0 0 10px 5px'});
         }
 
         self.updateDialog = function(){
