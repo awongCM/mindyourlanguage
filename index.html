@@ -124,150 +124,17 @@ jQuery(document).ready(function($){
       active: true // whether or not the plugin should be active by default
   });
 
-  
-  
-  // $("#playaudio").click(function() {
-  //    alert("hello word")
-  // });
-
-
 });
 </script>
 
 <script type="text/javascript">
 
+//TODO: Decided what to do with this???
 function TranslationObj(id, segment, translation, reference){
   this.id = id;
   this.segment = segment;
   this.translation = translation;
   this.reference = reference;
-
-}
-
-function loadData(){
-
-  console.log("in loadData...");
-
-  if(xhr.readyState == 4){
-
-    //console.log("in the if statement");
-    var JSONObject = xhr.responseText;
-
-    console.log("getting to eval statement");
-
-    //not safe!
-    var JSONData = eval('(' + JSONObject +')');
-    //var JSONData = JSON.parse(JSONObject);
-
-    console.log("before processing..");
-
-    //First approach in using json format
-    //processData(JSONData)
-
-    //Secondary approach in using declared object-oriented arrays
-    processData2(JSONData);
-
-  }
-
-//  xhr.update();
-
-  
-}
-
-function processData(JSONData){
-  
-  console.log("processData..", JSONData);
-  
-  //To store the key value pairs in the associative arrays that I'm interested to extract
-  var myArray = new Array();
-
-  for (var i=0; i<JSONData.matches.length; i++){
-    //alert("after loop.." + xhr.responseText);
-    
-      var obj = {
-          id: JSONData.matches[i].id, 
-          segment: JSONData.matches[i].segment,
-          translation: JSONData.matches[i].translation,
-          reference: JSONData.matches[i].reference
-      };
-
-      myArray.push(obj);
-  }
-
-    var JSONObject = xhr.responseText;
-    var JSONData = eval('(' + JSONObject +')');
-    //document.getElementById("myDiv").innerHTML = JSON.stringify(JSONData, null, '\t');
-    console.log(JSON.stringify(JSONData,null,'\t'));
-    //document.getElementById("myDiv").innerHTML = printArrayValues(myArray);
-
-    printArrayRows(myArray);
-}
-
-function processData2(JSONData){
-  //alert("in processData");
-  console.log("processData2..", JSONData);
-  
-  //To store the key value pairs in the associative arrays that I'm interested to extract
-  var myArray = new Array();
-
-  for (var i=0; i<JSONData.matches.length; i++){
-    //alert("after loop.." + xhr.responseText);
-    
-      var translationobj = new TranslationObj (
-          JSONData.matches[i].id, 
-          JSONData.matches[i].segment,
-          JSONData.matches[i].translation,
-          JSONData.matches[i].reference
-      );
-
-      myArray.push(translationobj);
-  }
-
-    var JSONObject = xhr.responseText;
-    var JSONData = eval('(' + JSONObject +')');
-    //document.getElementById("myDiv").innerHTML = JSON.stringify(JSONData, null, '\t');
-    console.log(JSON.stringify(JSONData,null,'\t'));
-    //document.getElementById("myDiv").innerHTML = printArrayValues(myArray);
-
-    console.log("document.getElementById.span10: ", document.getElementById("span10"));
-   // document.getElementById("span10").innerHTML = printArrayRows(myArray);
-
-    
-    //Effect.Fade('span10')
-
-    jQuery('#span10').empty();
-    $('span10').hide();
-    printArrayRows(myArray);
-
-    //Effect.toggle('span10', 'appear');
-    console.log("Effect.appear")
-    $('span10').appear();
-    //Effect.Appear('span10');
-
-    //Let's format the display on the frame
-    formatFrameDisplay(myArray);
-
-    //activate the Google Language Audio
-    activateLangAudio();
-
-    Effect.BlindDown('leftframe', {duration: .23, scaleX: false, scaleY:true});
-
-}
-
-function formatFrameDisplay(myArray){
-  console.log("myArray[0]: "+ JSON.stringify(myArray[0]));
-  console.log(myArray[0].segment);
-  
-  jQuery('#leftframe').find('.h5').text(myArray[0].segment);
-  console.log("leftframe.h5.text: "+jQuery('#leftframe').find('.h5').text());
-  //jQuery('#leftframe').find('.actualtranslation').text(myArray[0].translation);
-
-  //append span keyword
-  //jQuery('#leftframe').find('.actualtranslation').append('<span>'+myArray[0].translation+'</span>');
-  jQuery('#leftframe').find('.actualtranslation').empty();
-  jQuery('<span id="playaudio">'+myArray[0].translation+'</span>').appendTo(jQuery('#leftframe').find('.actualtranslation'))
-
-
 }
 
 function activateLangAudio(){
@@ -320,33 +187,6 @@ function printArrayValues(myArray){
       result += "{ id="+obj.id+", segment="+obj.segment+", translation="+obj.translation+", reference="+obj.reference+";}";
     }
     return result;
-}
-
-function printArrayRows(myArray){
-    //print header first
-    var result = "";
-    for (var i =0; i<myArray.length; i++){
-      
-      //access the first element of the array
-      var obj = myArray[i];
-
-      console.log("myArray's obj: ", obj);
-
-      //total number of elements in the array
-      console.log("myArray.length: ", myArray.length);
-
-      //total number of properties in an array element
-      console.log("Object.keys(myArray[i]).length: ", Object.keys(myArray[i]).length)
-
-      //Test Div Row1
-      //createdivrows(obj);
-      //Test Div Row2
-      //createdivrows2(obj);
-      //Test Format Row
-
-      formatrowcontent(obj);
-    }
-
 }
 
 function loadXMLDoc()
@@ -404,16 +244,13 @@ function loadXMLDoc()
                 sb.append(" " +key+" "+ value +" "+ newline);
             });
 
-
-        //sb.append(newline)
-        //alert(sb.toString())
     });
 
-     console.log(sb.toString());
+     //console.log(sb.toString());
 
      var testspace = new Space(sb.toString());
 
-     console.log("testspace \n"+testspace.toJSON());
+     //console.log("testspace \n"+testspace.toJSON());
 
      $parsedTranslatedJSONObjects = JSON.parse(testspace.toJSON());
 
@@ -467,7 +304,6 @@ function displayTranslatedObjectsList(parsedTranslatedObjects, TranslatedObjects
 
   };
 
-
 }
 
 function createJSONelements(value){
@@ -482,95 +318,28 @@ function createJSONelements(value){
   //gets translation piece
   var translation = value.match(regextranslation)
             
-  console.log(translation.toString());
+  //console.log(translation.toString());
 
   value = value.replace(translation, '');
 
   //gets the pinyin piece
   var pinyin = value.match(regexpinyin);
 
-  console.log(pinyin.toString());
+  //console.log(pinyin.toString());
 
   value = value.replace(pinyin, '');
 
-  console.log(value);
+  //console.log(value);
 
   //gets the remaining character pieces
   var temparray = value.split(/[\s\/]/g)
 
   jsonarray.push({'simplified':temparray[0], 'traditional':temparray[1], 'pinyin': pinyin.toString(), 'translation':translation.toString()});
 
-  console.log("jsonarray: "+JSON.stringify(jsonarray));
+  //console.log("jsonarray: "+JSON.stringify(jsonarray));
 
   //returns the json array output for that piece of chinese translation output
   return jsonarray;
-}
-
-function createdivrows(myArrayElement){
-  var newdiv = document.createElement('div');
-  newdiv.setAttribute('class', 'row-fluid show-grid');
-  var newchilddiv = document.createElement('div');
-  newchilddiv.setAttribute('class','span2');
-  //alert("createddivros: "+myArrayElement.id);
-  console.log("createddivros: ", myArrayElement.id)
-  newchilddiv.innerHTML = "{ id="+myArrayElement.id+", segment="+myArrayElement.segment+", translation="+myArrayElement.translation+", reference="+myArrayElement.reference+";}";
-  //alert(newchilddiv.innerHTML);
-  console.log("newchilddiv.innerHTML: ", newchilddiv.innerHTML);
-  newdiv.appendChild(newchilddiv);
-  document.getElementById('container-span10').appendChild(newdiv);
-
-}
-
-function createdivrows2(myArrayElement){
-  var newdiv = document.createElement('div');
-  //newdiv.setAttribute('id', 'row-fluid show-grid');
-  newdiv.setAttribute('class', 'row-fluid show-grid');
-  console.log("myArrayElement object ", myArrayElement);
-  for (var key in myArrayElement){
-    console.log("myArrayElement.key ", key);
-    console.log("myArrayElement.key.value ", myArrayElement[key]);
-    
-    var newchilddiv = document.createElement('div');
-    newchilddiv.setAttribute('class','span8');
-
-    //newchilddiv.setAttribute('id','span2');
-
-    //to set up coloring effect of the div tag
-    //newchilddiv.setAttribute('style', 'border: 1px solid #333');
-
-    newchilddiv.innerHTML = key + ": " + myArrayElement[key];
-    console.log("newchilddv.innerHTML, ", newchilddiv.innerHTML);
-    newdiv.appendChild(newchilddiv);
-
-    Effect.toggle('span2', 'appear', { duration: 10.0});
-
-    //$('span2').appear({duration: 3.0});
-  }  
-   document.getElementById('span10').appendChild(newdiv);
-   //Effect.toggle('span10', 'appear');
-}
-
-function formatrowcontent(myArrayElement){
-  var newdiv = document.createElement('div');
-  //newdiv.setAttribute('id', 'row-fluid show-grid');
-  newdiv.setAttribute('class', 'row-fluid show-grid');
-  console.log("myArrayElement object ", myArrayElement);
-  var newchilddiv = document.createElement('div');
-  newchilddiv.setAttribute('class','span10 bubble');
-  
-  var idheading = "<h4>"+ "ID: " + myArrayElement.id + "</h4>";
-  var segmentheading = "<p>" + "English: " + myArrayElement.segment + "</p>";
-  var translationheading = "<p>" + "Chinese: " + myArrayElement.translation + "</p>";
- 
-
-  newchilddiv.innerHTML = idheading + segmentheading + translationheading;
-  console.log("newchilddv.innerHTML, ", newchilddiv.innerHTML);
-  newdiv.appendChild(newchilddiv);
-
-  document.getElementById('span10').appendChild(newdiv);
-  console.log("span10.innerHTML, ", $('span10').innerHTML);
-  //Effect.toggle('span10 bubble', 'appear');
-  //$('span10').appear();
 }
 </script>
 
