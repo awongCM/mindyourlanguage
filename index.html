@@ -76,18 +76,13 @@ jQuery(document).ready(function($){
   
   /** Basically acting as a switch/toggle button*/
   $("#dropdown_action_01").click(function(e){
-      //console.log("Handler for .click() called.");
+      
       var $div = $(this).parent().parent().parent();
       var $btn = $div.find('button');
       var $tempvar = $btn.text();
       $btn.html($(this).text()+' <span class="caret"></span>');
       $div.removeClass('open');
       $div.find('#dropdown_action_01').text($tempvar);
-
-      if ($(".btn.dropdown-toggle.link").text().trim() == "English")
-        console.log("Must be English");
-      else 
-        console.log("Must be Chinese");
 
       e.preventDefault();
       return false;
@@ -128,26 +123,6 @@ jQuery(document).ready(function($){
 </script>
 
 <script type="text/javascript">
-
-//var xhr = new XMLHttpRequest();
-
-/*function lookupWords(){
-  console.log("insideLookupWords");
-  //replace $ for JQuery to resolve different Jquery implementations
-  jQuery('#myDiv').load('http://google.com'); // SERIOUSLY!
-  console.log("nothing???");
-  jQuery.ajax({
-     url: 'http://news.bbc.co.uk',
-     type: 'GET',
-     success: function(res) {
-         
-         var headline = $(res.responseText).find('focus').text();
-         console.log("nothing??? again???");
-         alert(headline);
-     }
-  });
-
-}*/
 
 function TranslationObj(id, segment, translation, reference){
   this.id = id;
@@ -542,7 +517,7 @@ function createdivrows2(myArrayElement){
 }
 
 function formatrowcontent(myArrayElement){
-   var newdiv = document.createElement('div');
+  var newdiv = document.createElement('div');
   //newdiv.setAttribute('id', 'row-fluid show-grid');
   newdiv.setAttribute('class', 'row-fluid show-grid');
   console.log("myArrayElement object ", myArrayElement);
