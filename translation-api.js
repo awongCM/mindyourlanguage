@@ -186,6 +186,7 @@ url = url + '?' + OAuth.formEncode(message.parameters);
 
 }
 
+//Consume Cedict resource to retrieve the translated resultset asynchronously via AJAX.
 function useCedictresource(handleData)
 {
 	jQuery(document).ready(function() {

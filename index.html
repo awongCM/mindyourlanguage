@@ -32,7 +32,7 @@
 <!--<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
 <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet" type="text/css"/> -->
 
-<!--MyBootstrap stuff --IMPORTANT!! Must load JQuery libs first before other prototype's libs -->
+<!--MyBootstrap stuff: IMPORTANT!! Must load JQuery libs first before other prototype's libs -->
 <!--<script src="myownbootstrap/docs/assets/js/jquery-1.9.1.js" type="text/javascript"></script> -->
 
 <!-- Load Space JS utilities-->
@@ -80,14 +80,17 @@ jQuery(document).ready(function($){
 
   //Validation code for empty search string
   $("#btn_search").click(function(e){
+ 
+    $(this).addClass('active');
 
-    $(this).toggleClass('active');
+    updateButtonSearchHTML(this);
+
     
     if(!$("#input_text").val()){
       return;
     }
 
-    loadXMLDoc();
+    outputTranslationResults(this, cb_removeSpinnerActive);
 
   });
   
@@ -114,7 +117,7 @@ jQuery(document).ready(function($){
   });
 
   $("#input_text").keypress(function(e){
-      console.log("Handler for .keypress() called.");
+      
       if ($(this).is(":empty"))
         $("#btn_search").parent().show();
   });
@@ -133,6 +136,24 @@ jQuery(document).ready(function($){
 </script>
 
 <script type="text/javascript">
+
+//Callback functions section
+function cb_removeSpinnerActive(selector){
+
+  $(selector).removeClass('active');
+
+  updateButtonSearchHTML(selector);
+
+}
+
+function updateButtonSearchHTML(selector){
+
+    var button_search_text = ($(selector).hasClass('active')) ? "SEARCHING...." : "SEARCH";
+
+    var button_search_html = '<span class="spinner"><i class="fa-spin icon-refresh"></i></span> '+button_search_text;
+
+    $(selector).html(button_search_html);
+}
 
 //TODO: Decided what to do with this???
 function TranslationObj(id, segment, translation, reference){
@@ -194,12 +215,11 @@ function printArrayValues(myArray){
     return result;
 }
 
-function loadXMLDoc()
+//Calls the main function with spinning icon callback function using the jQuery selector as the main argument
+function outputTranslationResults(selector, callback)
 {
  
-  console.log("start loadXMLDoc here");
-  
-  
+  //retrieved the queried word or character  
   var textparam = document.getElementById("input_text").value;
 
   //Consume MyMemory Rest APIs
@@ -209,7 +229,7 @@ function loadXMLDoc()
   //Consume MS Bing Translate REST APIs
   //useBingTranslatorREST(textparam);
 
-  //Test CEDICT resource
+  //Consume CEDICT resource and retrieve data back for futher processing via callback
   useCedictresource(function(output){
     
     var lines = output.split('\n');
@@ -264,6 +284,9 @@ function loadXMLDoc()
      extractLeftFrameData($parsedTranslatedJSONObjects[0]);
 
      displayTranslatedObjectsList($parsedTranslatedJSONObjects, translatedObjectsCount);
+
+     //Made the callback to stop the search icon from spinning
+     callback(selector);
 
 
   });
