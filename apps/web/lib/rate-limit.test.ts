@@ -49,4 +49,28 @@ describe('checkRateLimit', () => {
     expect(checkRateLimit('10.0.0.1')).toBe(false)
     expect(checkRateLimit('10.0.0.2')).toBe(true)
   })
+
+  it('parses first hop from x-forwarded-for', async () => {
+    const { clientIpFromForwardedFor } = await import('./rate-limit')
+    expect(clientIpFromForwardedFor('1.2.3.4, 5.6.7.8')).toBe('1.2.3.4')
+    expect(clientIpFromForwardedFor(null)).toBe('anonymous')
+  })
+
+  it('evicts stale empty buckets after window expires', async () => {
+    vi.useFakeTimers()
+    const start = Date.now()
+    vi.setSystemTime(start)
+    try {
+      const { checkRateLimit, bucketCountForTests } = await import(
+        './rate-limit'
+      )
+      checkRateLimit('10.0.0.1')
+      expect(bucketCountForTests()).toBe(1)
+      vi.setSystemTime(start + 60_001)
+      checkRateLimit('10.0.0.2')
+      expect(bucketCountForTests()).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
