@@ -1,0 +1,5 @@
+# CC-CEDICT sample fixture
+认识 认识 [ren4 shi5] /to know/to recognize/to be familiar with/to get acquainted with sb/
+高興 高兴 [gao1 xing4] /happy/glad/willing (to do sth)/in a cheerful mood/
+你好 你好 [ni3 hao3] /hello/hi/
+世界 世界 [shi4 jie4] /world/
