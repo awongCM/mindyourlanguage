@@ -37,6 +37,8 @@ export interface TranslateRequest {
   sourceLang: Lang
   targetLang: Lang
   characterSet: CharacterSet
+  includeNativeAlternative?: boolean
+  voiceRegion?: VoiceRegion
 }
 
 export interface TranslateResponse {
@@ -47,4 +49,7 @@ export interface TranslateResponse {
   detectedLang: Lang
   segments: TranslationSegment[]
   dictionaryMatches: DictionaryEntry[]
+  nativeAlternative?: string
+  register?: Register
+  nativeNote?: string
 }

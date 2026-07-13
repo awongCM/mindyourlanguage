@@ -1,11 +1,17 @@
 {
   "name": "mindyourlanguage",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
     "test": "npm run test -w @mindyourlanguage/shared",
-    "import-cedict": "npx tsx scripts/import-cedict.ts"
+    "import-cedict": "tsx scripts/import-cedict.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.1"
   }
 }
