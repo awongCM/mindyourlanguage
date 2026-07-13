@@ -23,20 +23,27 @@ The goal is not beginner instruction — it is helping learners who are **stuck 
 ```
 mindyourlanguage/
 ├── README.md                          # This file
+├── apps/
+│   └── web/                           # Next.js App Router (v2)
+├── packages/
+│   ├── shared/                        # Shared TypeScript types
+│   └── dictionary/                    # CC-CEDICT lookup (Phase 2)
+├── db/
+│   └── migrations/                    # Auth-ready Postgres schema
 ├── docs/
 │   └── superpowers/
 │       ├── specs/                     # v2 design spec
 │       └── plans/                     # v2 implementation plan
 └── archive/
     └── legacy-v1/                     # Original jQuery app (archived)
-        ├── index.html
-        ├── server.js
-        ├── translation-api.js
-        └── ...
 ```
 
 | Path | Description |
 |---|---|
+| `apps/web/` | Next.js frontend + API routes |
+| `packages/shared/` | Shared translation domain types |
+| `packages/dictionary/` | CEDICT package placeholder (filled in Phase 2) |
+| `db/migrations/` | Postgres schema (nullable `user_id`) |
 | `docs/superpowers/specs/` | v2 design specification |
 | `docs/superpowers/plans/` | v2 step-by-step implementation plan |
 | `archive/legacy-v1/` | Archived v1 codebase (read-only reference) |
@@ -71,7 +78,7 @@ v2 is a greenfield rebuild documented in:
 
 | Feature | Details |
 |---|---|
-| Framework | Next.js 15 + TypeScript |
+| Framework | Next.js 16 + TypeScript (App Router) |
 | Translation | DeepL API (server-side) |
 | Dictionary | CC-CEDICT in SQLite |
 | Characters | 简体 / 繁體 toggle |
@@ -79,7 +86,7 @@ v2 is a greenfield rebuild documented in:
 | Audience | Intermediate → fluent learners |
 | Deploy | Render Web Service + PostgreSQL |
 
-Implementation has not started yet. Phase 0 (monorepo scaffold) is the first build step once development begins.
+**Phase 0 (foundation) is in progress** on branch `cursor/phase-0-foundation-7d72`: monorepo scaffold, shared types, Postgres schema, and shadcn base layout with character/voice toggles.
 
 ---
 

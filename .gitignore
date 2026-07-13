@@ -24,3 +24,6 @@ Thumbs.db
 
 # Data (generated)
 data/cedict.db
+
+# Git worktrees
+.worktrees/
