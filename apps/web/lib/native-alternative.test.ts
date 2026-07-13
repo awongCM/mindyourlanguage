@@ -15,6 +15,7 @@ describe('fetchNativeAlternative', () => {
   afterEach(() => {
     process.env.OPENAI_API_KEY = originalOpenAiKey
     process.env.NATIVE_ALT_MODEL = originalNativeAltModel
+    vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
@@ -115,5 +116,39 @@ describe('fetchNativeAlternative', () => {
     })
 
     expect(result).toBeNull()
+  })
+
+  it('returns null when the OpenAI request is aborted by timeout', async () => {
+    vi.useFakeTimers()
+    let capturedSignal: AbortSignal | undefined
+
+    vi.mocked(fetch).mockImplementation((_url, init) => {
+      capturedSignal = init?.signal as AbortSignal | undefined
+      if (!capturedSignal) {
+        return Promise.reject(new DOMException('Missing abort signal', 'AbortError'))
+      }
+
+      return new Promise((_resolve, reject) => {
+        capturedSignal?.addEventListener(
+          'abort',
+          () => {
+            reject(new DOMException('The operation was aborted', 'AbortError'))
+          },
+          { once: true },
+        )
+      })
+    })
+
+    const resultPromise = fetchNativeAlternative({
+      sourceText: 'Nice to meet you.',
+      primaryTranslation: '认识你很高兴。',
+      voiceRegion: 'zh-CN',
+    })
+
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await expect(resultPromise).resolves.toBeNull()
+    expect(capturedSignal).toBeInstanceOf(AbortSignal)
+    expect(capturedSignal?.aborted).toBe(true)
   })
 })
