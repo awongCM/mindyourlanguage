@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       translation: text,
       detectedLang: body.sourceLang,
       segments: enrichment?.segments ?? [],
-      dictionaryMatches: [],
+      dictionaryMatches: enrichment?.dictionaryMatches ?? [],
       ...(enrichment
         ? { pinyin: enrichment.pinyin, traditional: enrichment.traditional }
         : {}),

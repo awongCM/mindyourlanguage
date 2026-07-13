@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { NextRequest } from 'next/server'
 import { POST } from './route'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { translateText } from '@/lib/deepl'
@@ -23,18 +24,26 @@ vi.mock('@/lib/enrich-translation', () => ({
     pinyin: 'nǐ hǎo',
     traditional: '你好',
     segments: [{ text: '你', pinyin: 'nǐ' }, { text: '好', pinyin: 'hǎo' }],
+    dictionaryMatches: [
+      {
+        simplified: '你好',
+        traditional: '你好',
+        pinyin: 'ni3 hao3',
+        definitions: ['hello'],
+      },
+    ],
   }),
 }))
 
 function translateRequest(
   body: object,
   headers?: Record<string, string>,
-): Request {
+): NextRequest {
   return new Request('http://localhost/api/translate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
-  })
+  }) as NextRequest
 }
 
 describe('POST /api/translate', () => {
@@ -55,13 +64,14 @@ describe('POST /api/translate', () => {
       targetLang: 'zh',
       characterSet: 'simplified',
     })
-    const res = await POST(req as any)
+    const res = await POST(req)
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.translation).toBe('你好')
     expect(body.pinyin).toBe('nǐ hǎo')
     expect(body.traditional).toBe('你好')
     expect(body.segments).toHaveLength(2)
+    expect(body.dictionaryMatches).toHaveLength(1)
   })
 
   it('returns 400 for malformed JSON body', async () => {
@@ -69,8 +79,8 @@ describe('POST /api/translate', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: 'not json',
-    })
-    const res = await POST(req as any)
+    }) as NextRequest
+    const res = await POST(req)
     expect(res.status).toBe(400)
   })
 
@@ -81,7 +91,7 @@ describe('POST /api/translate', () => {
       targetLang: 'zh',
       characterSet: 'simplified',
     })
-    const res = await POST(req as any)
+    const res = await POST(req)
     expect(res.status).toBe(400)
   })
 
@@ -92,7 +102,7 @@ describe('POST /api/translate', () => {
       targetLang: 'zh',
       characterSet: 'simplified',
     })
-    const res = await POST(req as any)
+    const res = await POST(req)
     expect(res.status).toBe(400)
     expect(checkRateLimit).not.toHaveBeenCalled()
   })
@@ -104,7 +114,7 @@ describe('POST /api/translate', () => {
       targetLang: 'zh',
       characterSet: 'simplified',
     })
-    const res = await POST(req as any)
+    const res = await POST(req)
     expect(res.status).toBe(400)
     expect(checkRateLimit).not.toHaveBeenCalled()
   })
@@ -119,7 +129,7 @@ describe('POST /api/translate', () => {
       },
       { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' },
     )
-    await POST(req as any)
+    await POST(req)
     expect(checkRateLimit).toHaveBeenCalledWith('1.2.3.4')
   })
 
@@ -131,7 +141,7 @@ describe('POST /api/translate', () => {
       targetLang: 'zh',
       characterSet: 'simplified',
     })
-    const res = await POST(req as any)
+    const res = await POST(req)
     expect(res.status).toBe(429)
   })
 
@@ -143,7 +153,7 @@ describe('POST /api/translate', () => {
       targetLang: 'zh',
       characterSet: 'simplified',
     })
-    const res = await POST(req as any)
+    const res = await POST(req)
     expect(res.status).toBe(502)
   })
 })
