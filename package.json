@@ -1,0 +1,11 @@
+{
+  "name": "mindyourlanguage",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web",
+    "test": "npm run test -w apps/web",
+    "import-cedict": "npx tsx scripts/import-cedict.ts"
+  }
+}
