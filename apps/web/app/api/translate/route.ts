@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { translateText } from '@/lib/deepl'
+import { enrichChineseTranslation } from '@/lib/enrich-translation'
 import { checkRateLimit } from '@/lib/rate-limit'
 import type { Lang, TranslateRequest } from '@mindyourlanguage/shared'
 import { randomUUID } from 'crypto'
@@ -36,12 +37,18 @@ export async function POST(req: NextRequest) {
       body.sourceLang,
       body.targetLang,
     )
+    const enrichment =
+      body.targetLang === 'zh' ? enrichChineseTranslation(text) : undefined
+
     return NextResponse.json({
       id: randomUUID(),
       translation: text,
       detectedLang: body.sourceLang,
-      segments: [],
+      segments: enrichment?.segments ?? [],
       dictionaryMatches: [],
+      ...(enrichment
+        ? { pinyin: enrichment.pinyin, traditional: enrichment.traditional }
+        : {}),
     })
   } catch {
     return NextResponse.json(

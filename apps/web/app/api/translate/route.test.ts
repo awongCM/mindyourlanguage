@@ -13,6 +13,14 @@ vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: vi.fn().mockReturnValue(true),
 }))
 
+vi.mock('@/lib/enrich-translation', () => ({
+  enrichChineseTranslation: vi.fn().mockReturnValue({
+    pinyin: 'nǐ hǎo',
+    traditional: '你好',
+    segments: [{ text: '你', pinyin: 'nǐ' }, { text: '好', pinyin: 'hǎo' }],
+  }),
+}))
+
 describe('POST /api/translate', () => {
   beforeEach(() => {
     vi.mocked(checkRateLimit).mockReturnValue(true)
@@ -32,6 +40,9 @@ describe('POST /api/translate', () => {
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body.translation).toBe('你好')
+    expect(body.pinyin).toBe('nǐ hǎo')
+    expect(body.traditional).toBe('你好')
+    expect(body.segments).toHaveLength(2)
   })
 
   it('returns 400 for empty text', async () => {
