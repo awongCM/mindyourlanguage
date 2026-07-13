@@ -88,6 +88,31 @@ describe('enrichChineseTranslation', () => {
     ).toHaveLength(1)
   })
 
+  it('dedupes dictionary matches by simplified form after lookup', () => {
+    vi.mocked(segment).mockReturnValue([{ text: '认识' }, { text: '認識' }])
+    vi.mocked(lookupTerm).mockReturnValue([
+      {
+        simplified: '认识',
+        traditional: '認識',
+        pinyin: 'ren4 shi5',
+        definitions: ['to know'],
+      },
+    ])
+
+    const result = enrichChineseTranslation('认识認識')
+
+    expect(lookupTerm).toHaveBeenCalledWith('认识', 1)
+    expect(lookupTerm).toHaveBeenCalledWith('認識', 1)
+    expect(result.dictionaryMatches).toEqual([
+      {
+        simplified: '认识',
+        traditional: '認識',
+        pinyin: 'ren4 shi5',
+        definitions: ['to know'],
+      },
+    ])
+  })
+
   it('falls back to character segments when dictionary segmentation fails', () => {
     vi.mocked(segment).mockImplementationOnce(() => {
       throw new Error('segment unavailable')

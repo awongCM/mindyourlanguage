@@ -36,16 +36,20 @@ export function enrichChineseTranslation(translation: string): {
 
   const dictionaryMatches: DictionaryEntry[] = []
   if (canLookupSegments) {
-    const seen = new Set<string>()
+    const seenSegments = new Set<string>()
+    const seenSimplifiedMatches = new Set<string>()
 
     for (const word of wordSegments) {
       if (dictionaryMatches.length >= MAX_MATCHES) break
-      if (seen.has(word.text)) continue
-      seen.add(word.text)
+      if (seenSegments.has(word.text)) continue
+      seenSegments.add(word.text)
 
       try {
         const hits = lookupTerm(word.text, 1)
-        if (hits[0]) dictionaryMatches.push(hits[0])
+        const hit = hits[0]
+        if (!hit || seenSimplifiedMatches.has(hit.simplified)) continue
+        seenSimplifiedMatches.add(hit.simplified)
+        dictionaryMatches.push(hit)
       } catch (err) {
         console.error('lookupTerm failed', err)
       }
