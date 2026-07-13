@@ -7,10 +7,13 @@ import { setDictionaryDbPathForTests } from './lookup'
 import { clearSegmentCacheForTests, segment } from './segment'
 
 const FIXTURE_DB = path.join(__dirname, '../testdata/segment-fixture.db')
+const CORRUPT_DB = path.join(__dirname, '../testdata/segment-corrupt.db')
 const SAMPLE = path.join(__dirname, '../testdata/sample-cedict.txt')
 
 beforeAll(() => {
-  if (fs.existsSync(FIXTURE_DB)) fs.unlinkSync(FIXTURE_DB)
+  for (const dbPath of [FIXTURE_DB, CORRUPT_DB]) {
+    if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath)
+  }
 
   const db = new Database(FIXTURE_DB)
   db.exec(`
@@ -39,6 +42,7 @@ beforeAll(() => {
   }
   db.close()
 
+  fs.writeFileSync(CORRUPT_DB, 'not a sqlite database')
   setDictionaryDbPathForTests(FIXTURE_DB)
   clearSegmentCacheForTests()
 })
@@ -46,7 +50,9 @@ beforeAll(() => {
 afterAll(() => {
   setDictionaryDbPathForTests(null)
   clearSegmentCacheForTests()
-  if (fs.existsSync(FIXTURE_DB)) fs.unlinkSync(FIXTURE_DB)
+  for (const dbPath of [FIXTURE_DB, CORRUPT_DB]) {
+    if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath)
+  }
 })
 
 describe('segment', () => {
@@ -56,5 +62,16 @@ describe('segment', () => {
 
   it('falls back to a single unknown CJK character', () => {
     expect(segment('认识𠀀')).toEqual([{ text: '认识' }, { text: '𠀀' }])
+  })
+
+  it('falls back to single Han characters when the dictionary database is corrupt', () => {
+    setDictionaryDbPathForTests(CORRUPT_DB)
+    clearSegmentCacheForTests()
+    try {
+      expect(segment('认识')).toEqual([{ text: '认' }, { text: '识' }])
+    } finally {
+      setDictionaryDbPathForTests(FIXTURE_DB)
+      clearSegmentCacheForTests()
+    }
   })
 })

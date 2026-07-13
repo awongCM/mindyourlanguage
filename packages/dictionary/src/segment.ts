@@ -6,18 +6,22 @@ const MAX_WORD_LEN = 8
 let wordSetCache: Set<string> | null = null
 
 function getWordSet(): Set<string> {
-  const db = getDictionaryDb()
-  if (!db) return new Set()
-  if (wordSetCache) return wordSetCache
-  const rows = db
-    .prepare(
-      `SELECT DISTINCT simplified AS w FROM entries
-       UNION
-       SELECT DISTINCT traditional AS w FROM entries`,
-    )
-    .all() as { w: string }[]
-  wordSetCache = new Set(rows.map((r) => r.w))
-  return wordSetCache
+  try {
+    const db = getDictionaryDb()
+    if (!db) return new Set()
+    if (wordSetCache) return wordSetCache
+    const rows = db
+      .prepare(
+        `SELECT DISTINCT simplified AS w FROM entries
+         UNION
+         SELECT DISTINCT traditional AS w FROM entries`,
+      )
+      .all() as { w: string }[]
+    wordSetCache = new Set(rows.map((r) => r.w))
+    return wordSetCache
+  } catch {
+    return new Set()
+  }
 }
 
 export function clearSegmentCacheForTests() {
