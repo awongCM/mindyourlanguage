@@ -1,9 +1,7 @@
 "use client";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
-type CharacterSet = "simplified" | "traditional";
-type VoiceRegion = "zh-CN" | "zh-TW";
+import type { CharacterSet, VoiceRegion } from "@mindyourlanguage/shared";
 
 interface TogglesProps {
   characterSet: CharacterSet;

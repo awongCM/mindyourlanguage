@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { Toggles } from "@/components/toggles";
-
-type CharacterSet = "simplified" | "traditional";
-type VoiceRegion = "zh-CN" | "zh-TW";
+import type { CharacterSet, VoiceRegion } from "@mindyourlanguage/shared";
 
 export default function Home() {
   const [characterSet, setCharacterSet] =
