@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GroundingPanel } from "@/components/grounding-panel";
 import { ResultCard } from "@/components/result-card";
 import { Toggles } from "@/components/toggles";
 import {
@@ -112,7 +113,10 @@ export default function Home() {
       ) : null}
 
       {result ? (
-        <ResultCard result={result} characterSet={characterSet} />
+        <>
+          <ResultCard result={result} characterSet={characterSet} />
+          <GroundingPanel entries={result.dictionaryMatches} />
+        </>
       ) : null}
     </main>
   );
