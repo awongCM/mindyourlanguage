@@ -1,7 +1,7 @@
 # Phase 2 — Dictionary Grounding + Native Alternative (Sequenced C)
 
 **Date:** 2026-07-13  
-**Status:** Draft — awaiting user review of this file  
+**Status:** Approved  
 **Author:** awongCM + Cursor Agent  
 **Parent spec:** `docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`  
 **Parent plan:** `docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`
