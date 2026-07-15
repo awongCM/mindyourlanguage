@@ -10,6 +10,7 @@
     "build": "npm run build -w apps/web",
     "start": "npm run start -w apps/web -- -H 0.0.0.0 -p ${PORT:-3000}",
     "test": "npm run test -w @mindyourlanguage/shared",
+    "test:e2e": "npm run test:e2e -w apps/web",
     "import-cedict": "tsx scripts/import-cedict.ts"
   },
   "devDependencies": {
