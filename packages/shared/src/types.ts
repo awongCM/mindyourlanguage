@@ -27,8 +27,29 @@ export interface TranslationRecord {
   characterSet: CharacterSet
   register?: Register
   nativeAlternative?: string
+  nativeNote?: string
   dictionaryMatches: DictionaryEntry[]
   segments: TranslationSegment[]
+  createdAt: string
+}
+
+export interface PhrasebookEntry {
+  id: string
+  translationId: string | null
+  sourceText: string
+  sourceLang: Lang
+  targetLang: Lang
+  translation: string
+  traditional?: string
+  pinyin?: string
+  characterSet: CharacterSet
+  register?: Register
+  nativeAlternative?: string
+  nativeNote?: string
+  dictionaryMatches: DictionaryEntry[]
+  segments: TranslationSegment[]
+  tags: string[]
+  notes: string
   createdAt: string
 }
 

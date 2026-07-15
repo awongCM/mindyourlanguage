@@ -1,8 +1,10 @@
 "use client";
 
-import { Copy } from "lucide-react";
+import { useEffect } from "react";
+import { Bookmark, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cancelSpeech, speakChinese } from "@/lib/speech";
 import {
   Card,
   CardContent,
@@ -13,11 +15,15 @@ import {
 import type {
   CharacterSet,
   TranslateResponse,
+  VoiceRegion,
 } from "@mindyourlanguage/shared";
 
 interface ResultCardProps {
   result: TranslateResponse;
   characterSet: CharacterSet;
+  showPlayButtons?: boolean;
+  isSaved?: boolean;
+  onToggleSave?: () => void;
 }
 
 function displayedTranslation(
@@ -30,8 +36,18 @@ function displayedTranslation(
   return result.translation;
 }
 
-export function ResultCard({ result, characterSet }: ResultCardProps) {
+export function ResultCard({
+  result,
+  characterSet,
+  showPlayButtons = false,
+  isSaved = false,
+  onToggleSave,
+}: ResultCardProps) {
   const displayText = displayedTranslation(result, characterSet);
+
+  useEffect(() => {
+    return () => cancelSpeech();
+  }, []);
 
   async function handleCopy() {
     try {
@@ -42,8 +58,19 @@ export function ResultCard({ result, characterSet }: ResultCardProps) {
     }
   }
 
-  function handlePlayStub(region: "Mainland" | "Taiwan") {
-    toast.info(`Play ${region} — coming soon`);
+  async function handlePlay(region: VoiceRegion) {
+    try {
+      const { usedRegionFallback } = await speakChinese(displayText, region);
+      if (usedRegionFallback) {
+        toast.info(
+          region === "zh-TW"
+            ? "Taiwan voice unavailable — using the closest Chinese voice on this device."
+            : "Mainland voice unavailable — using the closest Chinese voice on this device.",
+        );
+      }
+    } catch {
+      toast.error("Audio unavailable");
+    }
   }
 
   return (
@@ -86,26 +113,37 @@ export function ResultCard({ result, characterSet }: ResultCardProps) {
         ) : null}
       </CardContent>
       <CardFooter className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled
-          onClick={() => handlePlayStub("Mainland")}
-          title="Coming soon"
-        >
-          Play Mainland
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled
-          onClick={() => handlePlayStub("Taiwan")}
-          title="Coming soon"
-        >
-          Play Taiwan
-        </Button>
+        {showPlayButtons ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handlePlay("zh-CN")}
+            >
+              Play Mainland
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handlePlay("zh-TW")}
+            >
+              Play Taiwan
+            </Button>
+          </>
+        ) : null}
+        {onToggleSave ? (
+          <Button
+            type="button"
+            variant={isSaved ? "secondary" : "outline"}
+            size="sm"
+            onClick={onToggleSave}
+          >
+            <Bookmark />
+            {isSaved ? "Saved" : "Save to phrasebook"}
+          </Button>
+        ) : null}
         <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
           <Copy />
           Copy
