@@ -1,0 +1,25 @@
+{
+  "id": "e2e-translate-1",
+  "translation": "你好，很高兴认识你。",
+  "traditional": "你好，很高興認識你。",
+  "pinyin": "nǐ hǎo , hěn gāo xìng rèn shi nǐ .",
+  "detectedLang": "en",
+  "segments": [
+    { "text": "你好", "pinyin": "nǐ hǎo" },
+    { "text": "很", "pinyin": "hěn" },
+    { "text": "高兴", "pinyin": "gāo xìng" },
+    { "text": "认识", "pinyin": "rèn shi" },
+    { "text": "你", "pinyin": "nǐ" }
+  ],
+  "dictionaryMatches": [
+    {
+      "simplified": "认识",
+      "traditional": "認識",
+      "pinyin": "ren4 shi5",
+      "definitions": ["to know (a person)"]
+    }
+  ],
+  "nativeAlternative": "你好，幸会。",
+  "register": "formal",
+  "nativeNote": "More concise greeting."
+}

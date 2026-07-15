@@ -1,10 +1,11 @@
 # Phase 4 — Render Deploy + Playwright E2E
 
 **Date:** 2026-07-15  
-**Status:** Draft (pending approval)  
+**Status:** Approved  
 **Author:** awongCM + Cursor Agent  
 **Parent spec:** `docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`  
 **Parent plan:** `docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`  
+**Implementation plan:** `docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`  
 **Prior phase:** Phase 3 approved — Web Speech TTS + local history + phrasebook (PR #8)
 
 ---
@@ -240,13 +241,13 @@ Protect the personal MVP loop without requiring live DeepL/OpenAI in default CI 
 
 ## 7. Success criteria
 
-- [ ] `render.yaml` provisions web + Postgres; no Azure TTS env vars
-- [ ] Build imports CEDICT and produces a runnable Next.js app on `0.0.0.0:$PORT`
-- [ ] `GET /api/health` reports CEDICT + DeepL readiness; used as Render health check
-- [ ] README documents secrets, Free-tier limits, and one-time migration
-- [ ] Playwright mocked suite covers translate UI, toggles, history, phrasebook, play controls
-- [ ] Default E2E run needs no paid API keys
-- [ ] No OAuth / cloud sync / `/api/speak` introduced
+- [x] `render.yaml` provisions web + Postgres; no Azure TTS env vars
+- [x] Build imports CEDICT and produces a runnable Next.js app on `0.0.0.0:$PORT`
+- [x] `GET /api/health` reports CEDICT + DeepL readiness; used as Render health check
+- [x] README documents secrets, Free-tier limits, and one-time migration
+- [x] Playwright mocked suite covers translate UI, toggles, history, phrasebook, play controls
+- [x] Default E2E run needs no paid API keys
+- [x] No OAuth / cloud sync / `/api/speak` introduced
 
 ---
 
@@ -318,4 +319,5 @@ Protect the personal MVP loop without requiring live DeepL/OpenAI in default CI 
 | CEDICT via build-time import | Yes | 2026-07-15 |
 | Postgres provisioned but unused by app | Yes | 2026-07-15 |
 | Default E2E mocked (no keys) | Yes | 2026-07-15 |
-| §1–10 Design | Pending approval | 2026-07-15 |
+| §1–10 Design | **Approved** | 2026-07-15 |
+| Implementation complete | Pending PR merge | 2026-07-15 |

@@ -2,7 +2,7 @@
 
 A Mandarin fluency grounding tool for intermediate learners who want to translate and calibrate their phrasing — so they sound natural, not just correct.
 
-**Status:** v2 Phases 0–3 shipped on `main`. Phase 4 (Render deploy + Playwright E2E) design/plan ready. Legacy v1 archived.
+**Status:** v2 Phases 0–3 shipped on `main`. Phase 4 (Render deploy + Playwright E2E) implemented on branch `cursor/phase-4-implementation-8d74`.
 
 ---
 
@@ -67,14 +67,14 @@ See [`archive/legacy-v1/README.md`](archive/legacy-v1/README.md) for details on 
 
 ---
 
-## Mind Your Language v2 (in progress)
+## Mind Your Language v2 (Phase 4 in progress)
 
 v2 is a greenfield rebuild documented in:
 
 - **Parent design:** [`docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`](docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md)
 - **Parent plan:** [`docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`](docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md)
 - **Phase 3 (approved, shipped):** [`docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md`](docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md)
-- **Phase 4 (design/plan):** [`docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md`](docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md) · [`docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`](docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md)
+- **Phase 4 (approved, shipped):** [`docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md`](docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md) · [`docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`](docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md)
 
 ### v2 highlights
 
@@ -89,7 +89,24 @@ v2 is a greenfield rebuild documented in:
 | Audience | Intermediate → fluent learners |
 | Deploy | Render Web Service + PostgreSQL (Phase 4) |
 
-**Phases 0–3 are on `main`.** Phase 4 next: Render Blueprint, `/api/health`, CEDICT build import, and Playwright E2E.
+**Phases 0–4 are on this branch.** Next: sync Blueprint on Render, apply Postgres migration, Phase 5 (OAuth + cloud sync).
+
+### Local E2E
+
+```bash
+cd apps/web && npx playwright install chromium
+npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
+```
+
+### Deploy (Render)
+
+1. **Blueprint sync** — Connect this repo in the [Render Dashboard](https://dashboard.render.com/) and sync from [`render.yaml`](render.yaml). Render provisions the web service and Postgres database from the Blueprint.
+2. **Required secret** — Set `DEEPL_API_KEY` in the service environment (marked `sync: false` in the Blueprint so it is not overwritten on sync).
+3. **Optional** — `OPENAI_API_KEY` for native-alternative suggestions (defaults to `gpt-4o-mini` via `NATIVE_ALT_MODEL`).
+4. **Build** — `buildCommand` runs `npm ci`, `npm run import-cedict` (imports CC-CEDICT from the repo fallback text), then `npm run build`.
+5. **Database migration** — After the Postgres instance is created, apply [`db/migrations/001_initial.sql`](db/migrations/001_initial.sql) once (e.g. via Render Shell or `psql` with the internal connection string).
+6. **Free tier limits** — Free web services spin down after ~15 minutes of inactivity; free Postgres databases expire after ~30 days.
+7. **Health check** — Render uses [`/api/health`](apps/web/app/api/health/route.ts) (`healthCheckPath` in `render.yaml`). A healthy deploy returns `{ ok: true, cedict: true, deeplConfigured: true }` when CEDICT is imported and `DEEPL_API_KEY` is set.
 
 ---
 
