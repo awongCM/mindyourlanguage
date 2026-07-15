@@ -1,10 +1,12 @@
 # Phase 3 — Web Speech TTS + History + Phrasebook
 
 **Date:** 2026-07-14  
-**Status:** Draft (pending approval)  
+**Status:** Approved  
 **Author:** awongCM + Cursor Agent  
 **Parent spec:** `docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`  
-**Parent plan:** `docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`
+**Parent plan:** `docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`  
+**Implementation plan:** `docs/superpowers/plans/2026-07-14-phase-3-tts-history-phrasebook.md`  
+**Shipped:** Merged to `main` via PR #8 (`0705fc0`, `1294767`)
 
 ---
 
@@ -262,12 +264,12 @@ Note: Web Speech quality varies by OS; document that Google TTS remains the upgr
 
 ## 8. Success criteria
 
-- [ ] Play Mainland / Play Taiwan produce audible Mandarin when the browser has suitable voices
-- [ ] TTS failure shows a toast and does not clear the result
-- [ ] Last 50 translations persist across refresh and restore full result context
-- [ ] Save to phrasebook stores favorites with optional tags/notes; drawer can filter and restore
-- [ ] Phrasebook can be removed later without rewriting TTS or history
-- [ ] No new paid TTS vendor or API keys required for Phase 3
+- [x] Play Mainland / Play Taiwan produce audible Mandarin when the browser has suitable voices
+- [x] TTS failure shows a toast and does not clear the result
+- [x] Last 50 translations persist across refresh and restore full result context
+- [x] Save to phrasebook stores favorites with optional tags/notes; drawer can filter and restore
+- [x] Phrasebook can be removed later without rewriting TTS or history
+- [x] No new paid TTS vendor or API keys required for Phase 3
 
 ---
 
@@ -343,4 +345,5 @@ Note: Web Speech quality varies by OS; document that Google TTS remains the upgr
 | MVP TTS | Web Speech API | 2026-07-14 |
 | Google TTS | Later upgrade path | 2026-07-14 |
 | Phrasebook in Phase 3 | Yes (opt-outable) | 2026-07-14 |
-| §1–11 Design | Pending approval | 2026-07-14 |
+| §1–11 Design | **Approved** | 2026-07-15 |
+| Implementation complete (PR #8) | Confirmed | 2026-07-15 |
