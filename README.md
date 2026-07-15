@@ -67,7 +67,7 @@ See [`archive/legacy-v1/README.md`](archive/legacy-v1/README.md) for details on 
 
 ---
 
-## Mind Your Language v2 (in progress)
+## Mind Your Language v2 (Phase 4 in progress)
 
 v2 is a greenfield rebuild documented in:
 
@@ -89,7 +89,7 @@ v2 is a greenfield rebuild documented in:
 | Audience | Intermediate → fluent learners |
 | Deploy | Render Web Service + PostgreSQL (Phase 4) |
 
-**Phases 0–3 are on `main`.** Phase 4 next: Render Blueprint, `/api/health`, CEDICT build import, and Playwright E2E.
+**Phases 0–3 are shipped on `main`.** Phase 4 (in progress): Playwright E2E, deploy hardening — [`render.yaml`](render.yaml), `/api/health`, and CEDICT build import are in place.
 
 ### Deploy (Render)
 
