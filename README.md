@@ -2,7 +2,7 @@
 
 A Mandarin fluency grounding tool for intermediate learners who want to translate and calibrate their phrasing — so they sound natural, not just correct.
 
-**Status:** v2 in planning. Legacy v1 has been archived.
+**Status:** v2 Phases 0–3 shipped on `main`. Phase 4 (Render deploy + Playwright E2E) design/plan ready. Legacy v1 archived.
 
 ---
 
@@ -71,8 +71,10 @@ See [`archive/legacy-v1/README.md`](archive/legacy-v1/README.md) for details on 
 
 v2 is a greenfield rebuild documented in:
 
-- **Design spec:** [`docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`](docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md)
-- **Implementation plan:** [`docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`](docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md)
+- **Parent design:** [`docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`](docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md)
+- **Parent plan:** [`docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`](docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md)
+- **Phase 3 (approved, shipped):** [`docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md`](docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md)
+- **Phase 4 (design/plan):** [`docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md`](docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md) · [`docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`](docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md)
 
 ### v2 highlights
 
@@ -82,11 +84,12 @@ v2 is a greenfield rebuild documented in:
 | Translation | DeepL API (server-side) |
 | Dictionary | CC-CEDICT in SQLite |
 | Characters | 简体 / 繁體 toggle |
-| TTS | Azure Neural TTS — Mainland (`zh-CN`) and Taiwan (`zh-TW`) voices |
+| TTS | Browser Web Speech API — Mainland (`zh-CN`) and Taiwan (`zh-TW`) |
+| History / phrasebook | Local (`localStorage`) until Phase 5 cloud sync |
 | Audience | Intermediate → fluent learners |
-| Deploy | Render Web Service + PostgreSQL |
+| Deploy | Render Web Service + PostgreSQL (Phase 4) |
 
-**Phase 0 (foundation) is in progress** on branch `cursor/phase-0-foundation-7d72`: monorepo scaffold, shared types, Postgres schema, and shadcn base layout with character/voice toggles.
+**Phases 0–3 are on `main`.** Phase 4 next: Render Blueprint, `/api/health`, CEDICT build import, and Playwright E2E.
 
 ---
 
