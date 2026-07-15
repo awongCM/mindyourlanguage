@@ -69,3 +69,23 @@ describe('DictionaryEntry type', () => {
     expect(entry.definitions).toHaveLength(2)
   })
 })
+
+describe('PhrasebookEntry type', () => {
+  it('accepts a valid phrasebook entry shape', () => {
+    const entry: import('./types').PhrasebookEntry = {
+      id: 'pb-1',
+      translationId: 'tr-1',
+      sourceText: 'Hello',
+      sourceLang: 'en',
+      targetLang: 'zh',
+      translation: '你好',
+      characterSet: 'simplified',
+      tags: ['greeting'],
+      notes: 'Casual hello',
+      createdAt: new Date().toISOString(),
+    }
+
+    expect(entry.tags).toContain('greeting')
+    expect(entry.notes).toBe('Casual hello')
+  })
+})

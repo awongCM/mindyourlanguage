@@ -1,8 +1,10 @@
 "use client";
 
-import { Copy } from "lucide-react";
+import { useEffect } from "react";
+import { Bookmark, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cancelSpeech, speakChinese } from "@/lib/speech";
 import {
   Card,
   CardContent,
@@ -13,11 +15,14 @@ import {
 import type {
   CharacterSet,
   TranslateResponse,
+  VoiceRegion,
 } from "@mindyourlanguage/shared";
 
 interface ResultCardProps {
   result: TranslateResponse;
   characterSet: CharacterSet;
+  isSaved?: boolean;
+  onToggleSave?: () => void;
 }
 
 function displayedTranslation(
@@ -30,8 +35,17 @@ function displayedTranslation(
   return result.translation;
 }
 
-export function ResultCard({ result, characterSet }: ResultCardProps) {
+export function ResultCard({
+  result,
+  characterSet,
+  isSaved = false,
+  onToggleSave,
+}: ResultCardProps) {
   const displayText = displayedTranslation(result, characterSet);
+
+  useEffect(() => {
+    return () => cancelSpeech();
+  }, []);
 
   async function handleCopy() {
     try {
@@ -42,8 +56,12 @@ export function ResultCard({ result, characterSet }: ResultCardProps) {
     }
   }
 
-  function handlePlayStub(region: "Mainland" | "Taiwan") {
-    toast.info(`Play ${region} — coming soon`);
+  async function handlePlay(region: VoiceRegion) {
+    try {
+      await speakChinese(displayText, region);
+    } catch {
+      toast.error("Audio unavailable");
+    }
   }
 
   return (
@@ -90,9 +108,7 @@ export function ResultCard({ result, characterSet }: ResultCardProps) {
           type="button"
           variant="outline"
           size="sm"
-          disabled
-          onClick={() => handlePlayStub("Mainland")}
-          title="Coming soon"
+          onClick={() => handlePlay("zh-CN")}
         >
           Play Mainland
         </Button>
@@ -100,12 +116,21 @@ export function ResultCard({ result, characterSet }: ResultCardProps) {
           type="button"
           variant="outline"
           size="sm"
-          disabled
-          onClick={() => handlePlayStub("Taiwan")}
-          title="Coming soon"
+          onClick={() => handlePlay("zh-TW")}
         >
           Play Taiwan
         </Button>
+        {onToggleSave ? (
+          <Button
+            type="button"
+            variant={isSaved ? "secondary" : "outline"}
+            size="sm"
+            onClick={onToggleSave}
+          >
+            <Bookmark />
+            {isSaved ? "Saved" : "Save to phrasebook"}
+          </Button>
+        ) : null}
         <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
           <Copy />
           Copy
