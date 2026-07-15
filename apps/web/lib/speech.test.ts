@@ -3,6 +3,7 @@ import {
   isSpeechSynthesisSupported,
   pickVoice,
   speakChinese,
+  voiceMatchesRegion,
 } from "./speech";
 
 function mockVoice(lang: string, name: string): SpeechSynthesisVoice {
@@ -69,8 +70,20 @@ describe("pickVoice", () => {
   });
 });
 
+describe("voiceMatchesRegion", () => {
+  it("matches exact region voices", () => {
+    expect(voiceMatchesRegion(mockVoice("zh-TW", "TW"), "zh-TW")).toBe(true);
+    expect(voiceMatchesRegion(mockVoice("zh-CN", "CN"), "zh-CN")).toBe(true);
+  });
+
+  it("does not treat Mainland voice as Taiwan match", () => {
+    expect(voiceMatchesRegion(mockVoice("zh-CN", "CN"), "zh-TW")).toBe(false);
+  });
+});
+
 describe("speakChinese", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     stubSpeechSynthesis([mockVoice("zh-CN", "CN")]);
     class MockUtterance {
       text: string;
@@ -87,12 +100,13 @@ describe("speakChinese", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
   it("cancels prior speech and speaks with zh-CN", async () => {
     const promise = speakChinese("你好", "zh-CN");
-    await Promise.resolve();
+    await vi.runAllTimersAsync();
 
     const synth = window.speechSynthesis;
     const utterance = vi.mocked(synth.speak).mock
@@ -102,7 +116,19 @@ describe("speakChinese", () => {
     expect(utterance.text).toBe("你好");
     expect(utterance.lang).toBe("zh-CN");
     utterance.onend?.(new Event("end") as SpeechSynthesisEvent);
-    await promise;
+
+    await expect(promise).resolves.toEqual({ usedRegionFallback: false });
+  });
+
+  it("reports region fallback when only Mainland voice exists for Taiwan", async () => {
+    const promise = speakChinese("你好", "zh-TW");
+    await vi.runAllTimersAsync();
+
+    const utterance = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[0]?.[0] as SpeechSynthesisUtterance;
+    utterance.onend?.(new Event("end") as SpeechSynthesisEvent);
+
+    await expect(promise).resolves.toEqual({ usedRegionFallback: true });
   });
 
   it("rejects when unsupported", async () => {

@@ -27,6 +27,7 @@ export interface TranslationRecord {
   characterSet: CharacterSet
   register?: Register
   nativeAlternative?: string
+  nativeNote?: string
   dictionaryMatches: DictionaryEntry[]
   segments: TranslationSegment[]
   createdAt: string
@@ -42,7 +43,11 @@ export interface PhrasebookEntry {
   traditional?: string
   pinyin?: string
   characterSet: CharacterSet
+  register?: Register
   nativeAlternative?: string
+  nativeNote?: string
+  dictionaryMatches: DictionaryEntry[]
+  segments: TranslationSegment[]
   tags: string[]
   notes: string
   createdAt: string

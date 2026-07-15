@@ -17,6 +17,7 @@ describe("toTranslationRecord", () => {
         dictionaryMatches: [],
         nativeAlternative: "嗨",
         register: "casual",
+        nativeNote: "More natural in casual speech.",
       },
       sourceText: "Hello",
       sourceLang: "en",
@@ -31,6 +32,7 @@ describe("toTranslationRecord", () => {
     expect(record.targetLang).toBe("zh");
     expect(record.characterSet).toBe("simplified");
     expect(record.nativeAlternative).toBe("嗨");
+    expect(record.nativeNote).toBe("More natural in casual speech.");
     expect(record.createdAt).toBeTruthy();
   });
 });
@@ -55,5 +57,36 @@ describe("translationRecordToResponse", () => {
     expect(response.id).toBe("abc");
     expect(response.translation).toBe("你好");
     expect(response.detectedLang).toBe("en");
+  });
+
+  it("round-trips nativeNote through history restore", () => {
+    const record = toTranslationRecord({
+      response: {
+        id: "abc",
+        translation: "你好",
+        detectedLang: "en",
+        segments: [{ text: "你好", pinyin: "nǐ hǎo" }],
+        dictionaryMatches: [
+          {
+            simplified: "你好",
+            traditional: "你好",
+            pinyin: "nǐ hǎo",
+            definitions: ["hello"],
+          },
+        ],
+        nativeAlternative: "嗨",
+        register: "casual",
+        nativeNote: "Colloquial greeting",
+      },
+      sourceText: "Hello",
+      sourceLang: "en",
+      targetLang: "zh",
+      characterSet: "simplified",
+    });
+
+    const response = translationRecordToResponse(record);
+    expect(response.nativeNote).toBe("Colloquial greeting");
+    expect(response.segments).toHaveLength(1);
+    expect(response.dictionaryMatches).toHaveLength(1);
   });
 });

@@ -1,5 +1,9 @@
 import type { VoiceRegion } from "@mindyourlanguage/shared";
 
+export interface SpeakChineseResult {
+  usedRegionFallback: boolean;
+}
+
 export function isSpeechSynthesisSupported(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -17,6 +21,19 @@ function langCandidates(region: VoiceRegion): string[] {
   return region === "zh-TW"
     ? ["zh-TW", "zh-tw", "cmn-TW", "cmn-tw"]
     : ["zh-CN", "zh-cn", "cmn-CN", "cmn-cn"];
+}
+
+export function voiceMatchesRegion(
+  voice: SpeechSynthesisVoice,
+  region: VoiceRegion,
+): boolean {
+  const candidates = langCandidates(region);
+  const lang = voice.lang.toLowerCase();
+  return candidates.some(
+    (candidate) =>
+      lang === candidate.toLowerCase() ||
+      lang.startsWith(`${candidate.toLowerCase()}-`),
+  );
 }
 
 export function pickVoice(
@@ -58,20 +75,30 @@ async function waitForVoices(timeoutMs = 500): Promise<SpeechSynthesisVoice[]> {
   });
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export async function speakChinese(
   text: string,
   region: VoiceRegion,
-): Promise<void> {
+): Promise<SpeakChineseResult> {
   const trimmed = text.trim();
-  if (!trimmed) return;
+  if (!trimmed) return { usedRegionFallback: false };
 
   if (!isSpeechSynthesisSupported()) {
     throw new Error("Audio unavailable");
   }
 
   cancelSpeech();
+  // Chrome often ignores speak() immediately after cancel() in the same tick.
+  await delay(0);
+
   const voices = await waitForVoices();
   const voice = pickVoice(voices, region);
+  const usedRegionFallback = voice ? !voiceMatchesRegion(voice, region) : false;
   const utterance = new SpeechSynthesisUtterance(trimmed);
   utterance.lang = region;
   if (voice) utterance.voice = voice;
@@ -81,4 +108,6 @@ export async function speakChinese(
     utterance.onerror = () => reject(new Error("Audio unavailable"));
     window.speechSynthesis.speak(utterance);
   });
+
+  return { usedRegionFallback };
 }

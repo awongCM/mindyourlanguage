@@ -25,6 +25,8 @@ describe("phrasebook helpers", () => {
       targetLang: "zh",
       translation: "你好",
       characterSet: "simplified",
+      dictionaryMatches: [],
+      segments: [],
     });
 
     expect(
@@ -45,6 +47,8 @@ describe("phrasebook helpers", () => {
         targetLang: "zh",
         translation: "甲",
         characterSet: "simplified",
+        dictionaryMatches: [],
+        segments: [],
         tags: ["greeting"],
       }),
       createPhrasebookEntry({
@@ -54,6 +58,8 @@ describe("phrasebook helpers", () => {
         targetLang: "zh",
         translation: "乙",
         characterSet: "simplified",
+        dictionaryMatches: [],
+        segments: [],
         tags: ["travel"],
       }),
     ];
@@ -74,6 +80,8 @@ describe("usePhrasebookStore", () => {
       targetLang: "zh",
       translation: "你好",
       characterSet: "simplified",
+      dictionaryMatches: [],
+      segments: [],
     });
 
     usePhrasebookStore.getState().add(entry);

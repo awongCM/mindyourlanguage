@@ -39,9 +39,11 @@ function phrasebookEntryToResponse(entry: PhrasebookEntry): TranslateResponse {
     traditional: entry.traditional,
     pinyin: entry.pinyin,
     detectedLang: entry.sourceLang,
-    segments: [],
-    dictionaryMatches: [],
+    segments: entry.segments ?? [],
+    dictionaryMatches: entry.dictionaryMatches ?? [],
     nativeAlternative: entry.nativeAlternative,
+    register: entry.register,
+    nativeNote: entry.nativeNote,
   };
 }
 
@@ -55,9 +57,9 @@ export default function Home() {
     sourceLang: "en",
     targetLang: "zh",
   });
+  const [sourceText, setSourceText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<TranslateResponse | null>(null);
-  const [lastSourceText, setLastSourceText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [phrasebookOpen, setPhrasebookOpen] = useState(false);
@@ -69,11 +71,12 @@ export default function Home() {
 
   const isEnglishToChinese =
     direction.sourceLang === "en" && direction.targetLang === "zh";
+  const showPlayButtons = direction.targetLang === "zh";
 
   const currentPhrasebookCandidate = result
     ? {
         translationId: result.id,
-        sourceText: lastSourceText,
+        sourceText,
         translation: result.translation,
       }
     : null;
@@ -90,7 +93,7 @@ export default function Home() {
       targetLang: record.targetLang,
     });
     setCharacterSet(record.characterSet);
-    setLastSourceText(record.sourceText);
+    setSourceText(record.sourceText);
     setResult(translationRecordToResponse(record));
     setError(null);
   }
@@ -101,17 +104,17 @@ export default function Home() {
       targetLang: entry.targetLang,
     });
     setCharacterSet(entry.characterSet);
-    setLastSourceText(entry.sourceText);
+    setSourceText(entry.sourceText);
     setResult(phrasebookEntryToResponse(entry));
     setError(null);
   }
 
   function handleToggleSave() {
-    if (!result || !lastSourceText) return;
+    if (!result || !sourceText.trim()) return;
 
     const candidate = {
       translationId: result.id,
-      sourceText: lastSourceText,
+      sourceText,
       translation: result.translation,
     };
 
@@ -129,14 +132,18 @@ export default function Home() {
     addPhrasebook(
       createPhrasebookEntry({
         translationId: result.id,
-        sourceText: lastSourceText,
+        sourceText,
         sourceLang: direction.sourceLang,
         targetLang: direction.targetLang,
         translation: result.translation,
         traditional: result.traditional,
         pinyin: result.pinyin,
         characterSet,
+        register: result.register,
         nativeAlternative: result.nativeAlternative,
+        nativeNote: result.nativeNote,
+        dictionaryMatches: result.dictionaryMatches,
+        segments: result.segments,
       }),
     );
     toast.success("Saved to phrasebook");
@@ -189,7 +196,7 @@ export default function Home() {
       }
 
       const data = (await response.json()) as TranslateResponse;
-      setLastSourceText(text);
+      setSourceText(text);
       setResult(data);
       addHistory(
         toTranslationRecord({
@@ -247,6 +254,8 @@ export default function Home() {
       />
 
       <TranslatorForm
+        sourceText={sourceText}
+        onSourceTextChange={setSourceText}
         onSubmit={handleTranslate}
         isLoading={isLoading}
         direction={direction}
@@ -278,6 +287,7 @@ export default function Home() {
           <ResultCard
             result={result}
             characterSet={characterSet}
+            showPlayButtons={showPlayButtons}
             isSaved={isSaved}
             onToggleSave={handleToggleSave}
           />

@@ -21,6 +21,7 @@ import type {
 interface ResultCardProps {
   result: TranslateResponse;
   characterSet: CharacterSet;
+  showPlayButtons?: boolean;
   isSaved?: boolean;
   onToggleSave?: () => void;
 }
@@ -38,6 +39,7 @@ function displayedTranslation(
 export function ResultCard({
   result,
   characterSet,
+  showPlayButtons = false,
   isSaved = false,
   onToggleSave,
 }: ResultCardProps) {
@@ -58,7 +60,14 @@ export function ResultCard({
 
   async function handlePlay(region: VoiceRegion) {
     try {
-      await speakChinese(displayText, region);
+      const { usedRegionFallback } = await speakChinese(displayText, region);
+      if (usedRegionFallback) {
+        toast.info(
+          region === "zh-TW"
+            ? "Taiwan voice unavailable — using the closest Chinese voice on this device."
+            : "Mainland voice unavailable — using the closest Chinese voice on this device.",
+        );
+      }
     } catch {
       toast.error("Audio unavailable");
     }
@@ -104,22 +113,26 @@ export function ResultCard({
         ) : null}
       </CardContent>
       <CardFooter className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => handlePlay("zh-CN")}
-        >
-          Play Mainland
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => handlePlay("zh-TW")}
-        >
-          Play Taiwan
-        </Button>
+        {showPlayButtons ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handlePlay("zh-CN")}
+            >
+              Play Mainland
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handlePlay("zh-TW")}
+            >
+              Play Taiwan
+            </Button>
+          </>
+        ) : null}
         {onToggleSave ? (
           <Button
             type="button"

@@ -26,6 +26,7 @@ export function toTranslationRecord(input: {
     characterSet,
     register: response.register,
     nativeAlternative: response.nativeAlternative,
+    nativeNote: response.nativeNote,
     dictionaryMatches: response.dictionaryMatches,
     segments: response.segments,
     createdAt: new Date().toISOString(),
@@ -45,5 +46,6 @@ export function translationRecordToResponse(
     dictionaryMatches: record.dictionaryMatches,
     nativeAlternative: record.nativeAlternative,
     register: record.register,
+    nativeNote: record.nativeNote,
   };
 }

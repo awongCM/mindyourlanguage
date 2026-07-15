@@ -94,6 +94,10 @@ export function createPhrasebookEntry(
     traditional: input.traditional,
     pinyin: input.pinyin,
     characterSet: input.characterSet,
+    register: input.register,
     nativeAlternative: input.nativeAlternative,
+    nativeNote: input.nativeNote,
+    dictionaryMatches: input.dictionaryMatches ?? [],
+    segments: input.segments ?? [],
   };
 }

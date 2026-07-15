@@ -14,6 +14,8 @@ export interface TranslateDirection {
 }
 
 interface TranslatorFormProps {
+  sourceText: string;
+  onSourceTextChange: (text: string) => void;
   onSubmit: (text: string) => void;
   isLoading: boolean;
   direction: TranslateDirection;
@@ -25,16 +27,17 @@ function langLabel(lang: Lang): string {
 }
 
 export function TranslatorForm({
+  sourceText,
+  onSourceTextChange,
   onSubmit,
   isLoading,
   direction,
   onDirectionChange,
 }: TranslatorFormProps) {
-  const [text, setText] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const charCount = text.length;
-  const trimmed = text.trim();
+  const charCount = sourceText.length;
+  const trimmed = sourceText.trim();
 
   function swapDirection() {
     onDirectionChange({
@@ -61,7 +64,7 @@ export function TranslatorForm({
   }
 
   function handleChange(value: string) {
-    setText(value);
+    onSourceTextChange(value);
     if (validationError) {
       if (!value.trim()) {
         setValidationError("Enter text to translate");
@@ -100,7 +103,7 @@ export function TranslatorForm({
 
       <div className="flex flex-col gap-1.5">
         <Textarea
-          value={text}
+          value={sourceText}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Enter text to translate…"
           rows={4}

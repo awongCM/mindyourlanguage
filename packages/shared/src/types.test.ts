@@ -80,6 +80,8 @@ describe('PhrasebookEntry type', () => {
       targetLang: 'zh',
       translation: '你好',
       characterSet: 'simplified',
+      dictionaryMatches: [],
+      segments: [],
       tags: ['greeting'],
       notes: 'Casual hello',
       createdAt: new Date().toISOString(),
