@@ -15,7 +15,7 @@ test.describe('history and phrasebook (mocked)', () => {
     await page.getByRole('button', { name: 'History' }).click()
     const drawer = page.getByRole('dialog')
     await expect(drawer.getByText(SAMPLE_TEXT)).toBeVisible()
-    await drawer.getByText('你好，很高兴认识你。').click()
+    await drawer.getByText('你好，很高兴认识你。').first().click()
     await expect(page.getByTestId('result-translation')).toHaveText('你好，很高兴认识你。')
     await expect(page.getByPlaceholder('Enter text to translate…')).toHaveValue(
       SAMPLE_TEXT,

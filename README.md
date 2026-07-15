@@ -2,7 +2,7 @@
 
 A Mandarin fluency grounding tool for intermediate learners who want to translate and calibrate their phrasing — so they sound natural, not just correct.
 
-**Status:** v2 Phases 0–3 shipped on `main`. Phase 4 (Render deploy + Playwright E2E) design/plan ready. Legacy v1 archived.
+**Status:** v2 Phases 0–3 shipped on `main`. Phase 4 (Render deploy + Playwright E2E) implemented on branch `cursor/phase-4-implementation-8d74`.
 
 ---
 
@@ -74,7 +74,7 @@ v2 is a greenfield rebuild documented in:
 - **Parent design:** [`docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`](docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md)
 - **Parent plan:** [`docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`](docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md)
 - **Phase 3 (approved, shipped):** [`docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md`](docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md)
-- **Phase 4 (design/plan):** [`docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md`](docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md) · [`docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`](docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md)
+- **Phase 4 (approved, shipped):** [`docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md`](docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md) · [`docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`](docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md)
 
 ### v2 highlights
 
@@ -89,7 +89,14 @@ v2 is a greenfield rebuild documented in:
 | Audience | Intermediate → fluent learners |
 | Deploy | Render Web Service + PostgreSQL (Phase 4) |
 
-**Phases 0–3 are shipped on `main`.** Phase 4 (in progress): Playwright E2E, deploy hardening — [`render.yaml`](render.yaml), `/api/health`, and CEDICT build import are in place.
+**Phases 0–4 are on this branch.** Next: sync Blueprint on Render, apply Postgres migration, Phase 5 (OAuth + cloud sync).
+
+### Local E2E
+
+```bash
+cd apps/web && npx playwright install chromium
+npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
+```
 
 ### Deploy (Render)
 
