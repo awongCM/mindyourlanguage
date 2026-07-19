@@ -2,7 +2,7 @@
 
 A Mandarin fluency grounding tool for intermediate learners who want to translate and calibrate their phrasing — so they sound natural, not just correct.
 
-**Status:** v2 Phases 0–3 shipped on `main`. Phase 4 (Render deploy + Playwright E2E) implemented on branch `cursor/phase-4-implementation-8d74`.
+**Status:** v2 Phases 0–4 shipped on `main`. Next: sync Blueprint on Render, Phase 5 (OAuth + cloud sync).
 
 ---
 
@@ -67,7 +67,7 @@ See [`archive/legacy-v1/README.md`](archive/legacy-v1/README.md) for details on 
 
 ---
 
-## Mind Your Language v2 (Phase 4 in progress)
+## Mind Your Language v2
 
 v2 is a greenfield rebuild documented in:
 
@@ -89,7 +89,29 @@ v2 is a greenfield rebuild documented in:
 | Audience | Intermediate → fluent learners |
 | Deploy | Render Web Service + PostgreSQL (Phase 4) |
 
-**Phases 0–4 are on this branch.** Next: sync Blueprint on Render, apply Postgres migration, Phase 5 (OAuth + cloud sync).
+**Phases 0–4 are on `main`.** Next: sync Blueprint on Render, apply Postgres migration, Phase 5 (OAuth + cloud sync).
+
+### Run locally
+
+Prerequisites: Node.js 20+, npm.
+
+```bash
+# 1. Install dependencies
+npm ci
+
+# 2. Import the dictionary (writes data/cedict.db; uses the repo CEDICT fallback)
+npm run import-cedict
+
+# 3. Configure env
+cp apps/web/.env.example apps/web/.env.local
+# Required for translate: DEEPL_API_KEY
+# Optional for native alternatives: OPENAI_API_KEY
+
+# 4. Start the app → http://localhost:3000
+npm run dev
+```
+
+Postgres / `DATABASE_URL` is not required for local use until Phase 5 (auth + cloud sync). History and phrasebook use `localStorage`. TTS uses the browser Web Speech API (no server key).
 
 ### Local E2E
 
