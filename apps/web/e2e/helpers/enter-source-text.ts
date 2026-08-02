@@ -13,5 +13,5 @@ export async function enterSourceText(page: Page, text = SAMPLE_TEXT) {
     setter?.call(el, value)
     el.dispatchEvent(new Event('input', { bubbles: true }))
   }, text)
-  await expect(page.getByText(`${text.length}/500`)).toBeVisible()
+  await expect(page.getByText(`${text.length}/1000`)).toBeVisible()
 }

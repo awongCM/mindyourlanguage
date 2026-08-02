@@ -13,7 +13,7 @@ import {
 import type { Lang, TranslateRequest, VoiceRegion } from '@mindyourlanguage/shared'
 import { randomUUID } from 'crypto'
 
-const MAX_CHARS = 500
+const MAX_CHARS = 1000
 const VALID_LANGS: Lang[] = ['en', 'zh']
 
 export async function POST(req: NextRequest) {

@@ -232,9 +232,9 @@ describe('POST /api/translate', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 400 when text exceeds 500 characters', async () => {
+  it('returns 400 when text exceeds 1000 characters', async () => {
     const req = translateRequest({
-      text: 'a'.repeat(501),
+      text: 'a'.repeat(1001),
       sourceLang: 'en',
       targetLang: 'zh',
       characterSet: 'simplified',

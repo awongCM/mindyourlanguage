@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { Lang } from "@mindyourlanguage/shared";
 
-const MAX_CHARS = 500;
+const MAX_CHARS = 1000;
 
 export interface TranslateDirection {
   sourceLang: Lang;
