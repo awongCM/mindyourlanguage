@@ -1,14 +1,14 @@
-# Phase 6 Production Practice Implementation Plan
+# Phase 5 Production Practice Implementation Plan
 
 > **For agentic workers:** Use superpowers:subagent-driven-development or executing-plans to implement task-by-task.
 
-**Goal:** Ship Phase 6 — production practice for intermediate Mandarin learners: try-first translate, check attempt, phrasebook drill with SRS, shadowing, and sandhi pinyin.
+**Goal:** Ship Phase 5 — production practice for intermediate Mandarin learners: try-first translate, check attempt, phrasebook drill with SRS, shadowing, and sandhi pinyin.
 
 **Architecture:** Client-first. Extends `PhrasebookEntry` with `PracticeStats`. New `/practice` route. Optional `POST /api/practice/check` (OpenAI). Sandhi computed in `lib/pinyin-sandhi.ts`. Shadowing extends `lib/speech.ts`.
 
 **Tech Stack:** Next.js App Router, TypeScript, Zustand, Web Speech API, Vitest, Playwright.
 
-**Design spec:** `docs/superpowers/specs/2026-07-19-phase-6-production-practice-design.md`
+**Design spec:** `docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md`
 
 ---
 
@@ -94,7 +94,7 @@
 ## Task 7: E2E + README
 
 - [ ] Add `e2e/practice.spec.ts`
-- [ ] Update README Phase 6 section
+- [ ] Update README Phase 5 section
 - [ ] Run vitest + e2e
 
 ---
@@ -103,10 +103,10 @@
 
 | Task | PR | Depends on |
 |---|---|---|
-| 1 Types + SRS | 6f | — |
-| 2 Sandhi | 6e | — |
-| 3 Try first | 6a | — |
-| 4 Check attempt | 6b | 3 |
-| 5 Shadowing | 6d | — |
-| 6 Practice page | 6c + 6f | 1, 5 |
+| 1 Types + SRS | 5f | — |
+| 2 Sandhi | 5e | — |
+| 3 Try first | 5a | — |
+| 4 Check attempt | 5b | 3 |
+| 5 Shadowing | 5d | — |
+| 6 Practice page | 5c + 5f | 1, 5 |
 | 7 E2E + docs | — | all |

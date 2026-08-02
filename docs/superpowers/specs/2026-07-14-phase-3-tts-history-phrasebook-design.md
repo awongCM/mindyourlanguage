@@ -50,7 +50,7 @@ Design Screen 3 calls for a phrasebook. Shipping it now completes the “save wh
 - Postgres writes for history or phrasebook (tables already exist; cloud sync = Phase 4–5)
 - Dual-engine compare
 - Render Blueprint / Playwright E2E (plan Phase 4)
-- OAuth / cloud sync (plan Phase 5)
+- OAuth / cloud sync (plan Phase 6)
 
 ### Pipeline after Phase 3
 

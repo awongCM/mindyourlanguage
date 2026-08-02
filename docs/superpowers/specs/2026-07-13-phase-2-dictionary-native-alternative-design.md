@@ -45,7 +45,7 @@ Dual-engine compare (listed under design-spec “Phase 2”) stays **out of scop
 - Azure TTS / `/api/speak` (plan Phase 3)
 - Local history drawer (plan Phase 3)
 - Render Blueprint / E2E suite (plan Phase 4)
-- OAuth / cloud sync (plan Phase 5)
+- OAuth / cloud sync (plan Phase 6)
 
 ### Pipeline after both land
 
@@ -279,7 +279,7 @@ NATIVE_ALT_MODEL=gpt-4o-mini
 | Parent plan item | This exercise |
 |---|---|
 | Phase 2 Tasks 8–9 (CEDICT + grounding panel) | **PR 2a** — implement now |
-| Phase 5 Task 15 (native alternative) | **PR 2b** — pull forward immediately after 2a, before TTS |
+| Phase 6 Task 15 (native alternative) | **PR 2b** — pull forward immediately after 2a, before TTS |
 | Dual-engine compare | Deferred |
 | Phase 3 TTS / history | After this exercise |
 

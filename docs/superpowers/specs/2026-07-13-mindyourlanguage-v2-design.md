@@ -71,7 +71,7 @@ The product helps users translate phrases, sentences, and short paragraphs betwe
 |---|---|---|---|
 | MVP (Phases 0–3) | Founder only | None | Local history + Postgres (nullable `userId`) |
 | Private beta (Phase 4) | Early testers | Optional OAuth | Postgres per user |
-| Public launch (Phase 5+) | Intermediate learners | Required for sync | Postgres + rate limits |
+| Public launch (Phase 6) | Intermediate learners | Required for sync | Postgres + rate limits |
 
 Design all tables and API contracts with `userId` from day one. MVP runs with `userId = null` and browser `localStorage` for history.
 
@@ -499,7 +499,7 @@ RATE_LIMIT_PER_MIN=20
 - [ ] Revisit last 50 translations offline (localStorage)
 - [ ] Deployed on Render, API keys not exposed
 
-### Public launch (Phase 5)
+### Public launch (Phase 6)
 
 - [ ] Intermediate learner completes onboarding in < 2 minutes
 - [ ] Auth syncs phrasebook across devices

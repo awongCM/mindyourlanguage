@@ -936,7 +936,18 @@ git commit -m "test: add Playwright E2E tests for translate flow and toggles"
 
 ---
 
-## Phase 5: Public readiness (post-MVP)
+## Phase 5: Production practice
+
+See dedicated spec and plan:
+
+- **Design:** `docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md`
+- **Plan:** `docs/superpowers/plans/2026-07-19-phase-5-production-practice.md`
+
+Try-first translate, check attempt, phrasebook drill, shadowing, sandhi pinyin, and lightweight SRS. Client-first (`localStorage`); ships before public launch.
+
+---
+
+## Phase 6: Public readiness (post-MVP)
 
 ### Task 14: OAuth + cloud sync (when ready for public)
 
@@ -951,16 +962,9 @@ git commit -m "test: add Playwright E2E tests for translate flow and toggles"
 
 ---
 
-### Task 15: Native alternative (Phase 2 feature)
+### Task 15: Native alternative
 
-**Files:**
-- Create: `apps/web/lib/native-alternative.ts`
-- Modify: `apps/web/app/api/translate/route.ts`
-- Create: `apps/web/components/native-alternative-card.tsx`
-
-- [ ] **Step 1:** Add LLM call (OpenAI or Anthropic) with prompt: "Rewrite this translation to sound like a fluent {CN|TW} Mandarin speaker. Explain register."
-- [ ] **Step 2:** Display native alternative below primary translation when different
-- [ ] **Step 3:** Add register label (口语/书面/neutral)
+**Status:** Shipped in Phase 2 PR 2b (pulled forward from original post-MVP placement).
 
 ---
 
@@ -981,8 +985,8 @@ git commit -m "test: add Playwright E2E tests for translate flow and toggles"
 | 11 History | 3 | 7 |
 | 12 Render deploy | 4 | 1–11 |
 | 13 E2E tests | 4 | 7, 9, 10 |
-| 14 OAuth | 5 | 12 |
-| 15 Native alternative | 5 | 9 |
+| 14 OAuth | 6 | 12, Phase 5 |
+| 15 Native alternative | 2 (shipped) | 9 |
 
 ---
 
