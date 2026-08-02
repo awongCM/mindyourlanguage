@@ -7,7 +7,7 @@ import {
 } from './native-alternative-shared'
 
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'
-const DEFAULT_NATIVE_ALT_MODEL = 'gpt-4o-mini'
+const DEFAULT_NATIVE_ALT_MODEL = 'gpt-5.6-luna'
 const NATIVE_ALT_FETCH_TIMEOUT_MS = 10_000
 
 interface FetchNativeAlternativeParams {

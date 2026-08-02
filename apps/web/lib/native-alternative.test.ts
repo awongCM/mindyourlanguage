@@ -60,7 +60,7 @@ describe('fetchNativeAlternative', () => {
       }),
     )
     const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-    expect(body.model).toBe('gpt-4o-mini')
+    expect(body.model).toBe('gpt-5.6-luna')
     expect(body.response_format).toEqual({ type: 'json_object' })
     expect(JSON.stringify(body.messages)).toContain('Mainland')
     expect(JSON.stringify(body.messages)).toContain('Nice to meet you.')
