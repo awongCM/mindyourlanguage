@@ -29,6 +29,7 @@ import {
   toTranslationRecord,
   translationRecordToResponse,
 } from "@/lib/to-translation-record";
+import { cancelSpeech } from "@/lib/speech";
 import type {
   CharacterSet,
   PhrasebookEntry,
@@ -123,6 +124,14 @@ export default function Home() {
     setCharacterSet(entry.characterSet);
     setSourceText(entry.sourceText);
     setResult(phrasebookEntryToResponse(entry));
+    setError(null);
+  }
+
+  function handleClear() {
+    cancelSpeech();
+    setSourceText("");
+    setUserAttempt("");
+    setResult(null);
     setError(null);
   }
 
@@ -278,6 +287,7 @@ export default function Home() {
         sourceText={sourceText}
         onSourceTextChange={setSourceText}
         onSubmit={handleTranslate}
+        onClear={handleClear}
         isLoading={isLoading}
         direction={direction}
         onDirectionChange={setDirection}
