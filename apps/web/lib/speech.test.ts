@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  cancelSpeech,
   chunkTextForSlowPlayback,
   isSpeechSynthesisSupported,
   pickVoice,
@@ -251,5 +252,22 @@ describe("speakSegments", () => {
     await expect(promise).resolves.toEqual({ usedRegionFallback: false });
     expect(first.text).toBe("你");
     expect(second.text).toBe("好");
+  });
+
+  it("stops segment playback when cancelled", async () => {
+    const promise = speakSegments(["你", "好", "世", "界"], "zh-CN", {
+      gapMs: 1000,
+    });
+
+    await vi.runAllTimersAsync();
+    const first = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[0]?.[0] as SpeechSynthesisUtterance;
+    first.onend?.(new Event("end") as SpeechSynthesisEvent);
+
+    cancelSpeech();
+    await vi.runAllTimersAsync();
+
+    await expect(promise).resolves.toEqual({ usedRegionFallback: false });
+    expect(window.speechSynthesis.speak).toHaveBeenCalledTimes(1);
   });
 });

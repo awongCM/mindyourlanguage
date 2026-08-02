@@ -146,6 +146,10 @@ export function ResultCard({
     }
   }
 
+  function handleStop() {
+    cancelSpeech();
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -209,6 +213,15 @@ export function ResultCard({
               onClick={() => handlePlay("zh-TW")}
             >
               Play Taiwan
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleStop}
+              data-testid="stop-audio"
+            >
+              Stop
             </Button>
           </>
         ) : null}

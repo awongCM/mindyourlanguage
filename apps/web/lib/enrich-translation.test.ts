@@ -62,12 +62,12 @@ describe('enrichChineseTranslation', () => {
     expect(result.segments[0]).toEqual({ text: '认识', pinyin: 'py:认识' })
     expect(result.segments[1]).toEqual({ text: '你', pinyin: 'py:你' })
     expect(lookupTerm).toHaveBeenCalledWith('认识', 1)
-    expect(lookupTerm).toHaveBeenCalledWith('你', 1)
+    expect(lookupTerm).not.toHaveBeenCalledWith('你', 1)
     expect(result.dictionaryMatches).toHaveLength(1)
     expect(result.dictionaryMatches[0].simplified).toBe('认识')
   })
 
-  it('dedupes dictionary lookups and caps matches at 15', () => {
+  it('dedupes dictionary lookups and curates study-worthy matches', () => {
     const words = [
       { text: '词0' },
       { text: '词0' },
@@ -85,12 +85,36 @@ describe('enrichChineseTranslation', () => {
 
     const result = enrichChineseTranslation('很多词')
 
-    expect(result.dictionaryMatches).toHaveLength(15)
-    expect(lookupTerm).toHaveBeenCalledTimes(15)
+    expect(result.dictionaryMatches).toHaveLength(17)
+    expect(lookupTerm).toHaveBeenCalledTimes(17)
     expect(lookupTerm).toHaveBeenCalledWith('词0', 1)
     expect(
       vi.mocked(lookupTerm).mock.calls.filter(([term]) => term === '词0'),
     ).toHaveLength(1)
+  })
+
+  it('skips ultra-common terms during dictionary lookup', () => {
+    vi.mocked(segment).mockReturnValue([
+      { text: '指出' },
+      { text: '吉隆坡' },
+      { text: '的' },
+    ])
+    vi.mocked(lookupTerm).mockImplementation((term: string) => [
+      {
+        simplified: term,
+        traditional: term,
+        pinyin: `pin:${term}`,
+        definitions: [`definition:${term}`],
+      },
+    ])
+
+    const result = enrichChineseTranslation('指出吉隆坡的')
+
+    expect(lookupTerm).not.toHaveBeenCalledWith('的', 1)
+    expect(result.dictionaryMatches.map((item) => item.simplified)).toEqual([
+      '吉隆坡',
+      '指出',
+    ])
   })
 
   it('dedupes dictionary matches by simplified form after lookup', () => {

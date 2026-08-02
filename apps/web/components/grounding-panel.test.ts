@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { DictionaryEntry } from '@mindyourlanguage/shared'
+import { getVisibleGroundingEntries } from '@/lib/dictionary-grounding'
 import { GroundingPanel } from './grounding-panel'
 
 describe('GroundingPanel', () => {
@@ -41,5 +42,22 @@ describe('GroundingPanel', () => {
     expect(html).toContain('to know; to recognize')
     expect(html).toContain('ni3')
     expect(html).toContain('you')
+  })
+
+  it('renders preview count for long curated lists', () => {
+    const entries: DictionaryEntry[] = Array.from({ length: 20 }, (_, index) => ({
+      simplified: `词${index}`,
+      traditional: `词${index}`,
+      pinyin: `ci${index}`,
+      definitions: [`definition ${index}`],
+    }))
+
+    const html = renderToStaticMarkup(
+      createElement(GroundingPanel, { entries }),
+    )
+
+    expect(html).toContain('Showing 15 of 20')
+    expect(html).toContain('Show more')
+    expect(getVisibleGroundingEntries(entries, false)).toHaveLength(15)
   })
 })

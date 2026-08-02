@@ -4,6 +4,8 @@ export interface SpeakChineseResult {
   usedRegionFallback: boolean;
 }
 
+let activeSpeechGeneration = 0;
+
 export function isSpeechSynthesisSupported(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -12,9 +14,14 @@ export function isSpeechSynthesisSupported(): boolean {
 }
 
 export function cancelSpeech() {
+  activeSpeechGeneration += 1;
   if (isSpeechSynthesisSupported()) {
     window.speechSynthesis.cancel();
   }
+}
+
+function isSpeechCancelled(generation: number): boolean {
+  return generation !== activeSpeechGeneration;
 }
 
 function langCandidates(region: VoiceRegion): string[] {
@@ -81,6 +88,17 @@ function delay(ms: number): Promise<void> {
   });
 }
 
+async function interruptibleDelay(
+  ms: number,
+  generation: number,
+): Promise<void> {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (isSpeechCancelled(generation)) return;
+    await delay(Math.min(50, end - Date.now()));
+  }
+}
+
 export const NORMAL_SPEECH_RATE = 1;
 export const SLOW_SPEECH_RATE = 0.55;
 export const SLOW_SEGMENT_GAP_MS = 500;
@@ -105,23 +123,26 @@ export function chunkTextForSlowPlayback(
   return trimmed ? [trimmed] : [];
 }
 
-export async function speakChinese(
+async function speakUtterance(
   text: string,
   region: VoiceRegion,
+  generation: number,
   options: { rate?: number } = {},
 ): Promise<SpeakChineseResult> {
   const trimmed = text.trim();
-  if (!trimmed) return { usedRegionFallback: false };
+  if (!trimmed || isSpeechCancelled(generation)) {
+    return { usedRegionFallback: false };
+  }
 
   if (!isSpeechSynthesisSupported()) {
     throw new Error("Audio unavailable");
   }
 
-  cancelSpeech();
-  // Chrome often ignores speak() immediately after cancel() in the same tick.
-  await delay(0);
-
   const voices = await waitForVoices();
+  if (isSpeechCancelled(generation)) {
+    return { usedRegionFallback: false };
+  }
+
   const voice = pickVoice(voices, region);
   const usedRegionFallback = voice ? !voiceMatchesRegion(voice, region) : false;
   const utterance = new SpeechSynthesisUtterance(trimmed);
@@ -132,12 +153,42 @@ export async function speakChinese(
   }
 
   await new Promise<void>((resolve, reject) => {
-    utterance.onend = () => resolve();
-    utterance.onerror = () => reject(new Error("Audio unavailable"));
+    utterance.onend = () => {
+      if (isSpeechCancelled(generation)) {
+        resolve();
+        return;
+      }
+      resolve();
+    };
+    utterance.onerror = (event) => {
+      if (
+        isSpeechCancelled(generation) ||
+        event.error === "interrupted" ||
+        event.error === "canceled"
+      ) {
+        resolve();
+        return;
+      }
+      reject(new Error("Audio unavailable"));
+    };
     window.speechSynthesis.speak(utterance);
   });
 
   return { usedRegionFallback };
+}
+
+export async function speakChinese(
+  text: string,
+  region: VoiceRegion,
+  options: { rate?: number } = {},
+): Promise<SpeakChineseResult> {
+  if (!isSpeechSynthesisSupported()) {
+    throw new Error("Audio unavailable");
+  }
+  cancelSpeech();
+  await delay(0);
+  const generation = activeSpeechGeneration;
+  return speakUtterance(text, region, generation, options);
 }
 
 export async function speakChineseSlow(
@@ -164,13 +215,28 @@ export async function speakSegments(
   const parts = segments.map((part) => part.trim()).filter(Boolean);
   if (parts.length === 0) return { usedRegionFallback: false };
 
+  if (!isSpeechSynthesisSupported()) {
+    throw new Error("Audio unavailable");
+  }
+  cancelSpeech();
+  await delay(0);
+  const generation = activeSpeechGeneration;
+
   let usedRegionFallback = false;
   for (let i = 0; i < parts.length; i += 1) {
-    const result = await speakChinese(parts[i], region, { rate: options.rate });
+    if (isSpeechCancelled(generation)) {
+      return { usedRegionFallback };
+    }
+
+    const result = await speakUtterance(parts[i], region, generation, {
+      rate: options.rate,
+    });
     usedRegionFallback = usedRegionFallback || result.usedRegionFallback;
+
     if (i < parts.length - 1) {
-      await delay(options.gapMs ?? 350);
+      await interruptibleDelay(options.gapMs ?? 350, generation);
     }
   }
+
   return { usedRegionFallback };
 }

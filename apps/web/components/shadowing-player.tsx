@@ -28,6 +28,11 @@ export function ShadowingPlayer({
     return () => cancelSpeech();
   }, []);
 
+  function handleStop() {
+    cancelSpeech();
+    setBusy(false);
+  }
+
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
     try {
@@ -79,6 +84,15 @@ export function ShadowingPlayer({
         }
       >
         Play segments
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleStop}
+        data-testid="stop-audio"
+      >
+        Stop
       </Button>
     </div>
   );

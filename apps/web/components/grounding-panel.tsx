@@ -1,5 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  getVisibleGroundingEntries,
+  GROUNDING_PREVIEW_COUNT,
+} from "@/lib/dictionary-grounding";
 import type { DictionaryEntry } from "@mindyourlanguage/shared";
 
 interface GroundingPanelProps {
@@ -7,6 +13,8 @@ interface GroundingPanelProps {
 }
 
 export function GroundingPanel({ entries }: GroundingPanelProps) {
+  const [expanded, setExpanded] = useState(false);
+
   if (entries.length === 0) {
     return (
       <section
@@ -18,13 +26,28 @@ export function GroundingPanel({ entries }: GroundingPanelProps) {
     );
   }
 
+  const visibleEntries = getVisibleGroundingEntries(entries, expanded);
+  const hasMore = entries.length > GROUNDING_PREVIEW_COUNT;
+
   return (
     <section aria-label="Dictionary grounding" className="flex flex-col gap-3">
-      <h2 className="text-sm font-medium text-foreground">
-        Dictionary grounding
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-medium text-foreground">
+          Dictionary grounding
+        </h2>
+        {hasMore ? (
+          <p
+            className="text-xs text-muted-foreground"
+            data-testid="grounding-count"
+          >
+            {expanded
+              ? `Showing all ${entries.length}`
+              : `Showing ${Math.min(GROUNDING_PREVIEW_COUNT, entries.length)} of ${entries.length}`}
+          </p>
+        ) : null}
+      </div>
       <ul className="flex flex-col gap-3">
-        {entries.map((entry) => (
+        {visibleEntries.map((entry) => (
           <li key={`${entry.simplified}-${entry.pinyin}`} className="text-sm">
             <p className="text-foreground">
               <span className="font-medium">{entry.simplified}</span>
@@ -43,6 +66,18 @@ export function GroundingPanel({ entries }: GroundingPanelProps) {
           </li>
         ))}
       </ul>
+      {hasMore ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="self-start"
+          onClick={() => setExpanded((value) => !value)}
+          data-testid="grounding-toggle"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </Button>
+      ) : null}
     </section>
   );
 }
