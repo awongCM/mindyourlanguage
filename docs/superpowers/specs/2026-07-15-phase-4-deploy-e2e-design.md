@@ -116,7 +116,7 @@ Rationale:
 |---|---|---|---|
 | `DEEPL_API_KEY` | Yes | Dashboard `sync: false` | Primary translate |
 | `OPENAI_API_KEY` | No | Dashboard `sync: false` | Native alternative; omit → feature skips gracefully |
-| `NATIVE_ALT_MODEL` | No | Optional default `gpt-4o-mini` | Already supported |
+| `NATIVE_ALT_MODEL` | No | Optional default `gpt-5.6-luna` | Already supported |
 | `DATABASE_URL` | Yes (Blueprint) | `fromDatabase` | Wire now; unused by translate path until Phase 6 |
 | `CEDICT_DB_PATH` | No | Optional | Default resolver finds `data/cedict.db` from repo root / web cwd |
 | `RATE_LIMIT_PER_MIN` | No | Default `20` | Keep for abuse guard |

@@ -166,7 +166,7 @@ CREATE INDEX idx_traditional ON entries(traditional);
 
 ### 4.3 Provider
 
-- **OpenAI** (`gpt-4o-mini` or model from env) via server-side `OPENAI_API_KEY`.
+- **OpenAI** (`gpt-5.6-luna` or model from env) via server-side `OPENAI_API_KEY`.
 - Isolate calls in `apps/web/lib/native-alternative.ts` so Azure/Anthropic can swap later.
 - Keys never ship to the client.
 - Share the existing translate rate limiter (or a slightly stricter cap on the LLM path).
@@ -198,7 +198,7 @@ Postgres `native_alternative` / `register` columns already exist from Phase 0 �
 
 ```
 OPENAI_API_KEY=
-NATIVE_ALT_MODEL=gpt-4o-mini
+NATIVE_ALT_MODEL=gpt-5.6-luna
 ```
 
 ### 4.7 Failure modes
@@ -291,7 +291,7 @@ NATIVE_ALT_MODEL=gpt-4o-mini
 |---|---|
 | Destination | Option C — dictionary + live native alternative |
 | Execution style | Sequenced PRs (2a then 2b), not one combined PR |
-| LLM provider | OpenAI (`NATIVE_ALT_MODEL`, default `gpt-4o-mini`) |
+| LLM provider | OpenAI (`NATIVE_ALT_MODEL`, default `gpt-5.6-luna`) |
 | Native alternative direction | EN→ZH only |
 | Dual-engine compare | Out of scope |
 

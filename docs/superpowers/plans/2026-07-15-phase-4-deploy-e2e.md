@@ -205,7 +205,7 @@ services:
       - key: OPENAI_API_KEY
         sync: false
       - key: NATIVE_ALT_MODEL
-        value: gpt-4o-mini
+        value: gpt-5.6-luna
       - key: RATE_LIMIT_PER_MIN
         value: "20"
       - key: DATABASE_URL
@@ -228,7 +228,7 @@ DATABASE_URL=
 RATE_LIMIT_PER_MIN=20
 CEDICT_DB_PATH=
 OPENAI_API_KEY=
-NATIVE_ALT_MODEL=gpt-4o-mini
+NATIVE_ALT_MODEL=gpt-5.6-luna
 
 # Phase 3+ TTS uses the browser Web Speech API (no server key).
 # Optional later: Google Cloud TTS

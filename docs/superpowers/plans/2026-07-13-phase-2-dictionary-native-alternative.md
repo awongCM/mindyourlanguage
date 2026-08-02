@@ -1097,7 +1097,7 @@ describe('fetchNativeAlternative', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
     process.env.OPENAI_API_KEY = 'test-key'
-    process.env.NATIVE_ALT_MODEL = 'gpt-4o-mini'
+    process.env.NATIVE_ALT_MODEL = 'gpt-5.6-luna'
   })
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -1221,7 +1221,7 @@ export async function fetchNativeAlternative(input: {
 }): Promise<NativeAlternativeResult | null> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) return null
-  const model = process.env.NATIVE_ALT_MODEL ?? 'gpt-4o-mini'
+  const model = process.env.NATIVE_ALT_MODEL ?? 'gpt-5.6-luna'
   const regionLabel =
     input.voiceRegion === 'zh-TW' ? 'Taiwan Mandarin' : 'Mainland Mandarin'
 
@@ -1477,7 +1477,7 @@ DATABASE_URL=
 RATE_LIMIT_PER_MIN=20
 CEDICT_DB_PATH=
 OPENAI_API_KEY=
-NATIVE_ALT_MODEL=gpt-4o-mini
+NATIVE_ALT_MODEL=gpt-5.6-luna
 ```
 
 - [ ] **Step 4: Run unit tests + manual EN→ZH check with `OPENAI_API_KEY`**
