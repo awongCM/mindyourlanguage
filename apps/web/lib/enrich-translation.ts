@@ -2,6 +2,7 @@ import { lookupTerm, segment } from '@mindyourlanguage/dictionary'
 import type { DictionaryEntry } from '@mindyourlanguage/shared'
 import { toTraditionalChars } from './characters'
 import { toPinyin } from './pinyin'
+import { toSpokenPinyin } from './pinyin-sandhi'
 
 const MAX_MATCHES = 15
 const CJK = /\p{Script=Han}/u
@@ -14,6 +15,7 @@ function fallbackCharacterSegments(translation: string): { text: string }[] {
 
 export function enrichChineseTranslation(translation: string): {
   pinyin: string
+  spokenPinyin: string
   traditional: string
   segments: { text: string; pinyin: string }[]
   dictionaryMatches: DictionaryEntry[]
@@ -58,6 +60,7 @@ export function enrichChineseTranslation(translation: string): {
 
   return {
     pinyin: toPinyin(translation),
+    spokenPinyin: toSpokenPinyin(translation),
     traditional: toTraditionalChars(translation),
     segments,
     dictionaryMatches,

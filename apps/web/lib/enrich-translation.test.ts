@@ -25,6 +25,10 @@ vi.mock('./pinyin', () => ({
   toPinyin: (t: string) => `py:${t}`,
 }))
 
+vi.mock('./pinyin-sandhi', () => ({
+  toSpokenPinyin: (t: string) => `spoken:${t}`,
+}))
+
 import { enrichChineseTranslation } from './enrich-translation'
 import { lookupTerm, segment } from '@mindyourlanguage/dictionary'
 
@@ -53,6 +57,7 @@ describe('enrichChineseTranslation', () => {
 
     expect(segment).toHaveBeenCalledWith('认识你')
     expect(result.pinyin).toBe('py:认识你')
+    expect(result.spokenPinyin).toBe('spoken:认识你')
     expect(result.traditional).toBe('认识你')
     expect(result.segments[0]).toEqual({ text: '认识', pinyin: 'py:认识' })
     expect(result.segments[1]).toEqual({ text: '你', pinyin: 'py:你' })

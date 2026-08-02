@@ -84,6 +84,7 @@ function delay(ms: number): Promise<void> {
 export async function speakChinese(
   text: string,
   region: VoiceRegion,
+  options: { rate?: number } = {},
 ): Promise<SpeakChineseResult> {
   const trimmed = text.trim();
   if (!trimmed) return { usedRegionFallback: false };
@@ -102,6 +103,9 @@ export async function speakChinese(
   const utterance = new SpeechSynthesisUtterance(trimmed);
   utterance.lang = region;
   if (voice) utterance.voice = voice;
+  if (typeof options.rate === "number") {
+    utterance.rate = options.rate;
+  }
 
   await new Promise<void>((resolve, reject) => {
     utterance.onend = () => resolve();
@@ -109,5 +113,24 @@ export async function speakChinese(
     window.speechSynthesis.speak(utterance);
   });
 
+  return { usedRegionFallback };
+}
+
+export async function speakSegments(
+  segments: string[],
+  region: VoiceRegion,
+  options: { rate?: number; gapMs?: number } = {},
+): Promise<SpeakChineseResult> {
+  const parts = segments.map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return { usedRegionFallback: false };
+
+  let usedRegionFallback = false;
+  for (let i = 0; i < parts.length; i += 1) {
+    const result = await speakChinese(parts[i], region, { rate: options.rate });
+    usedRegionFallback = usedRegionFallback || result.usedRegionFallback;
+    if (i < parts.length - 1) {
+      await delay(options.gapMs ?? 350);
+    }
+  }
   return { usedRegionFallback };
 }

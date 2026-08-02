@@ -27,6 +27,7 @@ vi.mock('@/lib/rate-limit', async (importOriginal) => {
 vi.mock('@/lib/enrich-translation', () => ({
   enrichChineseTranslation: vi.fn().mockReturnValue({
     pinyin: 'nǐ hǎo',
+    spokenPinyin: 'ní hǎo',
     traditional: '你好',
     segments: [{ text: '你', pinyin: 'nǐ' }, { text: '好', pinyin: 'hǎo' }],
     dictionaryMatches: [

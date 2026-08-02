@@ -3,6 +3,7 @@ import {
   isSpeechSynthesisSupported,
   pickVoice,
   speakChinese,
+  speakSegments,
   voiceMatchesRegion,
 } from "./speech";
 
@@ -89,6 +90,7 @@ describe("speakChinese", () => {
       text: string;
       lang = "";
       voice: SpeechSynthesisVoice | null = null;
+      rate = 1;
       onend: ((event: SpeechSynthesisEvent) => void) | null = null;
       onerror: ((event: SpeechSynthesisErrorEvent) => void) | null = null;
 
@@ -131,8 +133,61 @@ describe("speakChinese", () => {
     await expect(promise).resolves.toEqual({ usedRegionFallback: true });
   });
 
+  it("applies custom rate when provided", async () => {
+    const promise = speakChinese("你好", "zh-CN", { rate: 0.75 });
+    await vi.runAllTimersAsync();
+
+    const utterance = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[0]?.[0] as SpeechSynthesisUtterance & { rate?: number };
+    expect(utterance.rate).toBe(0.75);
+    utterance.onend?.(new Event("end") as SpeechSynthesisEvent);
+    await expect(promise).resolves.toEqual({ usedRegionFallback: false });
+  });
+
   it("rejects when unsupported", async () => {
     vi.stubGlobal("window", {});
     await expect(speakChinese("你好", "zh-CN")).rejects.toThrow(/unavailable/i);
+  });
+});
+
+describe("speakSegments", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    stubSpeechSynthesis([mockVoice("zh-CN", "CN")]);
+    class MockUtterance {
+      text: string;
+      lang = "";
+      voice: SpeechSynthesisVoice | null = null;
+      rate = 1;
+      onend: ((event: SpeechSynthesisEvent) => void) | null = null;
+      onerror: ((event: SpeechSynthesisErrorEvent) => void) | null = null;
+
+      constructor(text: string) {
+        this.text = text;
+      }
+    }
+    vi.stubGlobal("SpeechSynthesisUtterance", MockUtterance);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("speaks each segment in order", async () => {
+    const promise = speakSegments(["你", "好"], "zh-CN", { gapMs: 0 });
+
+    await vi.runAllTimersAsync();
+    const first = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[0]?.[0] as SpeechSynthesisUtterance;
+    first.onend?.(new Event("end") as SpeechSynthesisEvent);
+    await vi.runAllTimersAsync();
+    const second = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[1]?.[0] as SpeechSynthesisUtterance;
+    second.onend?.(new Event("end") as SpeechSynthesisEvent);
+
+    await expect(promise).resolves.toEqual({ usedRegionFallback: false });
+    expect(first.text).toBe("你");
+    expect(second.text).toBe("好");
   });
 });

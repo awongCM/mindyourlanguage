@@ -96,7 +96,11 @@ export async function POST(req: NextRequest) {
       segments: enrichment?.segments ?? [],
       dictionaryMatches: enrichment?.dictionaryMatches ?? [],
       ...(enrichment
-        ? { pinyin: enrichment.pinyin, traditional: enrichment.traditional }
+        ? {
+            pinyin: enrichment.pinyin,
+            spokenPinyin: enrichment.spokenPinyin,
+            traditional: enrichment.traditional,
+          }
         : {}),
       ...nativeFields,
     })

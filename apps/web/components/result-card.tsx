@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Bookmark, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ShadowingPlayer } from "@/components/shadowing-player";
 import { cancelSpeech, speakChinese } from "@/lib/speech";
 import {
   Card,
@@ -22,6 +23,7 @@ interface ResultCardProps {
   result: TranslateResponse;
   characterSet: CharacterSet;
   showPlayButtons?: boolean;
+  voiceRegion?: VoiceRegion;
   isSaved?: boolean;
   onToggleSave?: () => void;
 }
@@ -40,6 +42,7 @@ export function ResultCard({
   result,
   characterSet,
   showPlayButtons = false,
+  voiceRegion = "zh-CN",
   isSaved = false,
   onToggleSave,
 }: ResultCardProps) {
@@ -87,9 +90,22 @@ export function ResultCard({
         </p>
 
         {result.pinyin ? (
-          <p className="text-sm text-muted-foreground" lang="zh-Latn">
-            {result.pinyin}
-          </p>
+          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+            <p lang="zh-Latn">
+              <span className="mr-2 font-medium text-foreground/70">
+                Syllable pinyin
+              </span>
+              {result.pinyin}
+            </p>
+            {result.spokenPinyin ? (
+              <p lang="zh-Latn" data-testid="spoken-pinyin">
+                <span className="mr-2 font-medium text-foreground/70">
+                  Spoken pinyin
+                </span>
+                {result.spokenPinyin}
+              </p>
+            ) : null}
+          </div>
         ) : null}
 
         {result.segments.length > 0 ? (
@@ -110,6 +126,14 @@ export function ResultCard({
               </li>
             ))}
           </ul>
+        ) : null}
+
+        {showPlayButtons ? (
+          <ShadowingPlayer
+            text={displayText}
+            segments={result.segments}
+            region={voiceRegion}
+          />
         ) : null}
       </CardContent>
       <CardFooter className="flex flex-wrap gap-2">
