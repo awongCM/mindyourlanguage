@@ -79,7 +79,11 @@ export default function Home() {
 
   const isEnglishToChinese =
     direction.sourceLang === "en" && direction.targetLang === "zh";
-  const showPlayButtons = direction.targetLang === "zh";
+  const isChineseToEnglish =
+    direction.sourceLang === "zh" && direction.targetLang === "en";
+  const showPlayButtons =
+    direction.sourceLang === "zh" || direction.targetLang === "zh";
+  const resultLayout = isChineseToEnglish ? "chinese-source" : "chinese-target";
 
   const currentPhrasebookCandidate = result
     ? {
@@ -313,6 +317,8 @@ export default function Home() {
           <ResultCard
             result={result}
             characterSet={characterSet}
+            layout={resultLayout}
+            sourceText={sourceText}
             showPlayButtons={showPlayButtons}
             voiceRegion={voiceRegion}
             isSaved={isSaved}

@@ -81,6 +81,30 @@ function delay(ms: number): Promise<void> {
   });
 }
 
+export const NORMAL_SPEECH_RATE = 1;
+export const SLOW_SPEECH_RATE = 0.55;
+export const SLOW_SEGMENT_GAP_MS = 500;
+
+export function chunkTextForSlowPlayback(
+  text: string,
+  segments: string[] = [],
+): string[] {
+  const cleanedSegments = segments.map((part) => part.trim()).filter(Boolean);
+  if (cleanedSegments.length > 1) return cleanedSegments;
+
+  const clauseParts = text
+    .split(/(?<=[，。！？；：、,?!.])/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (clauseParts.length > 1) return clauseParts;
+
+  const chars = [...text].filter((char) => /\p{Script=Han}/u.test(char));
+  if (chars.length > 1) return chars;
+
+  const trimmed = text.trim();
+  return trimmed ? [trimmed] : [];
+}
+
 export async function speakChinese(
   text: string,
   region: VoiceRegion,
@@ -114,6 +138,22 @@ export async function speakChinese(
   });
 
   return { usedRegionFallback };
+}
+
+export async function speakChineseSlow(
+  text: string,
+  region: VoiceRegion,
+  segments: string[] = [],
+): Promise<SpeakChineseResult> {
+  const parts = chunkTextForSlowPlayback(text, segments);
+  if (parts.length === 0) return { usedRegionFallback: false };
+  if (parts.length === 1) {
+    return speakChinese(parts[0], region, { rate: SLOW_SPEECH_RATE });
+  }
+  return speakSegments(parts, region, {
+    rate: SLOW_SPEECH_RATE,
+    gapMs: SLOW_SEGMENT_GAP_MS,
+  });
 }
 
 export async function speakSegments(

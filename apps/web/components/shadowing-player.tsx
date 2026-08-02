@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   cancelSpeech,
   speakChinese,
+  speakChineseSlow,
   speakSegments,
 } from "@/lib/speech";
 import type { TranslationSegment, VoiceRegion } from "@mindyourlanguage/shared";
@@ -38,7 +39,7 @@ export function ShadowingPlayer({
     }
   }
 
-  const hasSegments = segments.some((segment) => segment.text.trim());
+  const segmentTexts = segments.map((segment) => segment.text);
 
   return (
     <div
@@ -60,7 +61,9 @@ export function ShadowingPlayer({
         variant="outline"
         size="sm"
         disabled={busy || !text.trim()}
-        onClick={() => run(() => speakChinese(text, region, { rate: 0.75 }))}
+        onClick={() =>
+          run(() => speakChineseSlow(text, region, segmentTexts))
+        }
       >
         Play slow
       </Button>
@@ -68,13 +71,10 @@ export function ShadowingPlayer({
         type="button"
         variant="outline"
         size="sm"
-        disabled={busy || !hasSegments}
+        disabled={busy || !segmentTexts.some((part) => part.trim())}
         onClick={() =>
           run(() =>
-            speakSegments(
-              segments.map((segment) => segment.text),
-              region,
-            ),
+            speakSegments(segmentTexts, region),
           )
         }
       >

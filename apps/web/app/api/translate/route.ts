@@ -51,8 +51,15 @@ export async function POST(req: NextRequest) {
       body.sourceLang,
       body.targetLang,
     )
-    const enrichment =
-      body.targetLang === 'zh' ? enrichChineseTranslation(text) : undefined
+    const chineseText =
+      body.targetLang === 'zh'
+        ? text
+        : body.sourceLang === 'zh'
+          ? body.text
+          : null
+    const enrichment = chineseText
+      ? enrichChineseTranslation(chineseText)
+      : undefined
     let nativeFields: {
       nativeAlternative?: string
       register?: string

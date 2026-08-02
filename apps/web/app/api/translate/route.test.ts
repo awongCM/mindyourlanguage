@@ -8,6 +8,7 @@ import {
   differsFromPrimary,
   shouldRequestNativeAlternative,
 } from '@/lib/native-alternative-shared'
+import { enrichChineseTranslation } from '@/lib/enrich-translation'
 
 vi.mock('@/lib/deepl', () => ({
   translateText: vi.fn().mockResolvedValue({
@@ -159,7 +160,36 @@ describe('POST /api/translate', () => {
     expect(body.nativeNote).toBeUndefined()
   })
 
+  it('returns source pinyin for Chinese to English input', async () => {
+    vi.mocked(translateText).mockResolvedValue({
+      text: 'Hello',
+      detectedLang: 'zh',
+    })
+
+    const req = translateRequest({
+      text: '你好',
+      sourceLang: 'zh',
+      targetLang: 'en',
+      characterSet: 'simplified',
+    })
+    const res = await POST(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.translation).toBe('Hello')
+    expect(enrichChineseTranslation).toHaveBeenCalledWith('你好')
+    expect(body.pinyin).toBe('nǐ hǎo')
+    expect(body.spokenPinyin).toBe('ní hǎo')
+    expect(body.segments).toHaveLength(2)
+    expect(body.dictionaryMatches).toHaveLength(1)
+  })
+
   it('does not fetch native alternative for Chinese to English input', async () => {
+    vi.mocked(translateText).mockResolvedValue({
+      text: 'Hello',
+      detectedLang: 'zh',
+    })
+
     const req = translateRequest({
       text: '你好',
       sourceLang: 'zh',
@@ -176,7 +206,7 @@ describe('POST /api/translate', () => {
         targetLang: 'en',
         includeNativeAlternative: true,
       }),
-      '你好',
+      'Hello',
     )
     expect(fetchNativeAlternative).not.toHaveBeenCalled()
   })
