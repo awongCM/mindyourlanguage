@@ -2,7 +2,7 @@
 
 A Mandarin fluency grounding tool for intermediate learners who want to translate and calibrate their phrasing — so they sound natural, not just correct.
 
-**Status:** v2 Phases 0–4 shipped on `main`. Next: sync Blueprint on Render, Phase 5 (OAuth + cloud sync).
+**Status:** v2 Phases 0–4 shipped on `main`. Next: Phase 5 (production practice).
 
 ---
 
@@ -75,6 +75,8 @@ v2 is a greenfield rebuild documented in:
 - **Parent plan:** [`docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`](docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md)
 - **Phase 3 (approved, shipped):** [`docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md`](docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md)
 - **Phase 4 (approved, shipped):** [`docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md`](docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md) · [`docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`](docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md)
+- **Phase 5 (approved, next):** [`docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md`](docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md) · [`docs/superpowers/plans/2026-07-19-phase-5-production-practice.md`](docs/superpowers/plans/2026-07-19-phase-5-production-practice.md)
+- **Phase 6 (approved, after Phase 5):** [`docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md`](docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md) — OAuth, cloud sync, public launch
 
 ### v2 highlights
 
@@ -85,11 +87,11 @@ v2 is a greenfield rebuild documented in:
 | Dictionary | CC-CEDICT in SQLite |
 | Characters | 简体 / 繁體 toggle |
 | TTS | Browser Web Speech API — Mainland (`zh-CN`) and Taiwan (`zh-TW`) |
-| History / phrasebook | Local (`localStorage`) until Phase 5 cloud sync |
+| History / phrasebook | Local (`localStorage`) until Phase 6 cloud sync |
 | Audience | Intermediate → fluent learners |
 | Deploy | Render Web Service + PostgreSQL (Phase 4) |
 
-**Phases 0–4 are on `main`.** Next: sync Blueprint on Render, apply Postgres migration, Phase 5 (OAuth + cloud sync).
+**Phases 0–4 are on `main`.** Next: Phase 5 (production practice). Phase 6 (OAuth + cloud sync + public launch) follows after practice features ship.
 
 ### Run locally
 
@@ -111,7 +113,7 @@ cp apps/web/.env.example apps/web/.env.local
 npm run dev
 ```
 
-Postgres / `DATABASE_URL` is not required for local use until Phase 5 (auth + cloud sync). History and phrasebook use `localStorage`. TTS uses the browser Web Speech API (no server key).
+Postgres / `DATABASE_URL` is not required for local use until Phase 6 (auth + cloud sync). History and phrasebook use `localStorage`. TTS uses the browser Web Speech API (no server key).
 
 ### Local E2E
 

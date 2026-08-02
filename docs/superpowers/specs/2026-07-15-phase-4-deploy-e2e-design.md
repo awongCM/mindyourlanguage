@@ -25,10 +25,10 @@ Phase 4 ships a **deployable, smoke-tested** personal MVP on Render — without 
 | Source | Says about “Phase 4” | This exercise |
 |---|---|---|
 | Parent plan Tasks 12–13 | Render Blueprint + Playwright E2E | **In scope** |
-| Parent design “Private beta (Phase 4)” | Optional OAuth + Postgres per user | **Out of scope** — stays Phase 5 |
+| Parent design “Private beta (Phase 4)” | Optional OAuth + Postgres per user | **Out of scope** — stays Phase 6 |
 | Parent architecture diagram | `/api/speak` (Azure), `/api/history` Phase 4 | **Not built** — TTS is Web Speech; history stays localStorage |
 
-This exercise **implements parent-plan Phase 4** and **defers** parent-design “public readiness” OAuth/sync to Phase 5.
+This exercise **implements parent-plan Phase 4** and **defers** parent-design “public readiness” OAuth/sync to Phase 6.
 
 ### Why deploy before auth
 
@@ -47,7 +47,7 @@ The founder needs a URL for daily practice. Auth-ready Postgres already exists f
 
 ### Out of scope (deferred)
 
-- OAuth / NextAuth / login UI (plan Phase 5)
+- OAuth / NextAuth / login UI (plan Phase 6)
 - Cloud history / phrasebook sync / `GET|POST /api/history`
 - Google Cloud TTS / Azure TTS / `/api/speak`
 - Dual-engine compare
@@ -72,7 +72,7 @@ flowchart LR
   Build --> Cedict[import-cedict]
   Cedict --> Next[next build]
   Next --> Web[Web service :$PORT]
-  PG[(Postgres)] -.->|DATABASE_URL wired; unused by app until Phase 5| Web
+  PG[(Postgres)] -.->|DATABASE_URL wired; unused by app until Phase 6| Web
   Secrets[DeepL + optional OpenAI] --> Web
   E2E[Playwright] -->|pre-merge / local| Repo
 ```
@@ -117,7 +117,7 @@ Rationale:
 | `DEEPL_API_KEY` | Yes | Dashboard `sync: false` | Primary translate |
 | `OPENAI_API_KEY` | No | Dashboard `sync: false` | Native alternative; omit → feature skips gracefully |
 | `NATIVE_ALT_MODEL` | No | Optional default `gpt-4o-mini` | Already supported |
-| `DATABASE_URL` | Yes (Blueprint) | `fromDatabase` | Wire now; unused by translate path until Phase 5 |
+| `DATABASE_URL` | Yes (Blueprint) | `fromDatabase` | Wire now; unused by translate path until Phase 6 |
 | `CEDICT_DB_PATH` | No | Optional | Default resolver finds `data/cedict.db` from repo root / web cwd |
 | `RATE_LIMIT_PER_MIN` | No | Default `20` | Keep for abuse guard |
 | Azure / Google TTS keys | **Not used** | — | Removed from Phase 4 Blueprint; Web Speech is client-side |
@@ -280,8 +280,8 @@ Protect the personal MVP loop without requiring live DeepL/OpenAI in default CI 
 | File | Why |
 |---|---|
 | `apps/web/app/api/speak/route.ts` | Deferred; Web Speech remains client-only |
-| `apps/web/app/api/history/route.ts` | Deferred to Phase 5 cloud sync |
-| Auth routes / NextAuth | Phase 5 |
+| `apps/web/app/api/history/route.ts` | Deferred to Phase 6 cloud sync |
+| Auth routes / NextAuth | Phase 6 |
 
 ---
 
@@ -291,7 +291,7 @@ Protect the personal MVP loop without requiring live DeepL/OpenAI in default CI 
 |---|---|
 | Phase 4 Task 12 (Render Blueprint + `.env.example`) | **PR 4a** — rewrite env list without Azure; add health + CEDICT build |
 | Phase 4 Task 13 (Playwright E2E) | **PR 4b** — expand beyond two smoke tests; default mocked |
-| Parent design Phase 4 OAuth / private beta | **Deferred to Phase 5** |
+| Parent design Phase 4 OAuth / private beta | **Deferred to Phase 6** |
 | Azure TTS keys in Task 12 sample YAML | **Dropped** — obsolete after Phase 3 |
 
 ---
@@ -315,7 +315,7 @@ Protect the personal MVP loop without requiring live DeepL/OpenAI in default CI 
 | Decision | Choice | Date |
 |---|---|---|
 | Phase 4 = Deploy + E2E only | Yes | 2026-07-15 |
-| OAuth deferred to Phase 5 | Yes | 2026-07-15 |
+| OAuth deferred to Phase 6 | Yes | 2026-07-15 |
 | CEDICT via build-time import | Yes | 2026-07-15 |
 | Postgres provisioned but unused by app | Yes | 2026-07-15 |
 | Default E2E mocked (no keys) | Yes | 2026-07-15 |

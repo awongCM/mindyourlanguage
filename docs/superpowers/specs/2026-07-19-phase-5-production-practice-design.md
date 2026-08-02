@@ -1,11 +1,11 @@
-# Phase 6 — Production Practice
+# Phase 5 — Production Practice
 
 **Date:** 2026-07-19  
 **Status:** Approved  
 **Author:** awongCM + Cursor Agent  
 **Parent spec:** `docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`  
-**Depends on:** Phases 0–4 shipped; Phase 5 (OAuth/sync) optional — Phase 6 is client-first  
-**Implementation plan:** `docs/superpowers/plans/2026-07-19-phase-6-production-practice.md`
+**Depends on:** Phases 0–4 shipped; Phase 6 (OAuth/sync) optional — Phase 5 is client-first  
+**Implementation plan:** `docs/superpowers/plans/2026-07-19-phase-5-production-practice.md`
 
 ---
 
@@ -13,26 +13,26 @@
 
 Phases 0–4 delivered translate → ground → native alternative → hear → save. That loop is **receptive**: the app tells the user what to say. The founder's blocker is **productive fluency** — composing Mandarin sentences under speaking pressure, with tone confidence, without reaching for Google Translate.
 
-Phase 6 closes the production loop:
+Phase 5 closes the production loop:
 
 > English thought → **try to say/write it yourself** → compare → **drill from phrasebook** → **shadow pronunciation** → **retain with spaced recall**
 
 ### Problem statement
 
-| Symptom | Root cause | Phase 6 answer |
+| Symptom | Root cause | Phase 5 answer |
 |---|---|---|
 | Know ~3500 characters but can't speak fluidly | Recognition ≠ production | Try-first + check attempt |
 | Wrong tones confuse listeners | Tones learned in isolation, not in sentences | Sandhi-aware pinyin + shadowing |
 | Forgets phrases between sessions | No active recall on personal sentences | Phrasebook drill + lightweight SRS |
 | Over-reliance on instant translation | No practice gate before reveal | Production-first translate mode |
 
-### Relationship to Phase 5
+### Relationship to Phase 6
 
-Phase 5 adds OAuth, cloud sync, and STT **input**. Phase 6 ships **before** Phase 5:
+Phase 6 adds OAuth, cloud sync, STT **input**, and public-launch readiness. Phase 5 ships **before** Phase 6:
 
-- All Phase 6 MVP data stays in `localStorage` (extends existing phrasebook store).
-- STT for "speak your attempt" is a **Phase 6 enhancement** if Phase 5 STT lands first; MVP uses typed Chinese attempt.
-- Cloud sync of SRS progress waits for Phase 5 Postgres wiring.
+- All Phase 5 MVP data stays in `localStorage` (extends existing phrasebook store).
+- STT for "speak your attempt" is a **Phase 5 enhancement** if Phase 6 STT lands first; MVP uses typed Chinese attempt.
+- Cloud sync of SRS progress waits for Phase 6 Postgres wiring.
 
 ---
 
@@ -42,12 +42,12 @@ Phase 5 adds OAuth, cloud sync, and STT **input**. Phase 6 ships **before** Phas
 
 | PR | Feature | Delivers |
 |---|---|---|
-| **6a — Try first** | Production-first translate mode | User composes ZH attempt before reveal; side-by-side compare after translate |
-| **6b — Check attempt** | `POST /api/practice/check` | LLM feedback on user's sentence vs model + native alternative (optional `OPENAI_API_KEY`) |
-| **6c — Phrasebook drill** | `/practice` page | EN prompt → recall ZH → reveal → TTS; self-grade |
-| **6d — Shadowing player** | Client shadowing controls | Slow/normal speed, segment loop, repeat-after-me using existing TTS |
-| **6e — Tone sandhi pinyin** | Sandhi-aware display | Spoken pinyin alongside dictionary pinyin on results + practice views |
-| **6f — Phrasebook SRS** | Lightweight spaced repetition | SM-2-lite scheduling on saved phrases; "Due today" queue in drill |
+| **5a — Try first** | Production-first translate mode | User composes ZH attempt before reveal; side-by-side compare after translate |
+| **5b — Check attempt** | `POST /api/practice/check` | LLM feedback on user's sentence vs model + native alternative (optional `OPENAI_API_KEY`) |
+| **5c — Phrasebook drill** | `/practice` page | EN prompt → recall ZH → reveal → TTS; self-grade |
+| **5d — Shadowing player** | Client shadowing controls | Slow/normal speed, segment loop, repeat-after-me using existing TTS |
+| **5e — Tone sandhi pinyin** | Sandhi-aware display | Spoken pinyin alongside dictionary pinyin on results + practice views |
+| **5f — Phrasebook SRS** | Lightweight spaced repetition | SM-2-lite scheduling on saved phrases; "Due today" queue in drill |
 
 ### Out of scope (deferred)
 
@@ -55,9 +55,9 @@ Phase 5 adds OAuth, cloud sync, and STT **input**. Phase 6 ships **before** Phas
 - Full spaced-repetition app (Anki replacement) — SRS limited to phrasebook entries
 - Cantonese / other dialects
 - Monetization
-- Postgres persistence of drill stats until Phase 5 cloud sync
+- Postgres persistence of drill stats until Phase 6 cloud sync
 
-### Pipeline after Phase 6
+### Pipeline after Phase 5
 
 ```
 EN source text
@@ -73,7 +73,7 @@ EN source text
 
 ---
 
-## 3. PR 6a — Try first mode
+## 3. PR 5a — Try first mode
 
 - Toggle on main page (EN→ZH only): **"Try first"** (default off; persist in `localStorage` key `myl-try-first`).
 - Additional textarea: "Your Mandarin attempt (optional)" before translate.
@@ -81,31 +81,31 @@ EN source text
 
 ---
 
-## 4. PR 6b — Check my attempt
+## 4. PR 5b — Check my attempt
 
 `POST /api/practice/check` — LLM compares user attempt vs primary + native alternative. Requires `OPENAI_API_KEY`; button hidden when absent.
 
 ---
 
-## 5. PR 6c — Phrasebook drill
+## 5. PR 5c — Phrasebook drill
 
 `/practice` page with drill modes: Due today, All saved, Tagged filter. Flashcard flow: EN → reveal ZH → self-grade.
 
 ---
 
-## 6. PR 6d — Shadowing player
+## 6. PR 5d — Shadowing player
 
 Reusable component with Play full, Play slow (rate 0.75), Play segments. Used in result card, comparison, and drill views.
 
 ---
 
-## 7. PR 6e — Tone sandhi pinyin
+## 7. PR 5e — Tone sandhi pinyin
 
 Rule-based sandhi for 不, 一, third-tone sequences. Display **Syllable pinyin** and **Spoken pinyin (sandhi)**.
 
 ---
 
-## 8. PR 6f — Phrasebook SRS
+## 8. PR 5f — Phrasebook SRS
 
 `PracticeStats` on `PhrasebookEntry`. SM-2-lite scheduling via self-grade (Again / Hard / Good / Easy). Due queue on `/practice`.
 

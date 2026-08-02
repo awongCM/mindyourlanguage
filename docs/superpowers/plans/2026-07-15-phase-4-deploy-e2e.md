@@ -4,7 +4,7 @@
 
 **Goal:** Ship Phase 4 for personal MVP — deploy Mind Your Language to Render via Blueprint (with CEDICT build import + health checks) and add a mocked Playwright E2E suite that needs no paid API keys by default.
 
-**Architecture:** Root `render.yaml` defines a Node web service + Postgres. Build runs `npm ci && npm run import-cedict && npm run build`; start binds `0.0.0.0:$PORT`. `GET /api/health` gates readiness on CEDICT + DeepL config. Playwright Chromium specs mock `/api/translate` for CI-stable coverage of translate UI, toggles, history, phrasebook, and play controls. OAuth and cloud sync stay Phase 5.
+**Architecture:** Root `render.yaml` defines a Node web service + Postgres. Build runs `npm ci && npm run import-cedict && npm run build`; start binds `0.0.0.0:$PORT`. `GET /api/health` gates readiness on CEDICT + DeepL config. Playwright Chromium specs mock `/api/translate` for CI-stable coverage of translate UI, toggles, history, phrasebook, and play controls. OAuth and cloud sync stay Phase 6.
 
 **Tech Stack:** Render Blueprints, Next.js 16 App Router, better-sqlite3 (CEDICT), Vitest, Playwright.
 
