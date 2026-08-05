@@ -13,7 +13,7 @@ import {
 import type { Lang, TranslateRequest, VoiceRegion } from '@mindyourlanguage/shared'
 import { randomUUID } from 'crypto'
 
-const MAX_CHARS = 500
+const MAX_CHARS = 1000
 const VALID_LANGS: Lang[] = ['en', 'zh']
 
 export async function POST(req: NextRequest) {
@@ -51,8 +51,15 @@ export async function POST(req: NextRequest) {
       body.sourceLang,
       body.targetLang,
     )
-    const enrichment =
-      body.targetLang === 'zh' ? enrichChineseTranslation(text) : undefined
+    const chineseText =
+      body.targetLang === 'zh'
+        ? text
+        : body.sourceLang === 'zh'
+          ? body.text
+          : null
+    const enrichment = chineseText
+      ? enrichChineseTranslation(chineseText)
+      : undefined
     let nativeFields: {
       nativeAlternative?: string
       register?: string
@@ -96,7 +103,11 @@ export async function POST(req: NextRequest) {
       segments: enrichment?.segments ?? [],
       dictionaryMatches: enrichment?.dictionaryMatches ?? [],
       ...(enrichment
-        ? { pinyin: enrichment.pinyin, traditional: enrichment.traditional }
+        ? {
+            pinyin: enrichment.pinyin,
+            spokenPinyin: enrichment.spokenPinyin,
+            traditional: enrichment.traditional,
+          }
         : {}),
       ...nativeFields,
     })

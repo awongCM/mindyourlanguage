@@ -2,6 +2,16 @@ export type Lang = 'en' | 'zh'
 export type CharacterSet = 'simplified' | 'traditional'
 export type VoiceRegion = 'zh-CN' | 'zh-TW'
 export type Register = 'formal' | 'casual' | 'neutral'
+export type ReviewGrade = 'again' | 'hard' | 'good' | 'easy'
+export type CheckAttemptVerdict = 'close' | 'partial' | 'off'
+
+export interface PracticeStats {
+  easeFactor: number
+  intervalDays: number
+  repetitions: number
+  nextReviewAt: string
+  lastReviewedAt?: string
+}
 
 export interface DictionaryEntry {
   simplified: string
@@ -51,6 +61,7 @@ export interface PhrasebookEntry {
   tags: string[]
   notes: string
   createdAt: string
+  practiceStats?: PracticeStats
 }
 
 export interface TranslateRequest {
@@ -67,10 +78,25 @@ export interface TranslateResponse {
   translation: string
   traditional?: string
   pinyin?: string
+  spokenPinyin?: string
   detectedLang: Lang
   segments: TranslationSegment[]
   dictionaryMatches: DictionaryEntry[]
   nativeAlternative?: string
   register?: Register
   nativeNote?: string
+}
+
+export interface CheckAttemptRequest {
+  sourceText: string
+  userAttempt: string
+  primaryTranslation: string
+  nativeAlternative?: string
+}
+
+export interface CheckAttemptResponse {
+  verdict: CheckAttemptVerdict
+  feedback: string
+  corrections?: string[]
+  betterPhrasing?: string
 }

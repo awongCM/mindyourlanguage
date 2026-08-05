@@ -4,6 +4,8 @@ export interface SpeakChineseResult {
   usedRegionFallback: boolean;
 }
 
+let activeSpeechGeneration = 0;
+
 export function isSpeechSynthesisSupported(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -12,9 +14,14 @@ export function isSpeechSynthesisSupported(): boolean {
 }
 
 export function cancelSpeech() {
+  activeSpeechGeneration += 1;
   if (isSpeechSynthesisSupported()) {
     window.speechSynthesis.cancel();
   }
+}
+
+function isSpeechCancelled(generation: number): boolean {
+  return generation !== activeSpeechGeneration;
 }
 
 function langCandidates(region: VoiceRegion): string[] {
@@ -81,33 +88,155 @@ function delay(ms: number): Promise<void> {
   });
 }
 
-export async function speakChinese(
+async function interruptibleDelay(
+  ms: number,
+  generation: number,
+): Promise<void> {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (isSpeechCancelled(generation)) return;
+    await delay(Math.min(50, end - Date.now()));
+  }
+}
+
+export const NORMAL_SPEECH_RATE = 1;
+export const SLOW_SPEECH_RATE = 0.55;
+export const SLOW_SEGMENT_GAP_MS = 500;
+
+export function chunkTextForSlowPlayback(
+  text: string,
+  segments: string[] = [],
+): string[] {
+  const cleanedSegments = segments.map((part) => part.trim()).filter(Boolean);
+  if (cleanedSegments.length > 1) return cleanedSegments;
+
+  const clauseParts = text
+    .split(/(?<=[，。！？；：、,?!.])/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (clauseParts.length > 1) return clauseParts;
+
+  const chars = [...text].filter((char) => /\p{Script=Han}/u.test(char));
+  if (chars.length > 1) return chars;
+
+  const trimmed = text.trim();
+  return trimmed ? [trimmed] : [];
+}
+
+async function speakUtterance(
   text: string,
   region: VoiceRegion,
+  generation: number,
+  options: { rate?: number } = {},
 ): Promise<SpeakChineseResult> {
   const trimmed = text.trim();
-  if (!trimmed) return { usedRegionFallback: false };
+  if (!trimmed || isSpeechCancelled(generation)) {
+    return { usedRegionFallback: false };
+  }
 
   if (!isSpeechSynthesisSupported()) {
     throw new Error("Audio unavailable");
   }
 
-  cancelSpeech();
-  // Chrome often ignores speak() immediately after cancel() in the same tick.
-  await delay(0);
-
   const voices = await waitForVoices();
+  if (isSpeechCancelled(generation)) {
+    return { usedRegionFallback: false };
+  }
+
   const voice = pickVoice(voices, region);
   const usedRegionFallback = voice ? !voiceMatchesRegion(voice, region) : false;
   const utterance = new SpeechSynthesisUtterance(trimmed);
   utterance.lang = region;
   if (voice) utterance.voice = voice;
+  if (typeof options.rate === "number") {
+    utterance.rate = options.rate;
+  }
 
   await new Promise<void>((resolve, reject) => {
-    utterance.onend = () => resolve();
-    utterance.onerror = () => reject(new Error("Audio unavailable"));
+    utterance.onend = () => {
+      if (isSpeechCancelled(generation)) {
+        resolve();
+        return;
+      }
+      resolve();
+    };
+    utterance.onerror = (event) => {
+      if (
+        isSpeechCancelled(generation) ||
+        event.error === "interrupted" ||
+        event.error === "canceled"
+      ) {
+        resolve();
+        return;
+      }
+      reject(new Error("Audio unavailable"));
+    };
     window.speechSynthesis.speak(utterance);
   });
+
+  return { usedRegionFallback };
+}
+
+export async function speakChinese(
+  text: string,
+  region: VoiceRegion,
+  options: { rate?: number } = {},
+): Promise<SpeakChineseResult> {
+  if (!isSpeechSynthesisSupported()) {
+    throw new Error("Audio unavailable");
+  }
+  cancelSpeech();
+  await delay(0);
+  const generation = activeSpeechGeneration;
+  return speakUtterance(text, region, generation, options);
+}
+
+export async function speakChineseSlow(
+  text: string,
+  region: VoiceRegion,
+  segments: string[] = [],
+): Promise<SpeakChineseResult> {
+  const parts = chunkTextForSlowPlayback(text, segments);
+  if (parts.length === 0) return { usedRegionFallback: false };
+  if (parts.length === 1) {
+    return speakChinese(parts[0], region, { rate: SLOW_SPEECH_RATE });
+  }
+  return speakSegments(parts, region, {
+    rate: SLOW_SPEECH_RATE,
+    gapMs: SLOW_SEGMENT_GAP_MS,
+  });
+}
+
+export async function speakSegments(
+  segments: string[],
+  region: VoiceRegion,
+  options: { rate?: number; gapMs?: number } = {},
+): Promise<SpeakChineseResult> {
+  const parts = segments.map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return { usedRegionFallback: false };
+
+  if (!isSpeechSynthesisSupported()) {
+    throw new Error("Audio unavailable");
+  }
+  cancelSpeech();
+  await delay(0);
+  const generation = activeSpeechGeneration;
+
+  let usedRegionFallback = false;
+  for (let i = 0; i < parts.length; i += 1) {
+    if (isSpeechCancelled(generation)) {
+      return { usedRegionFallback };
+    }
+
+    const result = await speakUtterance(parts[i], region, generation, {
+      rate: options.rate,
+    });
+    usedRegionFallback = usedRegionFallback || result.usedRegionFallback;
+
+    if (i < parts.length - 1) {
+      await interruptibleDelay(options.gapMs ?? 350, generation);
+    }
+  }
 
   return { usedRegionFallback };
 }

@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  cancelSpeech,
+  chunkTextForSlowPlayback,
   isSpeechSynthesisSupported,
   pickVoice,
   speakChinese,
+  speakChineseSlow,
+  SLOW_SPEECH_RATE,
+  speakSegments,
   voiceMatchesRegion,
 } from "./speech";
 
@@ -89,6 +94,7 @@ describe("speakChinese", () => {
       text: string;
       lang = "";
       voice: SpeechSynthesisVoice | null = null;
+      rate = 1;
       onend: ((event: SpeechSynthesisEvent) => void) | null = null;
       onerror: ((event: SpeechSynthesisErrorEvent) => void) | null = null;
 
@@ -131,8 +137,137 @@ describe("speakChinese", () => {
     await expect(promise).resolves.toEqual({ usedRegionFallback: true });
   });
 
+  it("applies custom rate when provided", async () => {
+    const promise = speakChinese("你好", "zh-CN", { rate: SLOW_SPEECH_RATE });
+    await vi.runAllTimersAsync();
+
+    const utterance = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[0]?.[0] as SpeechSynthesisUtterance & { rate?: number };
+    expect(utterance.rate).toBe(SLOW_SPEECH_RATE);
+    utterance.onend?.(new Event("end") as SpeechSynthesisEvent);
+    await expect(promise).resolves.toEqual({ usedRegionFallback: false });
+  });
+
   it("rejects when unsupported", async () => {
     vi.stubGlobal("window", {});
     await expect(speakChinese("你好", "zh-CN")).rejects.toThrow(/unavailable/i);
+  });
+});
+
+describe("chunkTextForSlowPlayback", () => {
+  it("prefers provided segments", () => {
+    expect(chunkTextForSlowPlayback("你好世界", ["你好", "世界"])).toEqual([
+      "你好",
+      "世界",
+    ]);
+  });
+
+  it("falls back to punctuation clauses then characters", () => {
+    expect(chunkTextForSlowPlayback("你好，世界")).toEqual(["你好，", "世界"]);
+    expect(chunkTextForSlowPlayback("你好世界")).toEqual(["你", "好", "世", "界"]);
+  });
+});
+
+describe("speakChineseSlow", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    stubSpeechSynthesis([mockVoice("zh-CN", "CN")]);
+    class MockUtterance {
+      text: string;
+      lang = "";
+      voice: SpeechSynthesisVoice | null = null;
+      rate = 1;
+      onend: ((event: SpeechSynthesisEvent) => void) | null = null;
+      onerror: ((event: SpeechSynthesisErrorEvent) => void) | null = null;
+
+      constructor(text: string) {
+        this.text = text;
+      }
+    }
+    vi.stubGlobal("SpeechSynthesisUtterance", MockUtterance);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("chunks multi-segment text with slow rate and pauses", async () => {
+    const promise = speakChineseSlow("你好世界", "zh-CN", ["你好", "世界"]);
+    await vi.runAllTimersAsync();
+
+    const first = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[0]?.[0] as SpeechSynthesisUtterance & { rate?: number };
+    expect(first.text).toBe("你好");
+    expect(first.rate).toBe(SLOW_SPEECH_RATE);
+    first.onend?.(new Event("end") as SpeechSynthesisEvent);
+    await vi.runAllTimersAsync();
+
+    const second = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[1]?.[0] as SpeechSynthesisUtterance & { rate?: number };
+    expect(second.text).toBe("世界");
+    expect(second.rate).toBe(SLOW_SPEECH_RATE);
+    second.onend?.(new Event("end") as SpeechSynthesisEvent);
+
+    await expect(promise).resolves.toEqual({ usedRegionFallback: false });
+  });
+});
+
+describe("speakSegments", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    stubSpeechSynthesis([mockVoice("zh-CN", "CN")]);
+    class MockUtterance {
+      text: string;
+      lang = "";
+      voice: SpeechSynthesisVoice | null = null;
+      rate = 1;
+      onend: ((event: SpeechSynthesisEvent) => void) | null = null;
+      onerror: ((event: SpeechSynthesisErrorEvent) => void) | null = null;
+
+      constructor(text: string) {
+        this.text = text;
+      }
+    }
+    vi.stubGlobal("SpeechSynthesisUtterance", MockUtterance);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("speaks each segment in order", async () => {
+    const promise = speakSegments(["你", "好"], "zh-CN", { gapMs: 0 });
+
+    await vi.runAllTimersAsync();
+    const first = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[0]?.[0] as SpeechSynthesisUtterance;
+    first.onend?.(new Event("end") as SpeechSynthesisEvent);
+    await vi.runAllTimersAsync();
+    const second = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[1]?.[0] as SpeechSynthesisUtterance;
+    second.onend?.(new Event("end") as SpeechSynthesisEvent);
+
+    await expect(promise).resolves.toEqual({ usedRegionFallback: false });
+    expect(first.text).toBe("你");
+    expect(second.text).toBe("好");
+  });
+
+  it("stops segment playback when cancelled", async () => {
+    const promise = speakSegments(["你", "好", "世", "界"], "zh-CN", {
+      gapMs: 1000,
+    });
+
+    await vi.runAllTimersAsync();
+    const first = vi.mocked(window.speechSynthesis.speak).mock
+      .calls[0]?.[0] as SpeechSynthesisUtterance;
+    first.onend?.(new Event("end") as SpeechSynthesisEvent);
+
+    cancelSpeech();
+    await vi.runAllTimersAsync();
+
+    await expect(promise).resolves.toEqual({ usedRegionFallback: false });
+    expect(window.speechSynthesis.speak).toHaveBeenCalledTimes(1);
   });
 });

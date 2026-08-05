@@ -41,61 +41,61 @@
 
 ## Task 1: Shared types + SRS
 
-- [ ] Add `ReviewGrade`, `PracticeStats`, `CheckAttemptRequest/Response` to `packages/shared/src/types.ts`
-- [ ] Add `spokenPinyin?: string` to `TranslateResponse`
-- [ ] Create `apps/web/lib/practice/srs.ts` with `createInitialPracticeStats`, `recordReview`, `getDueEntries`, `isDue`
-- [ ] Add `srs.test.ts`
+- [x] Add `ReviewGrade`, `PracticeStats`, `CheckAttemptRequest/Response` to `packages/shared/src/types.ts`
+- [x] Add `spokenPinyin?: string` to `TranslateResponse`
+- [x] Create `apps/web/lib/practice/srs.ts` with `createInitialPracticeStats`, `recordReview`, `getDueEntries`, `isDue`
+- [x] Add `srs.test.ts`
 
 ---
 
 ## Task 2: Sandhi pinyin
 
-- [ ] Create `pinyin-sandhi.ts` with `toSpokenPinyin(text)`
-- [ ] Integrate into `enrich-translation.ts`
-- [ ] Update `result-card.tsx` to show syllable + spoken pinyin
-- [ ] Add tests
+- [x] Create `pinyin-sandhi.ts` with `toSpokenPinyin(text)`
+- [x] Integrate into `enrich-translation.ts`
+- [x] Update `result-card.tsx` to show syllable + spoken pinyin
+- [x] Add tests
 
 ---
 
 ## Task 3: Try first + comparison
 
-- [ ] Create `try-first-panel.tsx` with localStorage persist
-- [ ] Create `comparison-panel.tsx`
-- [ ] Wire `page.tsx` state: `userAttempt`, `tryFirstEnabled`
+- [x] Create `try-first-panel.tsx` with localStorage persist
+- [x] Create `comparison-panel.tsx`
+- [x] Wire `page.tsx` state: `userAttempt`, `tryFirstEnabled`
 
 ---
 
 ## Task 4: Check attempt API
 
-- [ ] Create `check-attempt.ts` + route
-- [ ] Wire button in `comparison-panel.tsx`
-- [ ] Add route test
+- [x] Create `check-attempt.ts` + route
+- [x] Wire button in `comparison-panel.tsx`
+- [x] Add route test
 
 ---
 
 ## Task 5: Shadowing
 
-- [ ] Extend `speakChinese(text, region, { rate })`
-- [ ] Add `speakSegments(segments, region, options)`
-- [ ] Create `shadowing-player.tsx`
-- [ ] Add to result-card and comparison panel
+- [x] Extend `speakChinese(text, region, { rate })`
+- [x] Add `speakSegments(segments, region, options)`
+- [x] Create `shadowing-player.tsx`
+- [x] Add to result-card and comparison panel
 
 ---
 
 ## Task 6: Practice page + phrasebook SRS
 
-- [ ] Extend phrasebook store with `recordReview`, `getDueCount`
-- [ ] Create `practice-drill-card.tsx`
-- [ ] Create `app/practice/page.tsx`
-- [ ] Add Practice header link on main page + practice page
+- [x] Extend phrasebook store with `recordReview`, `getDueCount`
+- [x] Create `practice-drill-card.tsx`
+- [x] Create `app/practice/page.tsx`
+- [x] Add Practice header link on main page + practice page
 
 ---
 
 ## Task 7: E2E + README
 
-- [ ] Add `e2e/practice.spec.ts`
-- [ ] Update README Phase 5 section
-- [ ] Run vitest + e2e
+- [x] Add `e2e/practice.spec.ts`
+- [x] Update README Phase 5 section
+- [x] Run vitest + e2e
 
 ---
 

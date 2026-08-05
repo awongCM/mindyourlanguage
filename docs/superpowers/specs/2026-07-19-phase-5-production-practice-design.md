@@ -113,13 +113,13 @@ Rule-based sandhi for 不, 一, third-tone sequences. Display **Syllable pinyin*
 
 ## 9. Success criteria
 
-- [ ] EN→ZH with Try first: user can write attempt, translate, see three-way compare
-- [ ] Check attempt returns actionable feedback when `OPENAI_API_KEY` set
-- [ ] `/practice` drills phrasebook with hide/reveal + self-grade
-- [ ] Shadowing plays full, slow, and per-segment
-- [ ] Spoken pinyin differs from syllable pinyin on sandhi examples
-- [ ] SRS schedules reviews; "Due today" queue works after grading
-- [ ] No regression to Phases 0–4 translate/TTS/phrasebook flows
+- [x] EN→ZH with Try first: user can write attempt, translate, see three-way compare
+- [x] Check attempt returns actionable feedback when `OPENAI_API_KEY` set
+- [x] `/practice` drills phrasebook with hide/reveal + self-grade
+- [x] Shadowing plays full, slow, and per-segment
+- [x] Spoken pinyin differs from syllable pinyin on sandhi examples
+- [x] SRS schedules reviews; "Due today" queue works after grading
+- [x] No regression to Phases 0–4 translate/TTS/phrasebook flows
 
 ---
 

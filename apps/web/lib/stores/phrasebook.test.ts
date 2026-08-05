@@ -67,6 +67,22 @@ describe("phrasebook helpers", () => {
     expect(filterPhrasebookByTag(items, "gree")).toHaveLength(1);
     expect(filterPhrasebookByTag(items, "")).toHaveLength(2);
   });
+
+  it("initializes practice stats on create", () => {
+    const entry = createPhrasebookEntry({
+      translationId: "abc",
+      sourceText: "Hello",
+      sourceLang: "en",
+      targetLang: "zh",
+      translation: "你好",
+      characterSet: "simplified",
+      dictionaryMatches: [],
+      segments: [],
+    });
+
+    expect(entry.practiceStats?.easeFactor).toBe(2.5);
+    expect(entry.practiceStats?.repetitions).toBe(0);
+  });
 });
 
 describe("usePhrasebookStore", () => {
@@ -104,5 +120,41 @@ describe("usePhrasebookStore", () => {
     const saved = usePhrasebookStore.getState().items[0];
     usePhrasebookStore.getState().remove(saved.id);
     expect(usePhrasebookStore.getState().items).toHaveLength(0);
+  });
+
+  it("records reviews and updates due count", () => {
+    usePhrasebookStore.setState({ items: [] });
+    const now = new Date("2026-08-02T10:00:00.000Z");
+
+    const entry = createPhrasebookEntry({
+      translationId: "abc",
+      sourceText: "Hello",
+      sourceLang: "en",
+      targetLang: "zh",
+      translation: "你好",
+      characterSet: "simplified",
+      dictionaryMatches: [],
+      segments: [],
+      practiceStats: {
+        easeFactor: 2.5,
+        intervalDays: 0,
+        repetitions: 0,
+        nextReviewAt: now.toISOString(),
+      },
+    });
+
+    usePhrasebookStore.getState().add(entry);
+    expect(usePhrasebookStore.getState().getDueCount(now)).toBe(1);
+
+    usePhrasebookStore.getState().recordReview(entry.id, "good", now);
+    const updated = usePhrasebookStore.getState().items[0];
+    expect(updated.practiceStats?.repetitions).toBe(1);
+    expect(updated.practiceStats?.intervalDays).toBe(1);
+    expect(usePhrasebookStore.getState().getDueCount(now)).toBe(0);
+    expect(
+      usePhrasebookStore
+        .getState()
+        .getDueCount(new Date("2026-08-03T10:00:00.000Z")),
+    ).toBe(1);
   });
 });

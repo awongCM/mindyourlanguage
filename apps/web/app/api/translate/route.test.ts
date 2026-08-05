@@ -8,6 +8,7 @@ import {
   differsFromPrimary,
   shouldRequestNativeAlternative,
 } from '@/lib/native-alternative-shared'
+import { enrichChineseTranslation } from '@/lib/enrich-translation'
 
 vi.mock('@/lib/deepl', () => ({
   translateText: vi.fn().mockResolvedValue({
@@ -27,6 +28,7 @@ vi.mock('@/lib/rate-limit', async (importOriginal) => {
 vi.mock('@/lib/enrich-translation', () => ({
   enrichChineseTranslation: vi.fn().mockReturnValue({
     pinyin: 'nǐ hǎo',
+    spokenPinyin: 'ní hǎo',
     traditional: '你好',
     segments: [{ text: '你', pinyin: 'nǐ' }, { text: '好', pinyin: 'hǎo' }],
     dictionaryMatches: [
@@ -158,7 +160,36 @@ describe('POST /api/translate', () => {
     expect(body.nativeNote).toBeUndefined()
   })
 
+  it('returns source pinyin for Chinese to English input', async () => {
+    vi.mocked(translateText).mockResolvedValue({
+      text: 'Hello',
+      detectedLang: 'zh',
+    })
+
+    const req = translateRequest({
+      text: '你好',
+      sourceLang: 'zh',
+      targetLang: 'en',
+      characterSet: 'simplified',
+    })
+    const res = await POST(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.translation).toBe('Hello')
+    expect(enrichChineseTranslation).toHaveBeenCalledWith('你好')
+    expect(body.pinyin).toBe('nǐ hǎo')
+    expect(body.spokenPinyin).toBe('ní hǎo')
+    expect(body.segments).toHaveLength(2)
+    expect(body.dictionaryMatches).toHaveLength(1)
+  })
+
   it('does not fetch native alternative for Chinese to English input', async () => {
+    vi.mocked(translateText).mockResolvedValue({
+      text: 'Hello',
+      detectedLang: 'zh',
+    })
+
     const req = translateRequest({
       text: '你好',
       sourceLang: 'zh',
@@ -175,7 +206,7 @@ describe('POST /api/translate', () => {
         targetLang: 'en',
         includeNativeAlternative: true,
       }),
-      '你好',
+      'Hello',
     )
     expect(fetchNativeAlternative).not.toHaveBeenCalled()
   })
@@ -201,9 +232,9 @@ describe('POST /api/translate', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 400 when text exceeds 500 characters', async () => {
+  it('returns 400 when text exceeds 1000 characters', async () => {
     const req = translateRequest({
-      text: 'a'.repeat(501),
+      text: 'a'.repeat(1001),
       sourceLang: 'en',
       targetLang: 'zh',
       characterSet: 'simplified',

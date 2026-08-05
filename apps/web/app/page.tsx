@@ -1,18 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { HistoryDrawer } from "@/components/history-drawer";
+import { ComparisonPanel } from "@/components/comparison-panel";
 import { GroundingPanel } from "@/components/grounding-panel";
 import { NativeAlternativeCard } from "@/components/native-alternative-card";
 import { PhrasebookDrawer } from "@/components/phrasebook-drawer";
 import { ResultCard } from "@/components/result-card";
+import { TryFirstPanel } from "@/components/try-first-panel";
 import { Toggles } from "@/components/toggles";
 import {
   TranslatorForm,
   type TranslateDirection,
 } from "@/components/translator-form";
 import { Button } from "@/components/ui/button";
+import {
+  createInitialPracticeStats,
+} from "@/lib/practice/srs";
 import {
   createPhrasebookEntry,
   entryMatchesSaved,
@@ -23,6 +29,7 @@ import {
   toTranslationRecord,
   translationRecordToResponse,
 } from "@/lib/to-translation-record";
+import { cancelSpeech } from "@/lib/speech";
 import type {
   CharacterSet,
   PhrasebookEntry,
@@ -53,6 +60,8 @@ export default function Home() {
   const [voiceRegion, setVoiceRegion] = useState<VoiceRegion>("zh-CN");
   const [includeNativeAlternative, setIncludeNativeAlternative] =
     useState(true);
+  const [tryFirstEnabled, setTryFirstEnabled] = useState(false);
+  const [userAttempt, setUserAttempt] = useState("");
   const [direction, setDirection] = useState<TranslateDirection>({
     sourceLang: "en",
     targetLang: "zh",
@@ -71,7 +80,11 @@ export default function Home() {
 
   const isEnglishToChinese =
     direction.sourceLang === "en" && direction.targetLang === "zh";
-  const showPlayButtons = direction.targetLang === "zh";
+  const isChineseToEnglish =
+    direction.sourceLang === "zh" && direction.targetLang === "en";
+  const showPlayButtons =
+    direction.sourceLang === "zh" || direction.targetLang === "zh";
+  const resultLayout = isChineseToEnglish ? "chinese-source" : "chinese-target";
 
   const currentPhrasebookCandidate = result
     ? {
@@ -86,6 +99,11 @@ export default function Home() {
     phrasebookItems.some((item) =>
       entryMatchesSaved(item, currentPhrasebookCandidate),
     );
+
+  const submittedAttempt = useMemo(() => {
+    if (!isEnglishToChinese || !tryFirstEnabled) return "";
+    return userAttempt.trim();
+  }, [isEnglishToChinese, tryFirstEnabled, userAttempt]);
 
   function restoreRecord(record: TranslationRecord) {
     setDirection({
@@ -106,6 +124,14 @@ export default function Home() {
     setCharacterSet(entry.characterSet);
     setSourceText(entry.sourceText);
     setResult(phrasebookEntryToResponse(entry));
+    setError(null);
+  }
+
+  function handleClear() {
+    cancelSpeech();
+    setSourceText("");
+    setUserAttempt("");
+    setResult(null);
     setError(null);
   }
 
@@ -144,6 +170,7 @@ export default function Home() {
         nativeNote: result.nativeNote,
         dictionaryMatches: result.dictionaryMatches,
         segments: result.segments,
+        practiceStats: createInitialPracticeStats(),
       }),
     );
     toast.success("Saved to phrasebook");
@@ -227,6 +254,9 @@ export default function Home() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" asChild>
+            <Link href="/practice">Practice</Link>
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -257,23 +287,33 @@ export default function Home() {
         sourceText={sourceText}
         onSourceTextChange={setSourceText}
         onSubmit={handleTranslate}
+        onClear={handleClear}
         isLoading={isLoading}
         direction={direction}
         onDirectionChange={setDirection}
       />
 
       {isEnglishToChinese ? (
-        <label className="flex w-fit items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            checked={includeNativeAlternative}
-            onChange={(event) =>
-              setIncludeNativeAlternative(event.target.checked)
-            }
-            className="size-4 rounded border-foreground/20"
+        <>
+          <label className="flex w-fit items-center gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={includeNativeAlternative}
+              onChange={(event) =>
+                setIncludeNativeAlternative(event.target.checked)
+              }
+              className="size-4 rounded border-foreground/20"
+            />
+            Native alternative
+          </label>
+          <TryFirstPanel
+            enabled={tryFirstEnabled}
+            onEnabledChange={setTryFirstEnabled}
+            attempt={userAttempt}
+            onAttemptChange={setUserAttempt}
+            disabled={isLoading}
           />
-          Native alternative
-        </label>
+        </>
       ) : null}
 
       {error ? (
@@ -287,10 +327,21 @@ export default function Home() {
           <ResultCard
             result={result}
             characterSet={characterSet}
+            layout={resultLayout}
+            sourceText={sourceText}
             showPlayButtons={showPlayButtons}
+            voiceRegion={voiceRegion}
             isSaved={isSaved}
             onToggleSave={handleToggleSave}
           />
+          {submittedAttempt ? (
+            <ComparisonPanel
+              sourceText={sourceText}
+              userAttempt={submittedAttempt}
+              result={result}
+              voiceRegion={voiceRegion}
+            />
+          ) : null}
           {result.nativeAlternative && result.register ? (
             <NativeAlternativeCard
               alternative={result.nativeAlternative}

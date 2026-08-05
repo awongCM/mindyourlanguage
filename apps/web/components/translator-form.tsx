@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { Lang } from "@mindyourlanguage/shared";
 
-const MAX_CHARS = 500;
+const MAX_CHARS = 1000;
 
 export interface TranslateDirection {
   sourceLang: Lang;
@@ -17,6 +17,7 @@ interface TranslatorFormProps {
   sourceText: string;
   onSourceTextChange: (text: string) => void;
   onSubmit: (text: string) => void;
+  onClear: () => void;
   isLoading: boolean;
   direction: TranslateDirection;
   onDirectionChange: (direction: TranslateDirection) => void;
@@ -30,6 +31,7 @@ export function TranslatorForm({
   sourceText,
   onSourceTextChange,
   onSubmit,
+  onClear,
   isLoading,
   direction,
   onDirectionChange,
@@ -76,6 +78,11 @@ export function TranslatorForm({
         setValidationError(null);
       }
     }
+  }
+
+  function handleClear() {
+    setValidationError(null);
+    onClear();
   }
 
   const overLimit = charCount > MAX_CHARS;
@@ -130,16 +137,27 @@ export function TranslatorForm({
         </div>
       </div>
 
-      <Button type="submit" disabled={isLoading} className="self-start">
-        {isLoading ? (
-          <>
-            <Loader2 className="animate-spin" />
-            Translating…
-          </>
-        ) : (
-          "Translate"
-        )}
-      </Button>
+      <div className="flex flex-wrap gap-2 self-start">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin" />
+              Translating…
+            </>
+          ) : (
+            "Translate"
+          )}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isLoading}
+          onClick={handleClear}
+          data-testid="clear-translate"
+        >
+          Clear
+        </Button>
+      </div>
     </form>
   );
 }
