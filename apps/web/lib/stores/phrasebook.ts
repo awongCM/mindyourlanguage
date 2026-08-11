@@ -10,6 +10,7 @@ import {
   getDueEntries,
   recordReview as scheduleReview,
 } from "@/lib/practice/srs";
+import { useReviewEventsStore } from "./review-events";
 
 function createEntryId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -87,7 +88,10 @@ export const usePhrasebookStore = create<PhrasebookStore>()(
       clear: () => set({ items: [] }),
       isSaved: (entry) =>
         get().items.some((item) => entryMatchesSaved(item, entry)),
-      recordReview: (id, grade, now = new Date()) =>
+      recordReview: (id, grade, now = new Date()) => {
+        const exists = get().items.some((item) => item.id === id);
+        if (!exists) return;
+
         set((state) => ({
           items: state.items.map((item) => {
             if (item.id !== id) return item;
@@ -98,7 +102,15 @@ export const usePhrasebookStore = create<PhrasebookStore>()(
               practiceStats: scheduleReview(prior, grade, now),
             };
           }),
-        })),
+        }));
+
+        useReviewEventsStore.getState().append({
+          phraseId: id,
+          grade,
+          reviewedAt: now.toISOString(),
+          mode: "self_grade",
+        });
+      },
       getDueCount: (now = new Date()) => getDueEntries(get().items, now).length,
     }),
     { name: "myl-phrasebook" },

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   createPhrasebookEntry,
   entryMatchesSaved,
@@ -6,6 +6,7 @@ import {
   phrasebookEntryKey,
   usePhrasebookStore,
 } from "./phrasebook";
+import { useReviewEventsStore } from "./review-events";
 
 describe("phrasebook helpers", () => {
   it("dedupes by translation id when present", () => {
@@ -86,6 +87,11 @@ describe("phrasebook helpers", () => {
 });
 
 describe("usePhrasebookStore", () => {
+  beforeEach(() => {
+    usePhrasebookStore.setState({ items: [] });
+    useReviewEventsStore.setState({ events: [] });
+  });
+
   it("dedupes on add and supports remove", () => {
     usePhrasebookStore.setState({ items: [] });
 
@@ -156,5 +162,29 @@ describe("usePhrasebookStore", () => {
         .getState()
         .getDueCount(new Date("2026-08-03T10:00:00.000Z")),
     ).toBe(1);
+  });
+
+  it("appends a review event when grading", () => {
+    const entry = createPhrasebookEntry({
+      translationId: "abc",
+      sourceText: "Hello",
+      sourceLang: "en",
+      targetLang: "zh",
+      translation: "你好",
+      characterSet: "simplified",
+      dictionaryMatches: [],
+      segments: [],
+    });
+    const now = new Date("2026-08-06T12:00:00.000Z");
+    usePhrasebookStore.setState({ items: [entry] });
+
+    usePhrasebookStore.getState().recordReview(entry.id, "good", now);
+
+    const events = useReviewEventsStore.getState().events;
+    expect(events).toHaveLength(1);
+    expect(events[0]?.phraseId).toBe(entry.id);
+    expect(events[0]?.grade).toBe("good");
+    expect(events[0]?.mode).toBe("self_grade");
+    expect(events[0]?.reviewedAt).toBe("2026-08-06T12:00:00.000Z");
   });
 });
