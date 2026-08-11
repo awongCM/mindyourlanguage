@@ -6,20 +6,15 @@ import {
   type WeeklyReliabilityBucket,
 } from "@/lib/practice/reliability";
 import { useReviewEventsStore } from "@/lib/stores/review-events";
+import {
+  getSparklineSegments,
+  shouldShowEmptyNeedle,
+} from "./reliability-needle-helpers";
 
 function Sparkline({ weeks }: { weeks: WeeklyReliabilityBucket[] }) {
   const width = 160;
   const height = 28;
-  const points = weeks
-    .map((week, index) => {
-      const x = (index / Math.max(weeks.length - 1, 1)) * width;
-      const y =
-        week.percent == null
-          ? height - 2
-          : height - 2 - (week.percent / 100) * (height - 4);
-      return `${x},${y}`;
-    })
-    .join(" ");
+  const segments = getSparklineSegments(weeks, width, height);
 
   return (
     <svg
@@ -29,12 +24,24 @@ function Sparkline({ weeks }: { weeks: WeeklyReliabilityBucket[] }) {
       aria-hidden="true"
       className="text-foreground/70"
     >
-      <polyline
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        points={points}
-      />
+      {segments.map((segment, index) => (
+        <polyline
+          key={index}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          points={segment.map((point) => `${point.x},${point.y}`).join(" ")}
+        />
+      ))}
+      {segments.flat().map((point, index) => (
+        <circle
+          key={`point-${index}`}
+          cx={point.x}
+          cy={point.y}
+          r="1.5"
+          fill="currentColor"
+        />
+      ))}
     </svg>
   );
 }
@@ -44,7 +51,7 @@ export function ReliabilityNeedle() {
   const summary = useMemo(() => getReliabilitySummary(events), [events]);
   const { sevenDay, thirtyDay, weekly } = summary;
 
-  if (sevenDay.total === 0 && thirtyDay.total === 0) {
+  if (shouldShowEmptyNeedle(events)) {
     return (
       <section
         data-testid="reliability-needle"
