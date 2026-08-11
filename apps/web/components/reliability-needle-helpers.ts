@@ -1,5 +1,8 @@
 import type { ReviewEvent } from "@mindyourlanguage/shared";
-import type { WeeklyReliabilityBucket } from "@/lib/practice/reliability";
+import type {
+  ReliabilityWindow,
+  WeeklyReliabilityBucket,
+} from "@/lib/practice/reliability";
 
 export interface SparklinePoint {
   x: number;
@@ -8,6 +11,32 @@ export interface SparklinePoint {
 
 export function shouldShowEmptyNeedle(events: ReviewEvent[]): boolean {
   return events.length === 0;
+}
+
+export function getSevenDayHero(sevenDay: ReliabilityWindow): string {
+  if (sevenDay.total === 0) {
+    return "No reviews this week";
+  }
+  if (sevenDay.buildingSignal) {
+    return "Building signal…";
+  }
+  return `${sevenDay.percent}%`;
+}
+
+export function getSevenDaySubline(sevenDay: ReliabilityWindow): string {
+  if (sevenDay.total === 0) {
+    return "No reviews in the last 7 days";
+  }
+  return `${sevenDay.reliableCount} of ${sevenDay.total} reviews reliable · last 7 days`;
+}
+
+export function getReliabilityLiveSummary(
+  sevenDay: ReliabilityWindow,
+  thirtyDay: ReliabilityWindow,
+): string {
+  const thirty =
+    thirtyDay.percent == null ? "—" : `${thirtyDay.percent}%`;
+  return `7-day production reliability: ${getSevenDayHero(sevenDay)}. ${getSevenDaySubline(sevenDay)}. 30-day: ${thirty}. Based on self-grades.`;
 }
 
 export function getSparklineSegments(

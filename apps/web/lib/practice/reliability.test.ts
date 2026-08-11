@@ -96,7 +96,7 @@ describe("getReliabilitySummary", () => {
 });
 
 describe("getWeeklyReliability", () => {
-  it("returns last 8 ISO weeks newest-last or oldest-first consistently", () => {
+  it("returns 8 oldest-first ISO weeks with null percent for empty buckets", () => {
     const now = new Date("2026-08-06T12:00:00.000Z");
     const weeks = getWeeklyReliability(
       [
@@ -107,8 +107,16 @@ describe("getWeeklyReliability", () => {
       now,
     );
     expect(weeks).toHaveLength(8);
-    expect(weeks.every((w) => typeof w.weekStart === "string")).toBe(true);
-    const withData = weeks.filter((w) => w.total > 0);
-    expect(withData.length).toBeGreaterThanOrEqual(2);
+    for (let i = 1; i < weeks.length; i += 1) {
+      expect(new Date(weeks[i]!.weekStart).getTime()).toBeGreaterThan(
+        new Date(weeks[i - 1]!.weekStart).getTime(),
+      );
+    }
+    const emptyWeeks = weeks.filter((w) => w.total === 0);
+    expect(emptyWeeks.length).toBeGreaterThan(0);
+    expect(emptyWeeks.every((w) => w.percent === null)).toBe(true);
+    const dataWeeks = weeks.filter((w) => w.total > 0);
+    expect(dataWeeks).toHaveLength(2);
+    expect(dataWeeks.every((w) => w.percent !== null)).toBe(true);
   });
 });

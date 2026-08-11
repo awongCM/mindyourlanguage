@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ReviewEvent } from "@mindyourlanguage/shared";
 import {
+  getSevenDayHero,
+  getSevenDaySubline,
   getSparklineSegments,
   shouldShowEmptyNeedle,
 } from "./reliability-needle-helpers";
+import type { ReliabilityWindow } from "@/lib/practice/reliability";
 
 function event(reviewedAt: string): ReviewEvent {
   return {
@@ -20,6 +23,45 @@ describe("shouldShowEmptyNeedle", () => {
     expect(shouldShowEmptyNeedle([])).toBe(true);
     expect(shouldShowEmptyNeedle([event("2026-07-01T12:00:00.000Z")])).toBe(
       false,
+    );
+  });
+});
+
+function window(partial: Partial<ReliabilityWindow>): ReliabilityWindow {
+  return {
+    reliableCount: 0,
+    total: 0,
+    percent: null,
+    buildingSignal: false,
+    ...partial,
+  };
+}
+
+describe("getSevenDayHero", () => {
+  it("distinguishes no recent reviews from building signal", () => {
+    expect(getSevenDayHero(window({ total: 0, percent: null }))).toBe(
+      "No reviews this week",
+    );
+    expect(
+      getSevenDayHero(
+        window({ total: 3, percent: 100, buildingSignal: true }),
+      ),
+    ).toBe("Building signal…");
+    expect(
+      getSevenDayHero(
+        window({ total: 6, percent: 83, buildingSignal: false }),
+      ),
+    ).toBe("83%");
+  });
+});
+
+describe("getSevenDaySubline", () => {
+  it("uses idle copy when the 7-day window is empty", () => {
+    expect(getSevenDaySubline(window({ total: 0 }))).toBe(
+      "No reviews in the last 7 days",
+    );
+    expect(getSevenDaySubline(window({ total: 2, reliableCount: 1 }))).toBe(
+      "1 of 2 reviews reliable · last 7 days",
     );
   });
 });

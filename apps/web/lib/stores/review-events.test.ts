@@ -7,7 +7,7 @@ import {
 
 describe("review events store", () => {
   beforeEach(() => {
-    useReviewEventsStore.setState({ events: [] });
+    useReviewEventsStore.setState({ events: [], hasHydrated: true });
     useReviewEventsStore.persist?.clearStorage?.();
   });
 

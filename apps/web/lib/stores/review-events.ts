@@ -14,6 +14,8 @@ function createEventId(): string {
 
 interface ReviewEventsStore {
   events: ReviewEvent[];
+  hasHydrated: boolean;
+  setHasHydrated: (value: boolean) => void;
   append: (input: {
     phraseId: string;
     grade: ReviewGrade;
@@ -27,6 +29,8 @@ export const useReviewEventsStore = create<ReviewEventsStore>()(
   persist(
     (set) => ({
       events: [],
+      hasHydrated: false,
+      setHasHydrated: (value) => set({ hasHydrated: value }),
       append: (input) =>
         set((state) => {
           const next: ReviewEvent = {
@@ -42,6 +46,12 @@ export const useReviewEventsStore = create<ReviewEventsStore>()(
         }),
       clear: () => set({ events: [] }),
     }),
-    { name: REVIEW_EVENTS_STORAGE_KEY },
+    {
+      name: REVIEW_EVENTS_STORAGE_KEY,
+      partialize: (state) => ({ events: state.events }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+    },
   ),
 );

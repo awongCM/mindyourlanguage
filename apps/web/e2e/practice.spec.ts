@@ -35,9 +35,16 @@ test.describe('practice flows (mocked)', () => {
     await expect(page.getByTestId('drill-answer')).toBeVisible()
     await page.getByTestId('grade-good').click()
     await expect(page.getByTestId('reliability-needle')).toBeVisible()
+    await expect(page.getByTestId('reliability-hero')).toHaveText(
+      'Building signal…',
+    )
+    await expect(
+      page
+        .getByTestId('reliability-needle')
+        .locator('p.text-sm.text-muted-foreground'),
+    ).toHaveText('1 of 1 reviews reliable · last 7 days')
     await expect(
       page.getByText('Practice a few due phrases to unlock your needle.'),
     ).toHaveCount(0)
-    await expect(page.getByText('Based on self-grades')).toBeVisible()
   })
 })
