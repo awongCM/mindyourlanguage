@@ -13,6 +13,16 @@ export interface PracticeStats {
   lastReviewedAt?: string
 }
 
+export type ReviewEventMode = 'self_grade'
+
+export interface ReviewEvent {
+  id: string
+  phraseId: string
+  grade: ReviewGrade
+  reviewedAt: string
+  mode: ReviewEventMode
+}
+
 export interface DictionaryEntry {
   simplified: string
   traditional: string
