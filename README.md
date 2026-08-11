@@ -2,7 +2,7 @@
 
 A Mandarin fluency grounding tool for intermediate learners who want to translate and calibrate their phrasing — so they sound natural, not just correct.
 
-**Status:** v2 Phases 0–5 shipped on `feature/phase-5-production-practice` (merge to `main` pending). Next: Phase 6 (public readiness).
+**Status:** v2 Phases 0–5 shipped on `main`; Phase 5.5 reliability needle implemented on this branch. Next: Phase 6 (public readiness).
 
 ---
 
@@ -75,7 +75,8 @@ v2 is a greenfield rebuild documented in:
 - **Parent plan:** [`docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md`](docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md)
 - **Phase 3 (approved, shipped):** [`docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md`](docs/superpowers/specs/2026-07-14-phase-3-tts-history-phrasebook-design.md)
 - **Phase 4 (approved, shipped):** [`docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md`](docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md) · [`docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`](docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md)
-- **Phase 5 (approved, shipped on branch):** [`docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md`](docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md) · [`docs/superpowers/plans/2026-07-19-phase-5-production-practice.md`](docs/superpowers/plans/2026-07-19-phase-5-production-practice.md)
+- **Phase 5 (approved, shipped on main):** [`docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md`](docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md) · [`docs/superpowers/plans/2026-07-19-phase-5-production-practice.md`](docs/superpowers/plans/2026-07-19-phase-5-production-practice.md)
+- **Phase 5.5 (approved):** [`docs/superpowers/specs/2026-08-06-phase-5.5-production-reliability-design.md`](docs/superpowers/specs/2026-08-06-phase-5.5-production-reliability-design.md) · [`docs/superpowers/plans/2026-08-06-phase-5.5-production-reliability.md`](docs/superpowers/plans/2026-08-06-phase-5.5-production-reliability.md)
 - **Phase 6 (approved, next):** [`docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md`](docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md) — OAuth, cloud sync, public launch
 
 ### v2 highlights
@@ -88,11 +89,11 @@ v2 is a greenfield rebuild documented in:
 | Characters | 简体 / 繁體 toggle |
 | TTS | Browser Web Speech API — Mainland (`zh-CN`) and Taiwan (`zh-TW`) |
 | History / phrasebook | Local (`localStorage`) until Phase 6 cloud sync |
-| Practice | Try-first translate, phrasebook drill, SRS, shadowing, sandhi pinyin |
+| Practice | Try-first translate, phrasebook drill, SRS, shadowing, sandhi pinyin, production reliability needle on `/practice` |
 | Audience | Intermediate → fluent learners |
 | Deploy | Render Web Service + PostgreSQL (Phase 4) |
 
-**Phases 0–5 are implemented** (Phase 5 on this branch). Next: Phase 6 (OAuth + cloud sync + public launch).
+**Phases 0–5 are implemented on `main`; Phase 5.5 is implemented on this branch.** Next: Phase 6 (OAuth + cloud sync + public launch).
 
 ### Run locally
 

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PracticeDrillCard } from "@/components/practice-drill-card";
+import { ReliabilityNeedle } from "@/components/reliability-needle";
 import { Button } from "@/components/ui/button";
 import { getDueEntries } from "@/lib/practice/srs";
 import {
@@ -74,6 +75,8 @@ export default function PracticePage() {
           <Link href="/">Translate</Link>
         </Button>
       </div>
+
+      <ReliabilityNeedle />
 
       <div className="flex flex-wrap items-center gap-3">
         <Button

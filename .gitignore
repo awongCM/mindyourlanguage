@@ -33,3 +33,6 @@ data/cedict.txt
 test-results/
 playwright-report/
 blob-report/
+
+# Superpowers SDD scratch
+.superpowers/
