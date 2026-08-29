@@ -35,6 +35,15 @@ export function parseRenderDeployHookUrl(value: string | undefined): string {
     throw new Error('RENDER_DEPLOY_HOOK_URL must be a Render deploy hook')
   }
 
+  if (parsed.searchParams.has('ref')) {
+    throw new Error('RENDER_DEPLOY_HOOK_URL must not include a ref parameter')
+  }
+  if (parsed.searchParams.has('imgURL')) {
+    throw new Error(
+      'RENDER_DEPLOY_HOOK_URL must not include an imgURL parameter',
+    )
+  }
+
   return url
 }
 
@@ -49,6 +58,7 @@ export async function triggerRenderDeploy(
 
   const response = await fetchImpl(url, {
     method: 'POST',
+    redirect: 'error',
     signal: AbortSignal.timeout(timeoutMs),
   })
 

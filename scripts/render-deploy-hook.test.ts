@@ -33,6 +33,20 @@ describe('parseRenderDeployHookUrl', () => {
       /must be a Render deploy hook/,
     )
   })
+
+  it('rejects a hook URL that pins a git ref', () => {
+    assert.throws(
+      () => parseRenderDeployHookUrl(`${VALID_HOOK}&ref=main`),
+      /must not include a ref parameter/,
+    )
+  })
+
+  it('rejects a hook URL that overrides the image', () => {
+    assert.throws(
+      () => parseRenderDeployHookUrl(`${VALID_HOOK}&imgURL=docker.io%2Fnginx`),
+      /must not include an imgURL parameter/,
+    )
+  })
 })
 
 describe('triggerRenderDeploy', () => {

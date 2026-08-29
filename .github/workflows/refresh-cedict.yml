@@ -20,12 +20,15 @@ concurrency:
 jobs:
   trigger-render-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
       - name: Trigger Render deploy
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-        run: npx --yes tsx scripts/trigger-render-deploy.ts
+        run: npx --yes tsx@4.23.1 scripts/trigger-render-deploy.ts
