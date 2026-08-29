@@ -135,6 +135,7 @@ npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
 5. **Database migration** — After the Postgres instance is created, apply [`db/migrations/001_initial.sql`](db/migrations/001_initial.sql) once (e.g. via Render Shell or `psql` with the internal connection string).
 6. **Free tier limits** — Free web services spin down after ~15 minutes of inactivity; free Postgres databases expire after ~30 days.
 7. **Health check** — Render uses [`/api/health`](apps/web/app/api/health/route.ts) (`healthCheckPath` in `render.yaml`). A healthy deploy returns `{ ok: true, cedict: true, deeplConfigured: true }` when CEDICT is imported and `DEEPL_API_KEY` is set.
+8. **Monthly CEDICT refresh** — After this is on the deployed branch, add a GitHub Actions secret named `RENDER_DEPLOY_HOOK_URL`. Copy the value from the Render Dashboard: web service → **Settings** → **Deploy Hook**. The workflow [`.github/workflows/refresh-cedict.yml`](.github/workflows/refresh-cedict.yml) POSTs that hook at 04:00 UTC on the 1st of each month (and via **Actions → Refresh CEDICT → Run workflow**). That rebuilds the service with `CEDICT_FETCH=1` so a newer CC-CEDICT dump is imported. Do not append a `ref` query parameter; pinning a commit disables Render auto-deploys.
 
 ---
 
