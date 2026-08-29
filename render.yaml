@@ -9,7 +9,7 @@ services:
     runtime: node
     region: oregon
     plan: free
-    buildCommand: npm ci && npm run import-cedict && npm run build
+    buildCommand: npm ci --include=dev && npm run import-cedict && npm run build
     startCommand: npm run start
     healthCheckPath: /api/health
     envVars:
