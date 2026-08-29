@@ -106,6 +106,7 @@ npm ci
 npm run import-cedict
 # Offline by default (repo 2013 CC-CEDICT fallback). To fetch the latest dump:
 # CEDICT_FETCH=1 npm run import-cedict
+# Delete data/cedict.txt first if a previous dump is already present.
 
 # 3. Configure env
 cp apps/web/.env.example apps/web/.env.local

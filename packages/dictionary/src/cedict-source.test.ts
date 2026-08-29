@@ -153,10 +153,15 @@ describe('resolveCedictSource', () => {
     expect(source).toEqual({ kind: 'fallback', path: paths.fallbackTxt })
   })
 
-  it('uses the archive when fetch is disabled', async () => {
+  it('uses the archive when fetch is disabled even if download is provided', async () => {
     const paths = makePaths()
     fs.writeFileSync(paths.fallbackTxt, VALID_DUMP)
-    const source = await resolveCedictSource(paths, { fetchEnabled: false })
+    const source = await resolveCedictSource(paths, {
+      fetchEnabled: false,
+      download: async () => {
+        throw new Error('should not fetch when CEDICT_FETCH is unset')
+      },
+    })
     expect(source).toEqual({ kind: 'fallback', path: paths.fallbackTxt })
   })
 
@@ -209,5 +214,24 @@ describe('downloadCedictText', () => {
     await expect(downloadCedictText({ fetchImpl })).rejects.toThrow(
       /CEDICT download invalid/,
     )
+  })
+
+  it('aborts a hung download so import can fall back to the archive', async () => {
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      const signal = init?.signal
+      if (!signal) throw new Error('fetch was called without a timeout signal')
+      await new Promise<never>((_, reject) => {
+        const onAbort = () => {
+          const error = new Error('The operation was aborted')
+          error.name = 'AbortError'
+          reject(error)
+        }
+        if (signal.aborted) onAbort()
+        else signal.addEventListener('abort', onAbort)
+      })
+    }
+    await expect(
+      downloadCedictText({ fetchImpl, timeoutMs: 20 }),
+    ).rejects.toMatchObject({ name: 'AbortError' })
   })
 })

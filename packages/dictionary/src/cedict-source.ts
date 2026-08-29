@@ -85,14 +85,19 @@ export function isCedictFetchEnabled(
   return value === '1' || value === 'true' || value === 'yes'
 }
 
+export const DEFAULT_CEDICT_FETCH_TIMEOUT_MS = 30_000
+
 export async function downloadCedictText(options: {
   url?: string
   fetchImpl?: typeof fetch
+  timeoutMs?: number
 } = {}): Promise<string> {
   const url = options.url ?? DEFAULT_CEDICT_URL
   const fetchImpl = options.fetchImpl ?? fetch
+  const timeoutMs = options.timeoutMs ?? DEFAULT_CEDICT_FETCH_TIMEOUT_MS
   const response = await fetchImpl(url, {
     headers: { 'User-Agent': DEFAULT_CEDICT_USER_AGENT },
+    signal: AbortSignal.timeout(timeoutMs),
   })
   if (!response.ok) {
     throw new Error(`CEDICT download failed: ${response.status}`)
@@ -122,7 +127,18 @@ export async function resolveCedictSource(
         throw new Error(validation.reason)
       }
       fs.mkdirSync(path.dirname(paths.primaryTxt), { recursive: true })
-      fs.writeFileSync(paths.primaryTxt, text, 'utf8')
+      const tempPath = `${paths.primaryTxt}.${process.pid}.tmp`
+      try {
+        fs.writeFileSync(tempPath, text, 'utf8')
+        fs.renameSync(tempPath, paths.primaryTxt)
+      } catch (error) {
+        try {
+          fs.unlinkSync(tempPath)
+        } catch {
+          // Best-effort cleanup of a partial download.
+        }
+        throw error
+      }
       return { kind: 'fetched', path: paths.primaryTxt }
     } catch {
       // Fall through to the archive so a network or payload failure cannot
