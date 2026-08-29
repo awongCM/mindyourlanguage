@@ -1,6 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import Database from 'better-sqlite3'
+import {
+  downloadCedictText,
+  isCedictFetchEnabled,
+  parseCedictHeader,
+  resolveCedictSource,
+} from '../packages/dictionary/src/cedict-source'
 import { parseCedictLine } from '../packages/dictionary/src/parse-line'
 
 const ROOT = path.resolve(__dirname, '..')
@@ -11,16 +17,23 @@ const FALLBACK_TXT = path.join(
   'archive/legacy-v1/resource/cedict_1_0_ts_utf-8_mdbg.txt',
 )
 
-function resolveSource(): string {
-  if (fs.existsSync(PRIMARY_TXT)) return PRIMARY_TXT
-  if (fs.existsSync(FALLBACK_TXT)) return FALLBACK_TXT
-  throw new Error(
-    'No CEDICT source found. Download to data/cedict.txt or keep legacy archive file.',
+async function main() {
+  const source = await resolveCedictSource(
+    { primaryTxt: PRIMARY_TXT, fallbackTxt: FALLBACK_TXT },
+    {
+      fetchEnabled: isCedictFetchEnabled(),
+      download: async () => {
+        try {
+          return await downloadCedictText()
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          console.warn(`CEDICT fetch failed, using archive fallback: ${message}`)
+          throw error
+        }
+      },
+    },
   )
-}
 
-function main() {
-  const source = resolveSource()
   fs.mkdirSync(path.dirname(OUT_DB), { recursive: true })
   if (fs.existsSync(OUT_DB)) fs.unlinkSync(OUT_DB)
 
@@ -41,7 +54,8 @@ function main() {
      VALUES (@traditional, @simplified, @pinyin, @definitions)`,
   )
 
-  const text = fs.readFileSync(source, 'utf8')
+  const text = fs.readFileSync(source.path, 'utf8')
+  const header = parseCedictHeader(text)
   const lines = text.split(/\r?\n/)
   let count = 0
   const tx = db.transaction(() => {
@@ -59,7 +73,17 @@ function main() {
   })
   tx()
   db.close()
-  console.log(`Imported ${count} entries from ${source} → ${OUT_DB}`)
+  console.log(
+    `Imported ${count} entries from ${source.path} (${source.kind}) → ${OUT_DB}`,
+  )
+  if (header?.date) {
+    console.log(
+      `CEDICT dump date: ${header.date}; declared entries: ${header.entries}`,
+    )
+  }
 }
 
-main()
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error)
+  process.exit(1)
+})

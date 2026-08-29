@@ -102,8 +102,10 @@ Prerequisites: Node.js 20+, npm.
 # 1. Install dependencies
 npm ci
 
-# 2. Import the dictionary (writes data/cedict.db; uses the repo CEDICT fallback)
+# 2. Import the dictionary (writes data/cedict.db)
 npm run import-cedict
+# Offline by default (repo 2013 CC-CEDICT fallback). To fetch the latest dump:
+# CEDICT_FETCH=1 npm run import-cedict
 
 # 3. Configure env
 cp apps/web/.env.example apps/web/.env.local
@@ -128,7 +130,7 @@ npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
 1. **Blueprint sync** — Connect this repo in the [Render Dashboard](https://dashboard.render.com/) and sync from [`render.yaml`](render.yaml). Render provisions the web service and Postgres database from the Blueprint.
 2. **Required secret** — Set `DEEPL_API_KEY` in the service environment (marked `sync: false` in the Blueprint so it is not overwritten on sync).
 3. **Optional** — `OPENAI_API_KEY` for native-alternative suggestions (defaults to `gpt-5.6-luna` via `NATIVE_ALT_MODEL`).
-4. **Build** — `buildCommand` runs `npm ci`, `npm run import-cedict` (imports CC-CEDICT from the repo fallback text), then `npm run build`.
+4. **Build** — `buildCommand` runs `npm ci`, `npm run import-cedict`, then `npm run build`. With `CEDICT_FETCH=1` (set in the Blueprint) the importer downloads the latest CC-CEDICT from MDBG; if that fetch fails it falls back to the repo archive so the build still succeeds.
 5. **Database migration** — After the Postgres instance is created, apply [`db/migrations/001_initial.sql`](db/migrations/001_initial.sql) once (e.g. via Render Shell or `psql` with the internal connection string).
 6. **Free tier limits** — Free web services spin down after ~15 minutes of inactivity; free Postgres databases expire after ~30 days.
 7. **Health check** — Render uses [`/api/health`](apps/web/app/api/health/route.ts) (`healthCheckPath` in `render.yaml`). A healthy deploy returns `{ ok: true, cedict: true, deeplConfigured: true }` when CEDICT is imported and `DEEPL_API_KEY` is set.
@@ -137,4 +139,4 @@ npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
 
 ## License
 
-See individual component licenses within `archive/legacy-v1/` (e.g. Chinese IME LGPL, Font Awesome SIL).
+Dictionary data is [CC-CEDICT](https://www.mdbg.net/chinese/dictionary?page=cc-cedict) (CC BY-SA), published by MDBG. See individual component licenses within `archive/legacy-v1/` (e.g. Chinese IME LGPL, Font Awesome SIL).
