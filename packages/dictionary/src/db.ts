@@ -17,11 +17,22 @@ export function setDictionaryDbPathForTests(dbPath: string | null) {
 
 export function resolveDictionaryDbPath(): string {
   if (overridePath) return overridePath
-  if (process.env.CEDICT_DB_PATH) return path.resolve(process.env.CEDICT_DB_PATH)
+  if (process.env.CEDICT_DB_PATH) {
+    return path.resolve(
+      /* turbopackIgnore: true */ process.cwd(),
+      process.env.CEDICT_DB_PATH,
+    )
+  }
   // apps/web cwd -> repo data/; scripts cwd -> repo data/
   const candidates = [
-    path.resolve(process.cwd(), 'data/cedict.db'),
-    path.resolve(process.cwd(), '../../data/cedict.db'),
+    path.join(/* turbopackIgnore: true */ process.cwd(), 'data', 'cedict.db'),
+    path.join(
+      /* turbopackIgnore: true */ process.cwd(),
+      '..',
+      '..',
+      'data',
+      'cedict.db',
+    ),
   ]
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) return candidate
