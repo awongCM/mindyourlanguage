@@ -127,6 +127,12 @@ cd apps/web && npx playwright install chromium
 npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
 ```
 
+### Mobile web (Option A)
+
+The UI is a single-column layout tuned for phone browsers (Safari/Chrome). Data stays in that browser’s `localStorage` — not synced with your desktop unless you use the same device.
+
+After deploy, smoke-test on a phone: translate → play audio → save → **History** restore → **Practice** reveal/grade. Design: [`docs/superpowers/specs/2026-09-23-mobile-web-option-a-design.md`](docs/superpowers/specs/2026-09-23-mobile-web-option-a-design.md). iOS TTS may need a second tap if audio is silent on first play.
+
 ### Deploy (Render)
 
 1. **Blueprint sync** — Connect this repo in the [Render Dashboard](https://dashboard.render.com/) and sync from [`render.yaml`](render.yaml). Render provisions the web service and Postgres database from the Blueprint.

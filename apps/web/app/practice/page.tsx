@@ -61,28 +61,33 @@ export default function PracticePage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+    <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-1 flex-col gap-6 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
             Practice
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 hidden text-sm text-muted-foreground sm:block">
             Drill your phrasebook with active recall and spaced review.
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="touch-target-sm max-sm:text-sm"
+          asChild
+        >
           <Link href="/">Translate</Link>
         </Button>
       </div>
 
       <ReliabilityNeedle />
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Button
           type="button"
-          size="sm"
           variant={mode === "due" ? "default" : "outline"}
+          className="touch-target-sm max-sm:flex-1 max-sm:text-sm"
           onClick={() => handleModeChange("due")}
           data-testid="mode-due"
         >
@@ -90,8 +95,8 @@ export default function PracticePage() {
         </Button>
         <Button
           type="button"
-          size="sm"
           variant={mode === "all" ? "default" : "outline"}
+          className="touch-target-sm max-sm:flex-1 max-sm:text-sm"
           onClick={() => handleModeChange("all")}
           data-testid="mode-all"
         >
@@ -105,7 +110,7 @@ export default function PracticePage() {
             resetCard();
           }}
           placeholder="Filter by tag"
-          className="h-8 max-w-xs rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-8 sm:max-w-xs sm:flex-none sm:text-sm"
           data-testid="tag-filter"
         />
       </div>

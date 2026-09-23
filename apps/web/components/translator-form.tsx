@@ -137,8 +137,12 @@ export function TranslatorForm({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 self-start">
-        <Button type="submit" disabled={isLoading}>
+      <div className="flex flex-wrap gap-2 self-stretch sm:self-start">
+        <Button
+          type="submit"
+          className="touch-target-sm max-sm:flex-1"
+          disabled={isLoading}
+        >
           {isLoading ? (
             <>
               <Loader2 className="animate-spin" />
@@ -151,6 +155,7 @@ export function TranslatorForm({
         <Button
           type="button"
           variant="outline"
+          className="touch-target-sm max-sm:flex-1"
           disabled={isLoading}
           onClick={handleClear}
           data-testid="clear-translate"

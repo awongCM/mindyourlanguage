@@ -20,6 +20,12 @@ export function cancelSpeech() {
   }
 }
 
+/** iOS Safari often needs resume() on the user-gesture stack before speak(). */
+export function prepareSpeechSynthesis() {
+  if (!isSpeechSynthesisSupported()) return;
+  window.speechSynthesis.resume();
+}
+
 function isSpeechCancelled(generation: number): boolean {
   return generation !== activeSpeechGeneration;
 }
@@ -171,6 +177,7 @@ async function speakUtterance(
       }
       reject(new Error("Audio unavailable"));
     };
+    prepareSpeechSynthesis();
     window.speechSynthesis.speak(utterance);
   });
 
