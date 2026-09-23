@@ -42,7 +42,10 @@ export function HistoryDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col pb-safe sm:max-w-md"
+      >
         <SheetHeader>
           <SheetTitle>History</SheetTitle>
           <SheetDescription>

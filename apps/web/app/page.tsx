@@ -243,24 +243,30 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Mind Your Language
+    <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-1 flex-col gap-6 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            <span className="sm:hidden">Translate</span>
+            <span className="hidden sm:inline">Mind Your Language</span>
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 hidden text-sm text-muted-foreground sm:block">
             From solid intermediate to natural fluency.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="touch-target-sm max-sm:text-sm"
+            asChild
+          >
             <Link href="/practice">Practice</Link>
           </Button>
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            className="touch-target-sm max-sm:text-sm"
             onClick={() => setHistoryOpen(true)}
           >
             History
@@ -268,7 +274,7 @@ export default function Home() {
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            className="touch-target-sm max-sm:text-sm"
             onClick={() => setPhrasebookOpen(true)}
           >
             Phrasebook
