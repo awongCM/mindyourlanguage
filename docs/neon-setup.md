@@ -38,9 +38,18 @@ Do **not** use the PgBouncer pooler URL for this app unless you later hit connec
 
 ## 3. Apply migrations (once per database)
 
-Migrations are **not** run during Render build. Apply them manually after creating the Neon database.
+Migrations are **not** run during the Render build (see [`render.yaml`](../render.yaml)). Apply them after creating the Neon database.
 
-### Option A — npm script (recommended)
+### Option A — GitHub Actions (recommended without Render Shell)
+
+Free Render tiers do not include a persistent shell, so use the workflow in [`.github/workflows/neon-db-migrate.yml`](../.github/workflows/neon-db-migrate.yml):
+
+1. Add repository secret **`DATABASE_URL`** (same Neon direct URL as Render, with `?sslmode=require`).
+2. GitHub → **Actions** → **Neon database migrate** → **Run workflow**.
+
+The workflow also runs automatically on pushes to `main` that change `db/migrations/` or `scripts/run-migrations.ts`. Re-running is safe (idempotent SQL).
+
+### Option B — npm script (local or any machine with Node)
 
 Requires Node 20+ and `npm ci` at repo root (uses the `pg` package from the workspace).
 
@@ -52,7 +61,7 @@ npm run db:migrate
 
 If `DATABASE_URL` is unset, the script also checks `apps/web/.env.local` for a `DATABASE_URL=` line.
 
-### Option B — psql
+### Option C — psql
 
 ```bash
 export DATABASE_URL='postgresql://…?sslmode=require'
@@ -60,7 +69,7 @@ psql "$DATABASE_URL" -f db/migrations/001_initial.sql
 psql "$DATABASE_URL" -f db/migrations/002_cloud_sync.sql
 ```
 
-### Option C — Neon SQL Editor
+### Option D — Neon SQL Editor
 
 Run the contents of each file in order:
 
