@@ -73,4 +73,12 @@ describe('checkRateLimit', () => {
       vi.useRealTimers()
     }
   })
+
+  it('tracks limits per user id independently from IP', async () => {
+    process.env.RATE_LIMIT_PER_MIN = '1'
+    const { checkRateLimitForKey } = await import('./rate-limit')
+    expect(checkRateLimitForKey('user:abc')).toBe(true)
+    expect(checkRateLimitForKey('user:abc')).toBe(false)
+    expect(checkRateLimitForKey('ip:1.2.3.4')).toBe(true)
+  })
 })

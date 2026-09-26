@@ -27,16 +27,16 @@ function pruneExpiredBuckets(now: number): void {
   }
 }
 
-export function checkRateLimit(ip: string): boolean {
+export function checkRateLimitForKey(key: string): boolean {
   const now = Date.now()
   const limit = getLimit()
 
   pruneExpiredBuckets(now)
 
-  let bucket = buckets.get(ip)
+  let bucket = buckets.get(key)
   if (!bucket) {
     bucket = { timestamps: [] }
-    buckets.set(ip, bucket)
+    buckets.set(key, bucket)
   }
 
   if (bucket.timestamps.length >= limit) {
@@ -45,6 +45,10 @@ export function checkRateLimit(ip: string): boolean {
 
   bucket.timestamps.push(now)
   return true
+}
+
+export function checkRateLimit(ip: string): boolean {
+  return checkRateLimitForKey(`ip:${ip}`)
 }
 
 /** @internal For unit tests only */
