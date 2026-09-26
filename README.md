@@ -129,13 +129,18 @@ npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
 
 ### Deploy (Render)
 
-1. **Blueprint sync** — Connect this repo in the [Render Dashboard](https://dashboard.render.com/) and sync from [`render.yaml`](render.yaml). Render provisions the web service and Postgres database from the Blueprint.
-2. **Required secret** — Set `DEEPL_API_KEY` in the service environment (marked `sync: false` in the Blueprint so it is not overwritten on sync).
-3. **Optional** — `OPENAI_API_KEY` for native-alternative suggestions (defaults to `gpt-5.6-luna` via `NATIVE_ALT_MODEL`).
-4. **Build** — `buildCommand` in `render.yaml` is `npm ci --include=dev && npm run import-cedict && npm run build`. A root `.npmrc` also sets `include=dev` so Render’s Dashboard `npm ci` (with `NODE_ENV=production`) still installs TypeScript and CSS tooling. Update **Settings → Build Command** when you can so it matches the YAML. With `CEDICT_FETCH=1` the importer downloads the latest CC-CEDICT from MDBG; if that fetch fails it falls back to the repo archive.
-5. **Database migration** — After the Postgres instance is created, apply [`db/migrations/001_initial.sql`](db/migrations/001_initial.sql) once (e.g. via Render Shell or `psql` with the internal connection string).
-6. **Free tier limits** — Free web services spin down after ~15 minutes of inactivity; free Postgres databases expire after ~30 days.
-7. **Health check** — Render uses [`/api/health`](apps/web/app/api/health/route.ts) (`healthCheckPath` in `render.yaml`). A healthy deploy returns `{ ok: true, cedict: true, deeplConfigured: true }` when CEDICT is imported and `DEEPL_API_KEY` is set.
+1. **Blueprint sync** — Connect this repo in the [Render Dashboard](https://dashboard.render.com/) and sync from [`render.yaml`](render.yaml). The Blueprint provisions the **web service only** (no Render Postgres).
+2. **Neon database (Phase 6)** — Create a [Neon](https://neon.tech) Free project in **AWS US West (Oregon)**. Apply migrations once:
+   ```bash
+   psql "$DATABASE_URL" -f db/migrations/001_initial.sql
+   psql "$DATABASE_URL" -f db/migrations/002_cloud_sync.sql
+   ```
+   Use Neon’s **direct** connection string (`sslmode=require`), not the pooler hostname.
+3. **Required secrets** — In Render → service → **Environment**, set `DEEPL_API_KEY`, `DATABASE_URL` (Neon), and for OAuth: `AUTH_SECRET`, `AUTH_URL` (your public Render URL, e.g. `https://mindyourlanguage.onrender.com`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`. All are `sync: false` in the Blueprint.
+4. **Optional** — `OPENAI_API_KEY` for native-alternative suggestions (defaults to `gpt-5.6-luna` via `NATIVE_ALT_MODEL`).
+5. **Build** — `buildCommand` in `render.yaml` is `npm ci --include=dev && npm run import-cedict && npm run build`. A root `.npmrc` also sets `include=dev` so Render’s Dashboard `npm ci` (with `NODE_ENV=production`) still installs TypeScript and CSS tooling. Update **Settings → Build Command** when you can so it matches the YAML. With `CEDICT_FETCH=1` the importer downloads the latest CC-CEDICT from MDBG; if that fetch fails it falls back to the repo archive.
+6. **Free tier limits** — Free web services spin down after ~15 minutes of inactivity. Neon Free does not expire; compute scales to zero after ~5 minutes idle (first DB query after idle may cold-start).
+7. **Health check** — Render uses [`/api/health`](apps/web/app/api/health/route.ts) (`healthCheckPath` in `render.yaml`). A healthy deploy returns `{ ok: true, cedict: true, deeplConfigured: true }` when CEDICT is imported and `DEEPL_API_KEY` is set. Health does **not** require `DATABASE_URL`.
 8. **Monthly CEDICT refresh (only after the app is on Render)** — Skip this until the Blueprint has created the `mindyourlanguage` web service. There is no Deploy Hook until that service exists. Then: copy the hook from Render Dashboard → that web service → **Settings** → **Deploy Hook**, and store it as the GitHub Actions secret `RENDER_DEPLOY_HOOK_URL`. The workflow [`.github/workflows/refresh-cedict.yml`](.github/workflows/refresh-cedict.yml) POSTs that hook at 04:00 UTC on the 1st of each month (and via **Actions → Refresh CEDICT → Run workflow**). That rebuilds with `CEDICT_FETCH=1`. Do not append a `ref` query parameter; pinning a commit disables Render auto-deploys. Until Render is connected, local refresh is `CEDICT_FETCH=1 npm run import-cedict`.
 
 ---
