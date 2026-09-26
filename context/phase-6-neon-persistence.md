@@ -8,8 +8,8 @@
 
 **Deploy checklist (when owner is ready):**
 
-1. Neon project (e.g. mindyourlanguage-db) — direct `DATABASE_URL` on Render + local.
-2. `npm run db:migrate` once per database.
+1. Neon project (e.g. mindyourlanguage-db) — direct `DATABASE_URL` on Render + GitHub Actions secret (same URL).
+2. Run **Neon database migrate** workflow (or `npm run db:migrate` locally) once per database.
 3. Google Cloud OAuth — redirect URIs: `http://localhost:3000/api/auth/callback/google` and `https://<render-host>/api/auth/callback/google`; match `AUTH_URL`.
 4. Set `NEXT_PUBLIC_GOOGLE_AUTH=true` on Render (and local if testing sign-in).
 
