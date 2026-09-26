@@ -7,9 +7,10 @@ import {
   shouldRequestNativeAlternative,
 } from '@/lib/native-alternative-shared'
 import {
-  checkRateLimit,
+  checkRateLimitForKey,
   clientIpFromForwardedFor,
 } from '@/lib/rate-limit'
+import { auth } from '@/lib/auth'
 import type { Lang, TranslateRequest, VoiceRegion } from '@mindyourlanguage/shared'
 import { randomUUID } from 'crypto'
 
@@ -40,8 +41,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid language' }, { status: 400 })
   }
 
-  const ip = clientIpFromForwardedFor(req.headers.get('x-forwarded-for'))
-  if (!checkRateLimit(ip)) {
+  const session = await auth()
+  const rateKey = session?.user?.id
+    ? `user:${session.user.id}`
+    : `ip:${clientIpFromForwardedFor(req.headers.get('x-forwarded-for'))}`
+  if (!checkRateLimitForKey(rateKey)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 

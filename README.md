@@ -31,6 +31,7 @@ mindyourlanguage/
 ├── db/
 │   └── migrations/                    # Auth-ready Postgres schema
 ├── docs/
+│   ├── neon-setup.md                  # Neon Postgres + migrations (Phase 6)
 │   └── superpowers/
 │       ├── specs/                     # v2 design spec
 │       └── plans/                     # v2 implementation plan
@@ -44,6 +45,7 @@ mindyourlanguage/
 | `packages/shared/` | Shared translation domain types |
 | `packages/dictionary/` | CEDICT package placeholder (filled in Phase 2) |
 | `db/migrations/` | Postgres schema (nullable `user_id`) |
+| `docs/neon-setup.md` | Neon project wiring, `DATABASE_URL`, OAuth, migrations |
 | `docs/superpowers/specs/` | v2 design specification |
 | `docs/superpowers/plans/` | v2 step-by-step implementation plan |
 | `archive/legacy-v1/` | Archived v1 codebase (read-only reference) |
@@ -77,7 +79,7 @@ v2 is a greenfield rebuild documented in:
 - **Phase 4 (approved, shipped):** [`docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md`](docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md) · [`docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`](docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md)
 - **Phase 5 (approved, shipped on main):** [`docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md`](docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md) · [`docs/superpowers/plans/2026-07-19-phase-5-production-practice.md`](docs/superpowers/plans/2026-07-19-phase-5-production-practice.md)
 - **Phase 5.5 (approved):** [`docs/superpowers/specs/2026-08-06-phase-5.5-production-reliability-design.md`](docs/superpowers/specs/2026-08-06-phase-5.5-production-reliability-design.md) · [`docs/superpowers/plans/2026-08-06-phase-5.5-production-reliability.md`](docs/superpowers/plans/2026-08-06-phase-5.5-production-reliability.md)
-- **Phase 6 (approved, next):** [`docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md`](docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md) — OAuth, cloud sync, public launch
+- **Phase 6 (approved, next):** [`docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md`](docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md) — OAuth, cloud sync, public launch · **Setup:** [`docs/neon-setup.md`](docs/neon-setup.md)
 
 ### v2 highlights
 
@@ -91,9 +93,9 @@ v2 is a greenfield rebuild documented in:
 | History / phrasebook | Local (`localStorage`) until Phase 6 cloud sync |
 | Practice | Try-first translate, phrasebook drill, SRS, shadowing, sandhi pinyin, production reliability needle on `/practice` |
 | Audience | Intermediate → fluent learners |
-| Deploy | Render Web Service + PostgreSQL (Phase 4) |
+| Deploy | Render web service + Neon Postgres (Phase 6) |
 
-**Phases 0–5 are implemented on `main`; Phase 5.5 is implemented on this branch.** Next: Phase 6 (OAuth + cloud sync + public launch).
+**Phases 0–5.5 on `main`; Phase 6 (Neon + OAuth + sync) on this branch.**
 
 ### Run locally
 
@@ -113,12 +115,13 @@ npm run import-cedict
 cp apps/web/.env.example apps/web/.env.local
 # Required for translate: DEEPL_API_KEY
 # Optional for native alternatives + check attempt: OPENAI_API_KEY
+# Phase 6 cloud sync: see docs/neon-setup.md (DATABASE_URL, AUTH_*)
 
 # 4. Start the app → http://localhost:3000
 npm run dev
 ```
 
-Postgres / `DATABASE_URL` is not required for local use until Phase 6 (auth + cloud sync). History and phrasebook use `localStorage`. TTS uses the browser Web Speech API (no server key).
+Without Phase 6 env vars, history and phrasebook stay in `localStorage`. For Neon + Google sign-in, follow **[Neon setup](docs/neon-setup.md)** (`npm run db:migrate`, then set `DATABASE_URL` and `AUTH_*` in `.env.local`).
 
 ### Local E2E
 
@@ -127,21 +130,25 @@ cd apps/web && npx playwright install chromium
 npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
 ```
 
+Playwright starts the dev server on **port 3001** by default so it does not collide with `npm run dev` on 3000. Override with `PLAYWRIGHT_PORT`.
+
 ### Mobile web (Option A)
 
-The UI is a single-column layout tuned for phone browsers (Safari/Chrome). Data stays in that browser’s `localStorage` — not synced with your desktop unless you use the same device.
+The UI is a single-column layout tuned for phone browsers (Safari/Chrome). When logged out, data stays in that browser’s `localStorage`; sign in to sync phrasebook and practice across devices (Phase 6).
 
 After deploy, smoke-test on a phone: translate → play audio → save → **History** restore → **Practice** reveal/grade. Design: [`docs/superpowers/specs/2026-09-23-mobile-web-option-a-design.md`](docs/superpowers/specs/2026-09-23-mobile-web-option-a-design.md). iOS TTS may need a second tap if audio is silent on first play.
 
 ### Deploy (Render)
 
-1. **Blueprint sync** — Connect this repo in the [Render Dashboard](https://dashboard.render.com/) and sync from [`render.yaml`](render.yaml). Render provisions the web service and Postgres database from the Blueprint.
-2. **Required secret** — Set `DEEPL_API_KEY` in the service environment (marked `sync: false` in the Blueprint so it is not overwritten on sync).
-3. **Optional** — `OPENAI_API_KEY` for native-alternative suggestions (defaults to `gpt-5.6-luna` via `NATIVE_ALT_MODEL`).
-4. **Build** — `buildCommand` in `render.yaml` is `npm ci --include=dev && npm run import-cedict && npm run build`. A root `.npmrc` also sets `include=dev` so Render’s Dashboard `npm ci` (with `NODE_ENV=production`) still installs TypeScript and CSS tooling. Update **Settings → Build Command** when you can so it matches the YAML. With `CEDICT_FETCH=1` the importer downloads the latest CC-CEDICT from MDBG; if that fetch fails it falls back to the repo archive.
-5. **Database migration** — After the Postgres instance is created, apply [`db/migrations/001_initial.sql`](db/migrations/001_initial.sql) once (e.g. via Render Shell or `psql` with the internal connection string).
-6. **Free tier limits** — Free web services spin down after ~15 minutes of inactivity; free Postgres databases expire after ~30 days.
-7. **Health check** — Render uses [`/api/health`](apps/web/app/api/health/route.ts) (`healthCheckPath` in `render.yaml`). A healthy deploy returns `{ ok: true, cedict: true, deeplConfigured: true }` when CEDICT is imported and `DEEPL_API_KEY` is set.
+Full Neon + OAuth steps: **[`docs/neon-setup.md`](docs/neon-setup.md)** (project **mindyourlanguage-db** or any Neon project name).
+
+1. **Blueprint sync** — Connect this repo in the [Render Dashboard](https://dashboard.render.com/) and sync from [`render.yaml`](render.yaml). The Blueprint provisions the **web service only** (no Render Postgres).
+2. **Neon** — Create or use a Neon project (Oregon region recommended). Apply migrations once: `export DATABASE_URL='…'` then `npm run db:migrate` (or `psql`; see the guide).
+3. **Required secrets** — On Render, set `DEEPL_API_KEY`, `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` (details in the Neon setup guide).
+4. **Optional** — `OPENAI_API_KEY` for native-alternative suggestions (defaults to `gpt-5.6-luna` via `NATIVE_ALT_MODEL`).
+5. **Build** — `buildCommand` in `render.yaml` is `npm ci --include=dev && npm run import-cedict && npm run build`. A root `.npmrc` also sets `include=dev` so Render’s Dashboard `npm ci` (with `NODE_ENV=production`) still installs TypeScript and CSS tooling. Update **Settings → Build Command** when you can so it matches the YAML. With `CEDICT_FETCH=1` the importer downloads the latest CC-CEDICT from MDBG; if that fetch fails it falls back to the repo archive.
+6. **Free tier limits** — Free web services spin down after ~15 minutes of inactivity. Neon Free does not expire; compute scales to zero after ~5 minutes idle (first DB query after idle may cold-start).
+7. **Health check** — Render uses [`/api/health`](apps/web/app/api/health/route.ts) (`healthCheckPath` in `render.yaml`). A healthy deploy returns `{ ok: true, cedict: true, deeplConfigured: true }` when CEDICT is imported and `DEEPL_API_KEY` is set. Health does **not** require `DATABASE_URL`.
 8. **Monthly CEDICT refresh (only after the app is on Render)** — Skip this until the Blueprint has created the `mindyourlanguage` web service. There is no Deploy Hook until that service exists. Then: copy the hook from Render Dashboard → that web service → **Settings** → **Deploy Hook**, and store it as the GitHub Actions secret `RENDER_DEPLOY_HOOK_URL`. The workflow [`.github/workflows/refresh-cedict.yml`](.github/workflows/refresh-cedict.yml) POSTs that hook at 04:00 UTC on the 1st of each month (and via **Actions → Refresh CEDICT → Run workflow**). That rebuilds with `CEDICT_FETCH=1`. Do not append a `ref` query parameter; pinning a commit disables Render auto-deploys. Until Render is connected, local refresh is `CEDICT_FETCH=1 npm run import-cedict`.
 
 ---

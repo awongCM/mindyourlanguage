@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { NextRequest } from 'next/server'
 import { POST } from './route'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimitForKey } from '@/lib/rate-limit'
 import { translateText } from '@/lib/deepl'
 import { fetchNativeAlternative } from '@/lib/native-alternative'
 import {
@@ -17,11 +17,15 @@ vi.mock('@/lib/deepl', () => ({
   }),
 }))
 
+vi.mock('@/lib/auth', () => ({
+  auth: vi.fn().mockResolvedValue(null),
+}))
+
 vi.mock('@/lib/rate-limit', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
   return {
     ...actual,
-    checkRateLimit: vi.fn().mockReturnValue(true),
+    checkRateLimitForKey: vi.fn().mockReturnValue(true),
   }
 })
 
@@ -67,8 +71,8 @@ function translateRequest(
 
 describe('POST /api/translate', () => {
   beforeEach(() => {
-    vi.mocked(checkRateLimit).mockClear()
-    vi.mocked(checkRateLimit).mockReturnValue(true)
+    vi.mocked(checkRateLimitForKey).mockClear()
+    vi.mocked(checkRateLimitForKey).mockReturnValue(true)
     vi.mocked(translateText).mockClear()
     vi.mocked(translateText).mockResolvedValue({
       text: '你好',
@@ -241,7 +245,7 @@ describe('POST /api/translate', () => {
     })
     const res = await POST(req)
     expect(res.status).toBe(400)
-    expect(checkRateLimit).not.toHaveBeenCalled()
+    expect(checkRateLimitForKey).not.toHaveBeenCalled()
   })
 
   it('returns 400 for invalid language', async () => {
@@ -253,7 +257,7 @@ describe('POST /api/translate', () => {
     })
     const res = await POST(req)
     expect(res.status).toBe(400)
-    expect(checkRateLimit).not.toHaveBeenCalled()
+    expect(checkRateLimitForKey).not.toHaveBeenCalled()
   })
 
   it('rate limits by first x-forwarded-for hop', async () => {
@@ -267,11 +271,11 @@ describe('POST /api/translate', () => {
       { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' },
     )
     await POST(req)
-    expect(checkRateLimit).toHaveBeenCalledWith('1.2.3.4')
+    expect(checkRateLimitForKey).toHaveBeenCalledWith('ip:1.2.3.4')
   })
 
   it('returns 429 when rate limit exceeded', async () => {
-    vi.mocked(checkRateLimit).mockReturnValue(false)
+    vi.mocked(checkRateLimitForKey).mockReturnValue(false)
     const req = translateRequest({
       text: 'Hello',
       sourceLang: 'en',

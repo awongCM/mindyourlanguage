@@ -1,17 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NextRequest } from 'next/server'
 import { GET, POST } from './route'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimitForKey } from '@/lib/rate-limit'
 import {
   checkUserAttempt,
   isCheckAttemptAvailable,
 } from '@/lib/practice/check-attempt'
 
+vi.mock('@/lib/auth', () => ({
+  auth: vi.fn().mockResolvedValue(null),
+}))
+
 vi.mock('@/lib/rate-limit', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/rate-limit')>()
   return {
     ...actual,
-    checkRateLimit: vi.fn().mockReturnValue(true),
+    checkRateLimitForKey: vi.fn().mockReturnValue(true),
   }
 })
 
@@ -42,7 +46,7 @@ describe('GET /api/practice/check', () => {
 
 describe('POST /api/practice/check', () => {
   beforeEach(() => {
-    vi.mocked(checkRateLimit).mockReturnValue(true)
+    vi.mocked(checkRateLimitForKey).mockReturnValue(true)
     vi.mocked(isCheckAttemptAvailable).mockReturnValue(true)
     vi.mocked(checkUserAttempt).mockResolvedValue({
       verdict: 'close',

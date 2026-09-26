@@ -4,9 +4,10 @@ import {
   isCheckAttemptAvailable,
 } from '@/lib/practice/check-attempt'
 import {
-  checkRateLimit,
+  checkRateLimitForKey,
   clientIpFromForwardedFor,
 } from '@/lib/rate-limit'
+import { auth } from '@/lib/auth'
 import type { CheckAttemptRequest } from '@mindyourlanguage/shared'
 
 export async function GET() {
@@ -35,8 +36,11 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const ip = clientIpFromForwardedFor(req.headers.get('x-forwarded-for'))
-  if (!checkRateLimit(ip)) {
+  const session = await auth()
+  const rateKey = session?.user?.id
+    ? `user:${session.user.id}`
+    : `ip:${clientIpFromForwardedFor(req.headers.get('x-forwarded-for'))}`
+  if (!checkRateLimitForKey(rateKey)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
