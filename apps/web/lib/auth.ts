@@ -33,7 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     async session({ session, token }) {
-      if (session.user && token.userId) {
+      if (session.user && typeof token.userId === 'string') {
         session.user.id = token.userId
       }
       return session
