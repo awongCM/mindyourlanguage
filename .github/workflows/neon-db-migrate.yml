@@ -41,6 +41,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Require DATABASE_URL secret
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Repository secret DATABASE_URL is missing or empty. Add it under Settings → Secrets and variables → Actions (Neon direct URL, include ?sslmode=require)."
+            exit 1
+          fi
+
       - name: Apply SQL migrations to Neon
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
