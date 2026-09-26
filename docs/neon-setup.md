@@ -73,9 +73,30 @@ Re-running is safe: migrations use `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` 
 
 ## 4. Local development
 
+### Local-only (no Neon yet)
+
+Use this while you are still on translate + `localStorage` only. Neon and Google OAuth can wait until Render deployment.
+
 ```bash
 cp apps/web/.env.example apps/web/.env.local
 ```
+
+| Variable | Local-only |
+|----------|------------|
+| `DEEPL_API_KEY` | **Required** — paste your DeepL key |
+| `AUTH_SECRET` | Generate: `openssl rand -base64 32` |
+| `AUTH_URL` | `http://localhost:3000` |
+| `NEXT_PUBLIC_GOOGLE_AUTH` | `false` (hides sign-in until OAuth + Neon are ready) |
+| `DATABASE_URL` | Leave empty |
+| `AUTH_GOOGLE_*` | Leave empty |
+
+```bash
+npm run dev
+```
+
+Translate, history, phrasebook (browser), and practice work without Neon. The header hides **Sign in with Google** until you flip `NEXT_PUBLIC_GOOGLE_AUTH=true`.
+
+### Full Phase 6 local (Neon + Google)
 
 Set at minimum:
 
@@ -87,6 +108,7 @@ Set at minimum:
 | `AUTH_URL` | `http://localhost:3000` |
 | `AUTH_GOOGLE_ID` | Google OAuth client ID |
 | `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
+| `NEXT_PUBLIC_GOOGLE_AUTH` | `true` |
 
 Then:
 

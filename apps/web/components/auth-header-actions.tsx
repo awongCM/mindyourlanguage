@@ -5,6 +5,9 @@ import { signIn, signOut, useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { syncAllStores } from '@/lib/sync/cloud-sync'
 
+const googleAuthUiEnabled =
+  process.env.NEXT_PUBLIC_GOOGLE_AUTH === 'true'
+
 export function AuthHeaderActions() {
   const { data: session, status } = useSession()
   const syncedForSession = useRef<string | null>(null)
@@ -15,6 +18,10 @@ export function AuthHeaderActions() {
     syncedForSession.current = userId
     void syncAllStores()
   }, [session?.user?.id])
+
+  if (!googleAuthUiEnabled) {
+    return null
+  }
 
   if (status === 'loading') {
     return (

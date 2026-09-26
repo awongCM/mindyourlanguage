@@ -3,14 +3,28 @@ import Google from 'next-auth/providers/google'
 import { isDatabaseConfigured } from '@/lib/db'
 import { ensureUserByEmail } from '@/lib/db/users'
 
+function googleAuthConfigured(): boolean {
+  return Boolean(
+    process.env.AUTH_GOOGLE_ID?.trim() &&
+      process.env.AUTH_GOOGLE_SECRET?.trim(),
+  )
+}
+
+const providers = googleAuthConfigured()
+  ? [
+      Google({
+        clientId: process.env.AUTH_GOOGLE_ID,
+        clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      }),
+    ]
+  : []
+
+export const isGoogleAuthEnabled = googleAuthConfigured()
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
-    }),
-  ],
+  secret: process.env.AUTH_SECRET,
+  providers,
   callbacks: {
     async signIn({ user }) {
       if (!user.email) return false
