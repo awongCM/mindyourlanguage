@@ -31,6 +31,7 @@ mindyourlanguage/
 ├── db/
 │   └── migrations/                    # Auth-ready Postgres schema
 ├── docs/
+│   ├── neon-setup.md                  # Neon Postgres + migrations (Phase 6)
 │   └── superpowers/
 │       ├── specs/                     # v2 design spec
 │       └── plans/                     # v2 implementation plan
@@ -44,6 +45,7 @@ mindyourlanguage/
 | `packages/shared/` | Shared translation domain types |
 | `packages/dictionary/` | CEDICT package placeholder (filled in Phase 2) |
 | `db/migrations/` | Postgres schema (nullable `user_id`) |
+| `docs/neon-setup.md` | Neon project wiring, `DATABASE_URL`, OAuth, migrations |
 | `docs/superpowers/specs/` | v2 design specification |
 | `docs/superpowers/plans/` | v2 step-by-step implementation plan |
 | `archive/legacy-v1/` | Archived v1 codebase (read-only reference) |
@@ -77,7 +79,7 @@ v2 is a greenfield rebuild documented in:
 - **Phase 4 (approved, shipped):** [`docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md`](docs/superpowers/specs/2026-07-15-phase-4-deploy-e2e-design.md) · [`docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md`](docs/superpowers/plans/2026-07-15-phase-4-deploy-e2e.md)
 - **Phase 5 (approved, shipped on main):** [`docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md`](docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md) · [`docs/superpowers/plans/2026-07-19-phase-5-production-practice.md`](docs/superpowers/plans/2026-07-19-phase-5-production-practice.md)
 - **Phase 5.5 (approved):** [`docs/superpowers/specs/2026-08-06-phase-5.5-production-reliability-design.md`](docs/superpowers/specs/2026-08-06-phase-5.5-production-reliability-design.md) · [`docs/superpowers/plans/2026-08-06-phase-5.5-production-reliability.md`](docs/superpowers/plans/2026-08-06-phase-5.5-production-reliability.md)
-- **Phase 6 (approved, next):** [`docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md`](docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md) — OAuth, cloud sync, public launch
+- **Phase 6 (approved, next):** [`docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md`](docs/superpowers/specs/2026-07-19-phase-6-public-readiness-design.md) — OAuth, cloud sync, public launch · **Setup:** [`docs/neon-setup.md`](docs/neon-setup.md)
 
 ### v2 highlights
 
@@ -113,12 +115,13 @@ npm run import-cedict
 cp apps/web/.env.example apps/web/.env.local
 # Required for translate: DEEPL_API_KEY
 # Optional for native alternatives + check attempt: OPENAI_API_KEY
+# Phase 6 cloud sync: see docs/neon-setup.md (DATABASE_URL, AUTH_*)
 
 # 4. Start the app → http://localhost:3000
 npm run dev
 ```
 
-Postgres / `DATABASE_URL` is not required for local use until Phase 6 (auth + cloud sync). History and phrasebook use `localStorage`. TTS uses the browser Web Speech API (no server key).
+Without Phase 6 env vars, history and phrasebook stay in `localStorage`. For Neon + Google sign-in, follow **[Neon setup](docs/neon-setup.md)** (`npm run db:migrate`, then set `DATABASE_URL` and `AUTH_*` in `.env.local`).
 
 ### Local E2E
 
@@ -137,14 +140,11 @@ After deploy, smoke-test on a phone: translate → play audio → save → **His
 
 ### Deploy (Render)
 
+Full Neon + OAuth steps: **[`docs/neon-setup.md`](docs/neon-setup.md)** (project **mindyourlanguage-db** or any Neon project name).
+
 1. **Blueprint sync** — Connect this repo in the [Render Dashboard](https://dashboard.render.com/) and sync from [`render.yaml`](render.yaml). The Blueprint provisions the **web service only** (no Render Postgres).
-2. **Neon database (Phase 6)** — Create a [Neon](https://neon.tech) Free project in **AWS US West (Oregon)**. Apply migrations once:
-   ```bash
-   psql "$DATABASE_URL" -f db/migrations/001_initial.sql
-   psql "$DATABASE_URL" -f db/migrations/002_cloud_sync.sql
-   ```
-   Use Neon’s **direct** connection string (`sslmode=require`), not the pooler hostname.
-3. **Required secrets** — In Render → service → **Environment**, set `DEEPL_API_KEY`, `DATABASE_URL` (Neon), and for OAuth: `AUTH_SECRET`, `AUTH_URL` (your public Render URL, e.g. `https://mindyourlanguage.onrender.com`), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`. All are `sync: false` in the Blueprint.
+2. **Neon** — Create or use a Neon project (Oregon region recommended). Apply migrations once: `export DATABASE_URL='…'` then `npm run db:migrate` (or `psql`; see the guide).
+3. **Required secrets** — On Render, set `DEEPL_API_KEY`, `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` (details in the Neon setup guide).
 4. **Optional** — `OPENAI_API_KEY` for native-alternative suggestions (defaults to `gpt-5.6-luna` via `NATIVE_ALT_MODEL`).
 5. **Build** — `buildCommand` in `render.yaml` is `npm ci --include=dev && npm run import-cedict && npm run build`. A root `.npmrc` also sets `include=dev` so Render’s Dashboard `npm ci` (with `NODE_ENV=production`) still installs TypeScript and CSS tooling. Update **Settings → Build Command** when you can so it matches the YAML. With `CEDICT_FETCH=1` the importer downloads the latest CC-CEDICT from MDBG; if that fetch fails it falls back to the repo archive.
 6. **Free tier limits** — Free web services spin down after ~15 minutes of inactivity. Neon Free does not expire; compute scales to zero after ~5 minutes idle (first DB query after idle may cold-start).
