@@ -6,6 +6,7 @@
 **Author:** awongCM + Cursor Agent  
 **Parent spec:** `docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`  
 **Parent plan:** `docs/superpowers/plans/2026-07-13-mindyourlanguage-v2.md` (Tasks 14–15)  
+**Implementation plan:** `docs/superpowers/plans/2026-09-26-phase-6-public-readiness-neon.md`  
 **Depends on:** Phases 0–5 shipped; Render web service deployable from Blueprint  
 **Prior phase:** Phase 5 — production practice (client-first; SRS + phrasebook in `localStorage`)
 
