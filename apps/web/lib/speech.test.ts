@@ -24,12 +24,14 @@ function mockVoice(lang: string, name: string): SpeechSynthesisVoice {
 function stubSpeechSynthesis(voices: SpeechSynthesisVoice[] = []) {
   const speak = vi.fn();
   const cancel = vi.fn();
+  const resume = vi.fn();
   const getVoices = vi.fn().mockReturnValue(voices);
   const addEventListener = vi.fn();
   const removeEventListener = vi.fn();
   const synth = {
     speak,
     cancel,
+    resume,
     getVoices,
     addEventListener,
     removeEventListener,
@@ -119,6 +121,7 @@ describe("speakChinese", () => {
       .calls[0]?.[0] as SpeechSynthesisUtterance;
 
     expect(synth.cancel).toHaveBeenCalled();
+    expect(synth.resume).toHaveBeenCalled();
     expect(utterance.text).toBe("你好");
     expect(utterance.lang).toBe("zh-CN");
     utterance.onend?.(new Event("end") as SpeechSynthesisEvent);

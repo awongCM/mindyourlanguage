@@ -48,14 +48,14 @@ export function ShadowingPlayer({
 
   return (
     <div
-      className="flex flex-wrap gap-2"
+      className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
       data-testid="shadowing-player"
       aria-label="Shadowing controls"
     >
       <Button
         type="button"
         variant="outline"
-        size="sm"
+        className="touch-target-sm max-sm:text-sm"
         disabled={busy || !text.trim()}
         onClick={() => run(() => speakChinese(text, region))}
       >
@@ -64,7 +64,7 @@ export function ShadowingPlayer({
       <Button
         type="button"
         variant="outline"
-        size="sm"
+        className="touch-target-sm max-sm:text-sm"
         disabled={busy || !text.trim()}
         onClick={() =>
           run(() => speakChineseSlow(text, region, segmentTexts))
@@ -75,7 +75,7 @@ export function ShadowingPlayer({
       <Button
         type="button"
         variant="outline"
-        size="sm"
+        className="touch-target-sm max-sm:col-span-2 max-sm:text-sm"
         disabled={busy || !segmentTexts.some((part) => part.trim())}
         onClick={() =>
           run(() =>
@@ -88,7 +88,7 @@ export function ShadowingPlayer({
       <Button
         type="button"
         variant="outline"
-        size="sm"
+        className="touch-target-sm max-sm:col-span-2 max-sm:text-sm"
         onClick={handleStop}
         data-testid="stop-audio"
       >

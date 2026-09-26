@@ -128,3 +128,16 @@
     @apply font-sans;
   }
 }
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .touch-target-sm {
+    @apply max-sm:min-h-11 max-sm:px-4;
+  }
+  .break-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}

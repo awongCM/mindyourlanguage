@@ -43,12 +43,15 @@ export function PracticeDrillCard({
         <CardTitle>Recall</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <p className="text-lg leading-relaxed text-foreground" data-testid="drill-prompt">
+        <p
+          className="break-anywhere text-lg leading-relaxed text-foreground"
+          data-testid="drill-prompt"
+        >
           {entry.sourceText}
         </p>
         {revealed ? (
           <div className="flex flex-col gap-3" data-testid="drill-answer">
-            <p className="text-xl font-medium text-foreground">
+            <p className="break-anywhere text-xl font-medium text-foreground">
               {entry.translation}
             </p>
             {entry.pinyin ? (
@@ -68,9 +71,14 @@ export function PracticeDrillCard({
           </p>
         )}
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-2">
+      <CardFooter className="flex flex-wrap gap-2 max-sm:grid max-sm:grid-cols-2">
         {!revealed ? (
-          <Button type="button" onClick={onReveal} data-testid="drill-reveal">
+          <Button
+            type="button"
+            className="touch-target-sm max-sm:col-span-2"
+            onClick={onReveal}
+            data-testid="drill-reveal"
+          >
             Reveal
           </Button>
         ) : (
@@ -79,7 +87,7 @@ export function PracticeDrillCard({
               key={grade}
               type="button"
               variant={grade === "good" ? "default" : "outline"}
-              size="sm"
+              className="touch-target-sm"
               onClick={() => onGrade(grade)}
               data-testid={`grade-${grade}`}
             >

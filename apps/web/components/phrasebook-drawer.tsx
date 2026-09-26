@@ -53,7 +53,10 @@ export function PhrasebookDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col pb-safe sm:max-w-md"
+      >
         <SheetHeader>
           <SheetTitle>Phrasebook</SheetTitle>
           <SheetDescription>

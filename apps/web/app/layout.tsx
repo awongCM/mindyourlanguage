@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   description: "From solid intermediate to natural fluency.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,8 +39,8 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AppSessionProvider>
-          <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 py-3 sm:px-6">
+          <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pt-[env(safe-area-inset-top)]">
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 py-3 pb-3 sm:px-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col gap-0.5">
                   <p className="text-base font-semibold tracking-tight text-foreground">

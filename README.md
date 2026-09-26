@@ -91,9 +91,9 @@ v2 is a greenfield rebuild documented in:
 | History / phrasebook | Local (`localStorage`) until Phase 6 cloud sync |
 | Practice | Try-first translate, phrasebook drill, SRS, shadowing, sandhi pinyin, production reliability needle on `/practice` |
 | Audience | Intermediate → fluent learners |
-| Deploy | Render Web Service + PostgreSQL (Phase 4) |
+| Deploy | Render web service + Neon Postgres (Phase 6) |
 
-**Phases 0–5 are implemented on `main`; Phase 5.5 is implemented on this branch.** Next: Phase 6 (OAuth + cloud sync + public launch).
+**Phases 0–5.5 on `main`; Phase 6 (Neon + OAuth + sync) on this branch.**
 
 ### Run locally
 
@@ -128,6 +128,12 @@ npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
 ```
 
 Playwright starts the dev server on **port 3001** by default so it does not collide with `npm run dev` on 3000. Override with `PLAYWRIGHT_PORT`.
+
+### Mobile web (Option A)
+
+The UI is a single-column layout tuned for phone browsers (Safari/Chrome). When logged out, data stays in that browser’s `localStorage`; sign in to sync phrasebook and practice across devices (Phase 6).
+
+After deploy, smoke-test on a phone: translate → play audio → save → **History** restore → **Practice** reveal/grade. Design: [`docs/superpowers/specs/2026-09-23-mobile-web-option-a-design.md`](docs/superpowers/specs/2026-09-23-mobile-web-option-a-design.md). iOS TTS may need a second tap if audio is silent on first play.
 
 ### Deploy (Render)
 

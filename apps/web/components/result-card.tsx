@@ -158,7 +158,7 @@ export function ResultCard({
       <CardContent className="flex flex-col gap-4">
         <p
           data-testid="result-translation"
-          className="text-lg leading-relaxed text-foreground"
+          className="break-anywhere text-lg leading-relaxed text-foreground"
         >
           {displayText}
         </p>
@@ -173,7 +173,7 @@ export function ResultCard({
             </p>
             <p
               data-testid="source-chinese-text"
-              className="text-lg leading-relaxed text-foreground"
+              className="break-anywhere text-lg leading-relaxed text-foreground"
             >
               {chineseText}
             </p>
@@ -195,13 +195,13 @@ export function ResultCard({
           />
         ) : null}
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-2">
+      <CardFooter className="flex flex-wrap gap-2 max-sm:grid max-sm:grid-cols-2">
         {showPlayButtons ? (
           <>
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              className="touch-target-sm max-sm:text-sm"
               onClick={() => handlePlay("zh-CN")}
             >
               Play Mainland
@@ -209,7 +209,7 @@ export function ResultCard({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              className="touch-target-sm max-sm:text-sm"
               onClick={() => handlePlay("zh-TW")}
             >
               Play Taiwan
@@ -217,7 +217,7 @@ export function ResultCard({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              className="touch-target-sm max-sm:col-span-2 max-sm:text-sm"
               onClick={handleStop}
               data-testid="stop-audio"
             >
@@ -229,14 +229,19 @@ export function ResultCard({
           <Button
             type="button"
             variant={isSaved ? "secondary" : "outline"}
-            size="sm"
+            className="touch-target-sm max-sm:col-span-2 max-sm:text-sm"
             onClick={onToggleSave}
           >
             <Bookmark />
             {isSaved ? "Saved" : "Save to phrasebook"}
           </Button>
         ) : null}
-        <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
+        <Button
+          type="button"
+          variant="outline"
+          className="touch-target-sm max-sm:col-span-2 max-sm:text-sm"
+          onClick={handleCopy}
+        >
           <Copy />
           Copy
         </Button>
