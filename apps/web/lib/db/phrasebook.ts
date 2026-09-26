@@ -39,7 +39,6 @@ export async function upsertPhrasebook(
          $16::jsonb, $17, $18, $19::timestamptz, now()
        )
        ON CONFLICT (id) DO UPDATE SET
-         user_id = EXCLUDED.user_id,
          translation_id = EXCLUDED.translation_id,
          source_text = EXCLUDED.source_text,
          source_lang = EXCLUDED.source_lang,
@@ -57,7 +56,8 @@ export async function upsertPhrasebook(
          tags = EXCLUDED.tags,
          notes = EXCLUDED.notes,
          created_at = EXCLUDED.created_at,
-         updated_at = now()`,
+         updated_at = now()
+       WHERE phrasebook.user_id = EXCLUDED.user_id`,
       [
         row.id,
         userId,
@@ -79,6 +79,18 @@ export async function upsertPhrasebook(
         row.notes,
         row.created_at ?? item.createdAt,
       ],
+    )
+  }
+
+  const ids = items.map((item) => item.id)
+  if (ids.length === 0) {
+    await query(`DELETE FROM phrasebook WHERE user_id = $1`, [userId])
+  } else {
+    await query(
+      `DELETE FROM phrasebook
+       WHERE user_id = $1
+         AND id <> ALL($2::uuid[])`,
+      [userId, ids],
     )
   }
 

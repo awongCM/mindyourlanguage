@@ -40,7 +40,6 @@ export async function upsertHistory(
          $12, $13::jsonb, $14::jsonb, $15::timestamptz
        )
        ON CONFLICT (id) DO UPDATE SET
-         user_id = EXCLUDED.user_id,
          source_text = EXCLUDED.source_text,
          source_lang = EXCLUDED.source_lang,
          target_lang = EXCLUDED.target_lang,
@@ -53,7 +52,8 @@ export async function upsertHistory(
          native_note = EXCLUDED.native_note,
          dictionary_matches = EXCLUDED.dictionary_matches,
          segments = EXCLUDED.segments,
-         created_at = EXCLUDED.created_at`,
+         created_at = EXCLUDED.created_at
+       WHERE translations.user_id = EXCLUDED.user_id`,
       [
         row.id,
         userId,
