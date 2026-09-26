@@ -41,7 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           token.userId = await ensureUserByEmail(user.email)
         } catch {
-          // Session works without cloud user id when Neon is down.
+          delete token.userId
         }
       }
       return token

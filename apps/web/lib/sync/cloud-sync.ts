@@ -1,7 +1,9 @@
+import type { PhrasebookEntry } from '@mindyourlanguage/shared'
 import { toast } from 'sonner'
 import { useHistoryStore } from '@/lib/stores/history'
 import { usePhrasebookStore } from '@/lib/stores/phrasebook'
 import { useReviewEventsStore } from '@/lib/stores/review-events'
+import { waitForSyncStoresHydration } from '@/lib/stores/wait-for-persist-hydration'
 
 type Identifiable = { id: string }
 
@@ -30,6 +32,18 @@ export function mergeById<T extends Identifiable>(
   return [...byId.values()]
 }
 
+export function phrasebookEntryUpdatedAt(entry: PhrasebookEntry): string {
+  const reviewedAt = entry.practiceStats?.lastReviewedAt
+  if (reviewedAt) {
+    const reviewedMs = Date.parse(reviewedAt)
+    const createdMs = Date.parse(entry.createdAt)
+    if (!Number.isNaN(reviewedMs) && reviewedMs >= createdMs) {
+      return reviewedAt
+    }
+  }
+  return entry.createdAt
+}
+
 async function readJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
     throw new Error(`Sync request failed: ${res.status}`)
@@ -41,6 +55,8 @@ export async function syncAllStores(): Promise<void> {
   if (typeof window === 'undefined') return
 
   try {
+    await waitForSyncStoresHydration()
+
     const historyItems = useHistoryStore.getState().items
     const historyPut = await fetch('/api/history', {
       method: 'PUT',
@@ -87,7 +103,7 @@ export async function syncAllStores(): Promise<void> {
       items: mergeById(
         phrasebookPutBody.items,
         phrasebookGetBody.items,
-        (row) => row.createdAt,
+        phrasebookEntryUpdatedAt,
       ),
     })
 

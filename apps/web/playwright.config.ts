@@ -27,6 +27,7 @@ export default defineConfig({
     env: {
       AUTH_SECRET: 'playwright-e2e-test-secret-min-32-chars',
       AUTH_URL: baseURL,
+      NEXT_PUBLIC_GOOGLE_AUTH: 'true',
     },
   },
 })

@@ -83,9 +83,7 @@ export async function upsertPhrasebook(
   }
 
   const ids = items.map((item) => item.id)
-  if (ids.length === 0) {
-    await query(`DELETE FROM phrasebook WHERE user_id = $1`, [userId])
-  } else {
+  if (ids.length > 0) {
     await query(
       `DELETE FROM phrasebook
        WHERE user_id = $1

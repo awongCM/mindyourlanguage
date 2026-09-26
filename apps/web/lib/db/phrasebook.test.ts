@@ -60,4 +60,13 @@ describe('upsertPhrasebook', () => {
     )
     expect(deleteCall?.[1]).toEqual(['user-a', [id]])
   })
+
+  it('does not delete cloud rows when PUT payload is empty', async () => {
+    await upsertPhrasebook('user-a', [])
+
+    const deleteCall = vi.mocked(query).mock.calls.find((call) =>
+      String(call[0]).includes('DELETE FROM phrasebook'),
+    )
+    expect(deleteCall).toBeUndefined()
+  })
 })
