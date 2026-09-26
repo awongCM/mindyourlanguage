@@ -127,6 +127,8 @@ cd apps/web && npx playwright install chromium
 npm run test:e2e -w apps/web   # from repo root; mocked APIs, no keys required
 ```
 
+Playwright starts the dev server on **port 3001** by default so it does not collide with `npm run dev` on 3000. Override with `PLAYWRIGHT_PORT`.
+
 ### Deploy (Render)
 
 1. **Blueprint sync** — Connect this repo in the [Render Dashboard](https://dashboard.render.com/) and sync from [`render.yaml`](render.yaml). The Blueprint provisions the **web service only** (no Render Postgres).
