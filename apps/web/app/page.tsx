@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { HistoryDrawer } from "@/components/history-drawer";
@@ -74,6 +74,8 @@ export default function Home() {
   const [phrasebookOpen, setPhrasebookOpen] = useState(false);
 
   const addHistory = useHistoryStore((state) => state.add);
+  const historyItems = useHistoryStore((state) => state.items);
+  const restoredLatestRef = useRef(false);
   const phrasebookItems = usePhrasebookStore((state) => state.items);
   const addPhrasebook = usePhrasebookStore((state) => state.add);
   const removePhrasebook = usePhrasebookStore((state) => state.remove);
@@ -115,6 +117,19 @@ export default function Home() {
     setResult(translationRecordToResponse(record));
     setError(null);
   }
+
+  // Put the newest saved translation back after a refresh, once, and only if
+  // the user has not typed or translated anything yet.
+  useEffect(() => {
+    if (restoredLatestRef.current) return;
+    const latest = historyItems[0];
+    if (!latest) return;
+    restoredLatestRef.current = true;
+    if (result !== null || sourceText.trim() !== "") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time restore of persisted history
+    restoreRecord(latest);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restore once from the first history snapshot
+  }, [historyItems]);
 
   function restorePhrasebook(entry: PhrasebookEntry) {
     setDirection({
