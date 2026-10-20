@@ -34,7 +34,7 @@ describe('upsertHistory', () => {
     expect(insertSql).not.toMatch(/DO UPDATE SET\s+user_id = EXCLUDED\.user_id/)
   })
 
-  it('only trims the translations table (phrasebook is not coupled to history)', async () => {
+  it('trims history with exactly one DELETE, and it targets translations only', async () => {
     await upsertHistory('user-a', [])
 
     const deletes = vi

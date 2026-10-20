@@ -11,6 +11,8 @@ vi.mock('@/lib/stores/wait-for-persist-hydration', () => ({
 }))
 
 import { useHistoryStore } from '@/lib/stores/history'
+import { usePhrasebookStore } from '@/lib/stores/phrasebook'
+import { useReviewEventsStore } from '@/lib/stores/review-events'
 import { waitForSyncStoresHydration } from '@/lib/stores/wait-for-persist-hydration'
 import {
   isApplyingRemoteState,
@@ -48,6 +50,7 @@ describe('startBackgroundSync', () => {
   afterEach(() => {
     stop()
     stop = () => undefined
+    vi.restoreAllMocks()
     vi.useRealTimers()
   })
 
@@ -206,11 +209,38 @@ describe('startBackgroundSync', () => {
     })
 
     it('does not push or react later when the pull reports not_configured', async () => {
+      // Wrap each store's subscribe so the returned unsubscribe functions can
+      // be observed: a later store change alone would not show a leaked
+      // subscription, because pullSettled/pulled never lead to a push here.
+      const unsubscribes: Array<ReturnType<typeof vi.fn>> = []
+      for (const store of [
+        useHistoryStore,
+        usePhrasebookStore,
+        useReviewEventsStore,
+      ]) {
+        const realSubscribe = store.subscribe.bind(store) as (
+          listener: () => void,
+        ) => () => void
+        vi.spyOn(store, 'subscribe').mockImplementation(((
+          listener: () => void,
+        ) => {
+          const wrapped = vi.fn(realSubscribe(listener))
+          unsubscribes.push(wrapped)
+          return wrapped
+        }) as typeof store.subscribe)
+      }
+
       await startWithPendingPull()
+      expect(unsubscribes).toHaveLength(3)
+      expect(unsubscribes.some((fn) => fn.mock.calls.length > 0)).toBe(false)
 
       touchHistory()
       finishPull('not_configured')
       await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS * 2)
+
+      // not_configured must drop all three subscriptions, before stop() runs.
+      for (const fn of unsubscribes) expect(fn).toHaveBeenCalledTimes(1)
+
       touchHistory()
       await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS * 2)
 
