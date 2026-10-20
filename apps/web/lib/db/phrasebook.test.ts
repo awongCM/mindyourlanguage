@@ -36,7 +36,15 @@ describe('upsertPhrasebook', () => {
     expect(insertSql).not.toMatch(/DO UPDATE SET\s+user_id = EXCLUDED\.user_id/)
   })
 
-  it('deletes phrasebook rows not present in the PUT payload', async () => {
+  function deleteCalls() {
+    return vi
+      .mocked(query)
+      .mock.calls.filter((call) =>
+        String(call[0]).includes('DELETE FROM phrasebook'),
+      )
+  }
+
+  it('does not delete rows that are merely absent from the payload', async () => {
     const id = '00000000-0000-4000-8000-000000000003'
     await upsertPhrasebook('user-a', [
       {
@@ -55,18 +63,26 @@ describe('upsertPhrasebook', () => {
       },
     ])
 
-    const deleteCall = vi.mocked(query).mock.calls.find((call) =>
-      String(call[0]).includes('DELETE FROM phrasebook'),
-    )
-    expect(deleteCall?.[1]).toEqual(['user-a', [id]])
+    expect(deleteCalls()).toHaveLength(0)
   })
 
-  it('does not delete cloud rows when PUT payload is empty', async () => {
+  it('does not delete cloud rows when the payload is empty and no ids are named', async () => {
     await upsertPhrasebook('user-a', [])
 
-    const deleteCall = vi.mocked(query).mock.calls.find((call) =>
-      String(call[0]).includes('DELETE FROM phrasebook'),
-    )
-    expect(deleteCall).toBeUndefined()
+    expect(deleteCalls()).toHaveLength(0)
+  })
+
+  it('deletes exactly the named ids, scoped by user', async () => {
+    const ids = [
+      '00000000-0000-4000-8000-000000000004',
+      '00000000-0000-4000-8000-000000000005',
+    ]
+    await upsertPhrasebook('user-a', [], ids)
+
+    const calls = deleteCalls()
+    expect(calls).toHaveLength(1)
+    expect(String(calls[0]?.[0])).toMatch(/user_id = \$1/)
+    expect(String(calls[0]?.[0])).toMatch(/id = ANY\(\$2::uuid\[\]\)/)
+    expect(calls[0]?.[1]).toEqual(['user-a', ids])
   })
 })

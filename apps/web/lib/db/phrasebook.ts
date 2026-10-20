@@ -23,6 +23,7 @@ export async function listPhrasebook(userId: string): Promise<PhrasebookEntry[]>
 export async function upsertPhrasebook(
   userId: string,
   items: PhrasebookEntry[],
+  deletedIds: string[] = [],
 ): Promise<PhrasebookEntry[]> {
   for (const item of items) {
     const row = entryToPhrasebookRow(item)
@@ -82,13 +83,13 @@ export async function upsertPhrasebook(
     )
   }
 
-  const ids = items.map((item) => item.id)
-  if (ids.length > 0) {
+  // Only rows the client explicitly named are deleted; absence never deletes.
+  if (deletedIds.length > 0) {
     await query(
       `DELETE FROM phrasebook
        WHERE user_id = $1
-         AND id <> ALL($2::uuid[])`,
-      [userId, ids],
+         AND id = ANY($2::uuid[])`,
+      [userId, deletedIds],
     )
   }
 

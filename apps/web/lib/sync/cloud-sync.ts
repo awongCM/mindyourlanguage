@@ -23,6 +23,23 @@ export type PullResult = 'ok' | 'not_configured' | 'failed'
 
 let applyingRemote = false
 
+/**
+ * Ids of the rows the server last reported, per store. Filled from every pull
+ * and push response; starts empty on each page load. Only rows in this set can
+ * be sent as `deletedIds`, so nothing the server has not shown us is ever
+ * deleted.
+ */
+const lastServerIds = {
+  history: new Set<string>(),
+  phrasebook: new Set<string>(),
+}
+
+/** Test-only: forget what the server last reported. */
+export function resetCloudSyncStateForTests(): void {
+  lastServerIds.history = new Set()
+  lastServerIds.phrasebook = new Set()
+}
+
 /** True while server rows are being written into the stores. */
 export function isApplyingRemoteState(): boolean {
   return applyingRemote
@@ -104,12 +121,24 @@ async function sendJson<T>(
   return readJson<T>(res)
 }
 
+/** Ids the server last reported that are no longer in the local list. */
+function removedLocally(
+  serverIds: Set<string>,
+  local: Identifiable[],
+): string[] {
+  const localIds = new Set(local.map((row) => row.id))
+  return [...serverIds].filter((id) => !localIds.has(id))
+}
+
 /** Merge server rows into the current local state (read at call time). */
 function applyRemoteRows(rows: {
   history: TranslationRecord[]
   phrasebook: PhrasebookEntry[]
   events: ReviewEvent[]
 }): void {
+  lastServerIds.history = new Set(rows.history.map((row) => row.id))
+  lastServerIds.phrasebook = new Set(rows.phrasebook.map((row) => row.id))
+
   applyRemote(() => {
     useHistoryStore.setState({
       items: mergeHistory(useHistoryStore.getState().items, rows.history),
@@ -166,15 +195,24 @@ async function runSync(options: SyncOptions): Promise<void> {
   try {
     await waitForSyncStoresHydration()
 
+    const historySnapshot = useHistoryStore.getState().items
+    const phrasebookSnapshot = usePhrasebookStore.getState().items
+
     const history = await sendJson<{ items: TranslationRecord[] }>(
       '/api/history',
       'PUT',
-      { items: useHistoryStore.getState().items },
+      {
+        items: historySnapshot,
+        deletedIds: removedLocally(lastServerIds.history, historySnapshot),
+      },
     )
     const phrasebook = await sendJson<{ items: PhrasebookEntry[] }>(
       '/api/phrasebook',
       'PUT',
-      { items: usePhrasebookStore.getState().items },
+      {
+        items: phrasebookSnapshot,
+        deletedIds: removedLocally(lastServerIds.phrasebook, phrasebookSnapshot),
+      },
     )
     const events = await sendJson<{ events: ReviewEvent[] }>(
       '/api/review-events',

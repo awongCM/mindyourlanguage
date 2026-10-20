@@ -20,6 +20,7 @@ import {
   mergeHistory,
   phrasebookEntryUpdatedAt,
   pullAllStores,
+  resetCloudSyncStateForTests,
   syncAllStores,
 } from './cloud-sync'
 
@@ -197,6 +198,7 @@ describe('cloud sync against the API', () => {
     vi.stubGlobal('window', globalThis)
     vi.stubGlobal('fetch', fetchMock)
     fetchMock.mockReset()
+    resetCloudSyncStateForTests()
     vi.mocked(toast.error).mockReset()
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     useHistoryStore.setState({ items: [] })
@@ -208,6 +210,13 @@ describe('cloud sync against the API', () => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
+
+  function okSyncResponses() {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url === '/api/review-events') return jsonResponse({ events: [] })
+      return jsonResponse({ items: [] })
+    })
+  }
 
   describe('pullAllStores', () => {
     it('merges server rows into local state and flags the update as remote', async () => {
@@ -288,13 +297,6 @@ describe('cloud sync against the API', () => {
   })
 
   describe('syncAllStores', () => {
-    function okSyncResponses() {
-      fetchMock.mockImplementation(async (url: string) => {
-        if (url === '/api/review-events') return jsonResponse({ events: [] })
-        return jsonResponse({ items: [] })
-      })
-    }
-
     it('pushes all three stores with PUT/PUT/POST in order', async () => {
       okSyncResponses()
       useHistoryStore.setState({
@@ -388,6 +390,91 @@ describe('cloud sync against the API', () => {
       release()
       await Promise.all([first, second, third])
       await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(6))
+    })
+  })
+
+  describe('explicit deletedIds', () => {
+    function serverHas(ids: string[]) {
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url === '/api/review-events') return jsonResponse({ events: [] })
+        if (init?.method === 'PUT') {
+          const body = JSON.parse(String(init.body)) as { items: unknown[] }
+          return jsonResponse({ items: body.items })
+        }
+        return jsonResponse({
+          items:
+            url === '/api/history'
+              ? ids.map((id) => historyRecord(id, '2026-01-01T00:00:00.000Z'))
+              : ids.map((id) => phrasebookEntry(id)),
+        })
+      })
+    }
+
+    function putBody(url: string): { items: { id: string }[]; deletedIds: string[] } {
+      const call = fetchMock.mock.calls.find(
+        ([callUrl, init]) => callUrl === url && init?.method === 'PUT',
+      )
+      return JSON.parse(String(call?.[1]?.body))
+    }
+
+    it('sends rows the server had and the user then removed locally', async () => {
+      serverHas(['a', 'b'])
+      await pullAllStores()
+      expect(useHistoryStore.getState().items.map((row) => row.id).sort()).toEqual(
+        ['a', 'b'],
+      )
+
+      useHistoryStore.setState({
+        items: useHistoryStore.getState().items.filter((row) => row.id !== 'b'),
+      })
+      usePhrasebookStore.setState({
+        items: usePhrasebookStore.getState().items.filter((row) => row.id !== 'b'),
+      })
+      fetchMock.mockClear()
+
+      await syncAllStores({ quiet: true })
+
+      expect(putBody('/api/history').deletedIds).toEqual(['b'])
+      expect(putBody('/api/phrasebook').deletedIds).toEqual(['b'])
+      expect(putBody('/api/history').items.map((row) => row.id)).toEqual(['a'])
+    })
+
+    it('sends no deletedIds without a prior pull', async () => {
+      okSyncResponses()
+      usePhrasebookStore.setState({ items: [phrasebookEntry('only-local')] })
+
+      await syncAllStores({ quiet: true })
+
+      expect(putBody('/api/history').deletedIds).toEqual([])
+      expect(putBody('/api/phrasebook').deletedIds).toEqual([])
+    })
+
+    it('sends no deletedIds after a failed pull', async () => {
+      fetchMock.mockImplementation(async () =>
+        jsonResponse({ error: 'Database error' }, 503),
+      )
+      await expect(pullAllStores()).resolves.toBe('failed')
+
+      okSyncResponses()
+      fetchMock.mockClear()
+      await syncAllStores({ quiet: true })
+
+      expect(putBody('/api/history').deletedIds).toEqual([])
+      expect(putBody('/api/phrasebook').deletedIds).toEqual([])
+    })
+
+    it('does not re-send ids after the server has confirmed the delete', async () => {
+      serverHas(['a', 'b'])
+      await pullAllStores()
+      usePhrasebookStore.setState({
+        items: usePhrasebookStore.getState().items.filter((row) => row.id !== 'b'),
+      })
+
+      await syncAllStores({ quiet: true })
+      fetchMock.mockClear()
+      await syncAllStores({ quiet: true })
+
+      expect(putBody('/api/phrasebook').deletedIds).toEqual([])
     })
   })
 })

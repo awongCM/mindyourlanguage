@@ -35,13 +35,19 @@ function sampleRecord(index: number): TranslationRecord {
   }
 }
 
-function putRequest(items: TranslationRecord[]) {
+function putBody(body: unknown) {
   return new Request('http://localhost/api/history', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items }),
+    body: JSON.stringify(body),
   })
 }
+
+function putRequest(items: TranslationRecord[], deletedIds?: string[]) {
+  return putBody(deletedIds === undefined ? { items } : { items, deletedIds })
+}
+
+const goneId = '22222222-2222-4222-8222-222222222222'
 
 describe('/api/history', () => {
   beforeEach(() => {
@@ -155,5 +161,89 @@ describe('/api/history', () => {
     const res = await PUT(req as never)
     expect(res.status).toBe(400)
     expect(resolveSyncUser).not.toHaveBeenCalled()
+  })
+
+  it('PUT passes explicit deletedIds through to the db layer', async () => {
+    vi.mocked(resolveSyncUser).mockResolvedValue({
+      kind: 'user',
+      userId: 'user-1',
+    })
+    vi.mocked(upsertHistory).mockResolvedValue([])
+
+    const res = await PUT(putRequest([sampleRecord(1)], [goneId]) as never)
+    expect(res.status).toBe(200)
+    expect(upsertHistory).toHaveBeenCalledWith(
+      'user-1',
+      [sampleRecord(1)],
+      [goneId],
+    )
+  })
+
+  it('PUT sends an empty deletedIds list when none are given', async () => {
+    vi.mocked(resolveSyncUser).mockResolvedValue({
+      kind: 'user',
+      userId: 'user-1',
+    })
+    vi.mocked(upsertHistory).mockResolvedValue([])
+
+    await PUT(putRequest([sampleRecord(1)]) as never)
+    expect(upsertHistory).toHaveBeenCalledWith('user-1', [sampleRecord(1)], [])
+  })
+
+  it('PUT drops non-UUID ids, ids also present in items, and duplicates', async () => {
+    vi.mocked(resolveSyncUser).mockResolvedValue({
+      kind: 'user',
+      userId: 'user-1',
+    })
+    vi.mocked(upsertHistory).mockResolvedValue([])
+
+    await PUT(
+      putRequest(
+        [sampleRecord(1)],
+        [
+          goneId,
+          goneId,
+          sampleRecord(1).id,
+          'not-a-uuid',
+          "'; DROP TABLE translations; --",
+        ],
+      ) as never,
+    )
+    expect(upsertHistory).toHaveBeenCalledWith(
+      'user-1',
+      [sampleRecord(1)],
+      [goneId],
+    )
+  })
+
+  it('PUT returns 400 when deletedIds is not an array of strings', async () => {
+    for (const deletedIds of ['nope', { a: 1 }, [1, 2], [goneId, null]]) {
+      const res = await PUT(putBody({ items: [], deletedIds }) as never)
+      expect(res.status).toBe(400)
+    }
+    expect(resolveSyncUser).not.toHaveBeenCalled()
+    expect(upsertHistory).not.toHaveBeenCalled()
+  })
+
+  it('PUT with only deletedIds and a valid cookie deletes without creating a user', async () => {
+    vi.mocked(resolveSyncUser).mockResolvedValue({
+      kind: 'user',
+      userId: 'user-1',
+    })
+    vi.mocked(upsertHistory).mockResolvedValue([])
+
+    const res = await PUT(putRequest([], [goneId]) as never)
+    expect(res.status).toBe(200)
+    expect(resolveSyncUser).toHaveBeenCalledWith({ create: false })
+    expect(upsertHistory).toHaveBeenCalledWith('user-1', [], [goneId])
+  })
+
+  it('PUT with only deletedIds and no identity returns an empty list without a db call', async () => {
+    vi.mocked(resolveSyncUser).mockResolvedValue({ kind: 'none' })
+
+    const res = await PUT(putRequest([], [goneId]) as never)
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ items: [] })
+    expect(upsertHistory).not.toHaveBeenCalled()
   })
 })

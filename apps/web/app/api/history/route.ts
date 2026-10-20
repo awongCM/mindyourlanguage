@@ -3,6 +3,7 @@ import type { TranslationRecord } from '@mindyourlanguage/shared'
 import { resolveSyncUser } from '@/lib/auth-session'
 import { isDatabaseConfigured } from '@/lib/db'
 import { listHistory, upsertHistory } from '@/lib/db/history'
+import { normalizeDeletedIds } from '@/lib/sync/deleted-ids'
 
 function syncNotConfigured(): NextResponse {
   return NextResponse.json(
@@ -32,7 +33,7 @@ export async function GET(): Promise<NextResponse> {
 export async function PUT(req: NextRequest): Promise<NextResponse> {
   if (!isDatabaseConfigured()) return syncNotConfigured()
 
-  let body: { items?: TranslationRecord[] }
+  let body: { items?: TranslationRecord[]; deletedIds?: unknown }
   try {
     body = await req.json()
   } catch {
@@ -43,6 +44,14 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'items array required' }, { status: 400 })
   }
 
+  const deletedIds = normalizeDeletedIds(body.deletedIds, body.items)
+  if (!deletedIds) {
+    return NextResponse.json(
+      { error: 'deletedIds must be an array of strings' },
+      { status: 400 },
+    )
+  }
+
   try {
     const resolution = await resolveSyncUser({ create: body.items.length > 0 })
     if (resolution.kind === 'rate_limited') {
@@ -50,7 +59,11 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     }
     if (resolution.kind === 'none') return NextResponse.json({ items: [] })
 
-    const items = await upsertHistory(resolution.userId, body.items)
+    const items = await upsertHistory(
+      resolution.userId,
+      body.items,
+      deletedIds,
+    )
     return NextResponse.json({ items })
   } catch {
     return syncDatabaseError()

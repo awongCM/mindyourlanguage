@@ -187,7 +187,7 @@ If an old **Render Postgres** instance exists from a previous Blueprint (`databa
 The app can keep each browser's history, phrasebook, and practice data in Neon **without Google sign-in**.
 
 - The server sets an httpOnly `myl_anon` cookie the first time that browser saves something. Only a SHA-256 hash of its token is stored (`users.anon_token_hash`, migration `003`). Reads (GET) with no cookie create nothing and return an empty list.
-- On load the page pulls that browser's rows from Neon, merges them with browser storage, and shows the newest translation again. After changes it pushes quietly in the background about 2 seconds later, and never pushes before a pull has succeeded.
+- On load the page pulls that browser's rows from Neon, merges them with browser storage, and shows the newest translation again. After changes it pushes quietly in the background about 2 seconds later. Pushes add or update rows, and delete only rows this browser saw on the server and then removed locally. A failed or empty first load never deletes cloud rows.
 - A signed-in Google session, if present, takes precedence over the cookie identity.
 - Clearing cookies or opening another browser starts an empty Neon user. Old rows stay in Neon and are not linked.
 - With `DATABASE_URL` unset the sync routes return `501` and the app stays browser-only, skipping sync silently with no errors shown. The page still restores the newest history entry on refresh from browser storage.
