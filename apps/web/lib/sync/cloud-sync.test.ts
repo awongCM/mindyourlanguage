@@ -318,6 +318,58 @@ describe('cloud sync against the API', () => {
       ])
     })
 
+    it('does not resurrect a row deleted locally while the push was in flight', async () => {
+      usePhrasebookStore.setState({
+        items: [phrasebookEntry('a'), phrasebookEntry('b')],
+      })
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url === '/api/review-events') return jsonResponse({ events: [] })
+        if (url === '/api/phrasebook') {
+          usePhrasebookStore.setState({
+            items: usePhrasebookStore
+              .getState()
+              .items.filter((row) => row.id !== 'b'),
+          })
+          return jsonResponse({
+            items: [phrasebookEntry('a'), phrasebookEntry('b')],
+          })
+        }
+        return jsonResponse({ items: [] })
+      })
+
+      await syncAllStores({ quiet: true })
+
+      expect(
+        usePhrasebookStore.getState().items.map((row) => row.id),
+      ).toEqual(['a'])
+
+      fetchMock.mockClear()
+      await syncAllStores({ quiet: true })
+      const put = fetchMock.mock.calls.find(
+        ([url, init]) => url === '/api/phrasebook' && init?.method === 'PUT',
+      )
+      expect(JSON.parse(String(put?.[1]?.body)).deletedIds).toEqual(['b'])
+    })
+
+    it('still adds server rows that were never sent (for example from another tab)', async () => {
+      usePhrasebookStore.setState({ items: [phrasebookEntry('a')] })
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url === '/api/review-events') return jsonResponse({ events: [] })
+        if (url === '/api/phrasebook') {
+          return jsonResponse({
+            items: [phrasebookEntry('a'), phrasebookEntry('other-tab')],
+          })
+        }
+        return jsonResponse({ items: [] })
+      })
+
+      await syncAllStores({ quiet: true })
+
+      expect(
+        usePhrasebookStore.getState().items.map((row) => row.id).sort(),
+      ).toEqual(['a', 'other-tab'])
+    })
+
     it('keeps an item saved locally while the sync was in flight', async () => {
       fetchMock.mockImplementation(async (url: string) => {
         if (url === '/api/review-events') {

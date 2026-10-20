@@ -130,23 +130,60 @@ function removedLocally(
   return [...serverIds].filter((id) => !localIds.has(id))
 }
 
-/** Merge server rows into the current local state (read at call time). */
-function applyRemoteRows(rows: {
-  history: TranslationRecord[]
-  phrasebook: PhrasebookEntry[]
-  events: ReviewEvent[]
-}): void {
+/**
+ * Drop remote rows that were sent in a push but have since been removed
+ * locally, so a delete made during the request is not undone by the response.
+ * Rows that were never sent (for example from another tab) are kept.
+ */
+function withoutDeletedDuringPush<T extends Identifiable>(
+  remote: T[],
+  current: Identifiable[],
+  sent: Set<string>,
+): T[] {
+  const currentIds = new Set(current.map((row) => row.id))
+  return remote.filter((row) => currentIds.has(row.id) || !sent.has(row.id))
+}
+
+/**
+ * Merge server rows into the current local state (read at call time). Pass
+ * `sent` after a push to skip rows deleted locally while it was in flight.
+ */
+function applyRemoteRows(
+  rows: {
+    history: TranslationRecord[]
+    phrasebook: PhrasebookEntry[]
+    events: ReviewEvent[]
+  },
+  sent?: { history: Set<string>; phrasebook: Set<string> },
+): void {
+  // Track the server's unfiltered answer so a locally deleted row is still
+  // named in the next push's deletedIds.
   lastServerIds.history = new Set(rows.history.map((row) => row.id))
   lastServerIds.phrasebook = new Set(rows.phrasebook.map((row) => row.id))
 
+  const historyRows = sent
+    ? withoutDeletedDuringPush(
+        rows.history,
+        useHistoryStore.getState().items,
+        sent.history,
+      )
+    : rows.history
+  const phrasebookRows = sent
+    ? withoutDeletedDuringPush(
+        rows.phrasebook,
+        usePhrasebookStore.getState().items,
+        sent.phrasebook,
+      )
+    : rows.phrasebook
+
   applyRemote(() => {
     useHistoryStore.setState({
-      items: mergeHistory(useHistoryStore.getState().items, rows.history),
+      items: mergeHistory(useHistoryStore.getState().items, historyRows),
     })
     usePhrasebookStore.setState({
       items: mergeById(
         usePhrasebookStore.getState().items,
-        rows.phrasebook,
+        phrasebookRows,
         phrasebookEntryUpdatedAt,
       ),
     })
@@ -220,11 +257,17 @@ async function runSync(options: SyncOptions): Promise<void> {
       { events: useReviewEventsStore.getState().events },
     )
 
-    applyRemoteRows({
-      history: history.items,
-      phrasebook: phrasebook.items,
-      events: events.events,
-    })
+    applyRemoteRows(
+      {
+        history: history.items,
+        phrasebook: phrasebook.items,
+        events: events.events,
+      },
+      {
+        history: new Set(historySnapshot.map((row) => row.id)),
+        phrasebook: new Set(phrasebookSnapshot.map((row) => row.id)),
+      },
+    )
   } catch (error) {
     if (error instanceof SyncNotConfiguredError) return
     if (options.quiet) {
