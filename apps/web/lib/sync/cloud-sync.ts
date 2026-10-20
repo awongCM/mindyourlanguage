@@ -6,7 +6,11 @@ import type {
 import { toast } from 'sonner'
 import { HISTORY_MAX, useHistoryStore } from '@/lib/stores/history'
 import { usePhrasebookStore } from '@/lib/stores/phrasebook'
-import { useReviewEventsStore } from '@/lib/stores/review-events'
+import {
+  REVIEW_EVENTS_MAX,
+  useReviewEventsStore,
+} from '@/lib/stores/review-events'
+import { REVIEW_EVENTS_SYNC_MAX } from './limits'
 import { waitForSyncStoresHydration } from '@/lib/stores/wait-for-persist-hydration'
 
 type Identifiable = { id: string }
@@ -86,6 +90,22 @@ export function mergeHistory(
   return mergeById(local, remote, (row) => row.createdAt)
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
     .slice(0, HISTORY_MAX)
+}
+
+export function mergeReviewEvents(
+  local: ReviewEvent[],
+  remote: ReviewEvent[],
+): ReviewEvent[] {
+  return mergeById(local, remote, (row) => row.reviewedAt)
+    .sort((a, b) => Date.parse(b.reviewedAt) - Date.parse(a.reviewedAt))
+    .slice(0, REVIEW_EVENTS_MAX)
+}
+
+/** Newest-first slice for POST; keeps requests within server count limits. */
+function reviewEventsForSync(events: ReviewEvent[]): ReviewEvent[] {
+  return [...events]
+    .sort((a, b) => Date.parse(b.reviewedAt) - Date.parse(a.reviewedAt))
+    .slice(0, REVIEW_EVENTS_SYNC_MAX)
 }
 
 export function phrasebookEntryUpdatedAt(entry: PhrasebookEntry): string {
@@ -190,10 +210,9 @@ function applyRemoteRows(
       ),
     })
     useReviewEventsStore.setState({
-      events: mergeById(
+      events: mergeReviewEvents(
         useReviewEventsStore.getState().events,
         rows.events,
-        (row) => row.reviewedAt,
       ),
     })
   })
@@ -268,7 +287,9 @@ async function runSync(options: SyncOptions): Promise<void> {
     const events = await sendJson<{ events: ReviewEvent[] }>(
       '/api/review-events',
       'POST',
-      { events: useReviewEventsStore.getState().events },
+      {
+        events: reviewEventsForSync(useReviewEventsStore.getState().events),
+      },
     )
 
     applyRemoteRows(

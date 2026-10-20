@@ -13,11 +13,15 @@ vi.mock('@/lib/stores/wait-for-persist-hydration', () => ({
 import { toast } from 'sonner'
 import { HISTORY_MAX, useHistoryStore } from '@/lib/stores/history'
 import { usePhrasebookStore } from '@/lib/stores/phrasebook'
-import { useReviewEventsStore } from '@/lib/stores/review-events'
+import {
+  REVIEW_EVENTS_MAX,
+  useReviewEventsStore,
+} from '@/lib/stores/review-events'
 import {
   isApplyingRemoteState,
   mergeById,
   mergeHistory,
+  mergeReviewEvents,
   phrasebookEntryUpdatedAt,
   pullAllStores,
   resetCloudSyncStateForTests,
@@ -176,6 +180,29 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
+describe('mergeReviewEvents', () => {
+  it('sorts newest first and caps at REVIEW_EVENTS_MAX', () => {
+    const local = Array.from({ length: REVIEW_EVENTS_MAX }, (_, i) =>
+      reviewEvent(
+        `local-${i}`,
+        new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+      ),
+    )
+    const remote = Array.from({ length: 500 }, (_, i) =>
+      reviewEvent(
+        `remote-${i}`,
+        new Date(Date.UTC(2026, 1, 1, 0, 0, i)).toISOString(),
+      ),
+    )
+
+    const merged = mergeReviewEvents(local, remote)
+
+    expect(merged).toHaveLength(REVIEW_EVENTS_MAX)
+    expect(merged.some((row) => row.id.startsWith('remote-'))).toBe(true)
+    expect(merged.some((row) => row.id === 'local-0')).toBe(false)
+  })
+})
+
 describe('mergeHistory', () => {
   it('sorts newest first and caps at HISTORY_MAX', () => {
     const local = [historyRecord('old', '2026-01-01T00:00:00.000Z')]
@@ -297,6 +324,59 @@ describe('cloud sync against the API', () => {
   })
 
   describe('syncAllStores', () => {
+    it('caps review events in the POST body at REVIEW_EVENTS_MAX', async () => {
+      okSyncResponses()
+      useReviewEventsStore.setState({
+        events: Array.from({ length: REVIEW_EVENTS_MAX + 200 }, (_, i) =>
+          reviewEvent(
+            `ev-${i}`,
+            new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+          ),
+        ),
+      })
+
+      await syncAllStores({ quiet: true })
+
+      const post = fetchMock.mock.calls.find(
+        ([url, init]) => url === '/api/review-events' && init?.method === 'POST',
+      )
+      const body = JSON.parse(String(post?.[1]?.body)) as {
+        events: ReviewEvent[]
+      }
+      expect(body.events).toHaveLength(REVIEW_EVENTS_MAX)
+      expect(body.events[0]?.id).toBe(`ev-${REVIEW_EVENTS_MAX + 199}`)
+    })
+
+    it('trims merged review events after a pull with more than REVIEW_EVENTS_MAX rows', async () => {
+      useReviewEventsStore.setState({
+        events: Array.from({ length: REVIEW_EVENTS_MAX }, (_, i) =>
+          reviewEvent(
+            `local-${i}`,
+            new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+          ),
+        ),
+      })
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url === '/api/review-events') {
+          return jsonResponse({
+            events: Array.from({ length: 500 }, (_, i) =>
+              reviewEvent(
+                `remote-${i}`,
+                new Date(Date.UTC(2026, 1, 1, 0, 0, i)).toISOString(),
+              ),
+            ),
+          })
+        }
+        return jsonResponse({ items: [] })
+      })
+
+      await pullAllStores()
+
+      expect(useReviewEventsStore.getState().events).toHaveLength(
+        REVIEW_EVENTS_MAX,
+      )
+    })
+
     it('pushes all three stores with PUT/PUT/POST in order', async () => {
       okSyncResponses()
       useHistoryStore.setState({
