@@ -3,12 +3,12 @@ import { enterSourceText, SAMPLE_TEXT } from './helpers/enter-source-text'
 import { mockTranslateApi } from './helpers/mock-translate'
 
 const syncedPhrasebookEntry = {
-  id: 'pb-sync-1',
+  id: '33333333-3333-4333-8333-333333333333',
   translationId: null,
-  sourceText: SAMPLE_TEXT,
+  sourceText: 'Server-only phrase',
   sourceLang: 'en',
   targetLang: 'zh',
-  translation: '你好，很高兴认识你。',
+  translation: '服务器短语',
   characterSet: 'simplified',
   dictionaryMatches: [],
   segments: [],
@@ -88,12 +88,33 @@ test.describe('auth and cloud sync (mocked)', () => {
     await expect(page.getByTestId('result-translation')).toBeVisible()
     await page.getByRole('button', { name: 'Save to phrasebook' }).click()
 
+    // The save schedules a background push BACKGROUND_SYNC_DEBOUNCE_MS (2 s)
+    // later. Register the wait only now, right before the click, with a window
+    // shorter than that debounce: the background push cannot land inside it,
+    // so only the manual "Sync now" click can produce this PUT.
+    const pushWithSavedEntry = page.waitForRequest(
+      (request) =>
+        request.url().endsWith('/api/phrasebook') &&
+        request.method() === 'PUT' &&
+        (request.postData() ?? '').includes(SAMPLE_TEXT),
+      { timeout: 1_000 },
+    )
     await page.getByRole('button', { name: 'Sync now' }).click()
+
+    const pushBody = (await pushWithSavedEntry).postDataJSON() as {
+      items: { sourceText: string }[]
+    }
+    expect(pushBody.items.some((item) => item.sourceText === SAMPLE_TEXT)).toBe(
+      true,
+    )
 
     await page.reload()
     await page.getByRole('button', { name: 'Phrasebook' }).click()
     const drawer = page.getByRole('dialog')
+    // Sync now pushes the locally saved entry and merges server rows into local
+    // state instead of replacing it, so the saved entry and the mocked
+    // server-only entry (different id, text and translation) both appear.
     await expect(drawer.getByText(SAMPLE_TEXT)).toBeVisible()
-    await expect(drawer.getByText('你好，很高兴认识你。')).toBeVisible()
+    await expect(drawer.getByText('Server-only phrase')).toBeVisible()
   })
 })

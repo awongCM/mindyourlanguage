@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthHeaderActions } from "@/components/auth-header-actions";
+import { CloudPersistence } from "@/components/cloud-persistence";
 import { OnboardingSyncHint } from "@/components/onboarding-sync-hint";
 import { AppSessionProvider } from "@/components/session-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -39,6 +40,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AppSessionProvider>
+          <CloudPersistence />
           <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pt-[env(safe-area-inset-top)]">
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 py-3 pb-3 sm:px-6">
               <div className="flex flex-wrap items-start justify-between gap-3">

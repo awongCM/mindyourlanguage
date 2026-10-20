@@ -1,5 +1,6 @@
 import type { PhrasebookEntry } from '@mindyourlanguage/shared'
 import { query } from '@/lib/db'
+import { PayloadTooLargeError, PHRASEBOOK_MAX_ITEMS } from '@/lib/sync/limits'
 import {
   entryToPhrasebookRow,
   phrasebookRowToEntry,
@@ -23,7 +24,21 @@ export async function listPhrasebook(userId: string): Promise<PhrasebookEntry[]>
 export async function upsertPhrasebook(
   userId: string,
   items: PhrasebookEntry[],
+  deletedIds: string[] = [],
 ): Promise<PhrasebookEntry[]> {
+  if (items.length > 0) {
+    // Rows this request neither upserts nor deletes stay; together with the
+    // upserts they must fit the per-user cap.
+    const counted = await query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM phrasebook
+       WHERE user_id = $1 AND id <> ALL($2::uuid[]) AND id <> ALL($3::uuid[])`,
+      [userId, items.map((item) => item.id), deletedIds],
+    )
+    if ((counted[0]?.n ?? 0) + items.length > PHRASEBOOK_MAX_ITEMS) {
+      throw new PayloadTooLargeError()
+    }
+  }
+
   for (const item of items) {
     const row = entryToPhrasebookRow(item)
     await query(
@@ -82,13 +97,13 @@ export async function upsertPhrasebook(
     )
   }
 
-  const ids = items.map((item) => item.id)
-  if (ids.length > 0) {
+  // Only rows the client explicitly named are deleted; absence never deletes.
+  if (deletedIds.length > 0) {
     await query(
       `DELETE FROM phrasebook
        WHERE user_id = $1
-         AND id <> ALL($2::uuid[])`,
-      [userId, ids],
+         AND id = ANY($2::uuid[])`,
+      [userId, deletedIds],
     )
   }
 

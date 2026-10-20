@@ -33,4 +33,45 @@ describe('upsertHistory', () => {
     expect(insertSql).toContain('WHERE translations.user_id = EXCLUDED.user_id')
     expect(insertSql).not.toMatch(/DO UPDATE SET\s+user_id = EXCLUDED\.user_id/)
   })
+
+  it('trims history with exactly one DELETE, and it targets translations only', async () => {
+    await upsertHistory('user-a', [])
+
+    const deletes = vi
+      .mocked(query)
+      .mock.calls.map((call) => String(call[0]))
+      .filter((sql) => /DELETE\s+FROM/i.test(sql))
+    expect(deletes).toHaveLength(1)
+    expect(deletes[0]).toMatch(/DELETE FROM translations/)
+    expect(deletes[0]).not.toMatch(/phrasebook/i)
+  })
+
+  it('deletes the named ids (scoped by user) after upserts and before the trim', async () => {
+    const ids = [
+      '00000000-0000-4000-8000-000000000004',
+      '00000000-0000-4000-8000-000000000005',
+    ]
+    await upsertHistory('user-a', [], ids)
+
+    const deleteCalls = vi
+      .mocked(query)
+      .mock.calls.filter((call) => /DELETE\s+FROM/i.test(String(call[0])))
+    expect(deleteCalls).toHaveLength(2)
+    const [byIds, trim] = deleteCalls
+    expect(String(byIds?.[0])).toMatch(/DELETE FROM translations/)
+    expect(String(byIds?.[0])).toMatch(/user_id = \$1/)
+    expect(String(byIds?.[0])).toMatch(/id = ANY\(\$2::uuid\[\]\)/)
+    expect(byIds?.[1]).toEqual(['user-a', ids])
+    expect(String(trim?.[0])).toMatch(/NOT IN/)
+  })
+
+  it('runs no delete-by-ids when no ids are named', async () => {
+    await upsertHistory('user-a', [])
+
+    const deletes = vi
+      .mocked(query)
+      .mock.calls.map((call) => String(call[0]))
+      .filter((sql) => /id = ANY/i.test(sql))
+    expect(deletes).toHaveLength(0)
+  })
 })

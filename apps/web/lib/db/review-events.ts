@@ -1,5 +1,6 @@
 import type { ReviewEvent } from '@mindyourlanguage/shared'
 import { query } from '@/lib/db'
+import { REVIEW_EVENTS_SERVER_MAX } from '@/lib/sync/limits'
 import {
   eventToReviewEventRow,
   reviewEventRowToEvent,
@@ -41,6 +42,19 @@ export async function appendReviewEvents(
         row.reviewed_at,
         row.mode ?? 'self_grade',
       ],
+    )
+  }
+
+  if (events.length > 0) {
+    // Keep the newest REVIEW_EVENTS_SERVER_MAX events per user.
+    await query(
+      `DELETE FROM review_events
+       WHERE user_id = $1
+         AND id NOT IN (
+           SELECT id FROM review_events WHERE user_id = $1
+           ORDER BY reviewed_at DESC LIMIT $2
+         )`,
+      [userId, REVIEW_EVENTS_SERVER_MAX],
     )
   }
 

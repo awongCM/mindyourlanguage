@@ -24,6 +24,7 @@ export async function listHistory(userId: string): Promise<TranslationRecord[]> 
 export async function upsertHistory(
   userId: string,
   items: TranslationRecord[],
+  deletedIds: string[] = [],
 ): Promise<TranslationRecord[]> {
   const capped = items.slice(0, HISTORY_MAX)
 
@@ -71,6 +72,16 @@ export async function upsertHistory(
         JSON.stringify(row.segments),
         row.created_at ?? item.createdAt,
       ],
+    )
+  }
+
+  // Only rows the client explicitly named are deleted; absence never deletes.
+  if (deletedIds.length > 0) {
+    await query(
+      `DELETE FROM translations
+       WHERE user_id = $1
+         AND id = ANY($2::uuid[])`,
+      [userId, deletedIds],
     )
   }
 

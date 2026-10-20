@@ -67,6 +67,8 @@ If `DATABASE_URL` is unset, the script also checks `apps/web/.env.local` for a `
 export DATABASE_URL='postgresql://…?sslmode=require'
 psql "$DATABASE_URL" -f db/migrations/001_initial.sql
 psql "$DATABASE_URL" -f db/migrations/002_cloud_sync.sql
+psql "$DATABASE_URL" -f db/migrations/003_anon_users.sql
+psql "$DATABASE_URL" -f db/migrations/004_phrasebook_drop_translation_fk.sql
 ```
 
 ### Option D — Neon SQL Editor
@@ -75,6 +77,8 @@ Run the contents of each file in order:
 
 1. [`db/migrations/001_initial.sql`](../db/migrations/001_initial.sql) — `users`, `translations`, `phrasebook`
 2. [`db/migrations/002_cloud_sync.sql`](../db/migrations/002_cloud_sync.sql) — sync columns + `review_events`
+3. [`db/migrations/003_anon_users.sql`](../db/migrations/003_anon_users.sql) — `users.anon_token_hash` for anonymous browser identity
+4. [`db/migrations/004_phrasebook_drop_translation_fk.sql`](../db/migrations/004_phrasebook_drop_translation_fk.sql) — drops the phrasebook → translations foreign key so history trims no longer delete saved phrases
 
 Re-running is safe: migrations use `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` where applicable.
 
@@ -178,13 +182,35 @@ If an old **Render Postgres** instance exists from a previous Blueprint (`databa
 
 ---
 
+## 8. Anonymous browser persistence (no sign-in)
+
+The app can keep each browser's history, phrasebook, and practice data in Neon **without Google sign-in**.
+
+- The server sets an httpOnly `myl_anon` cookie the first time that browser saves something. Only a SHA-256 hash of its token is stored (`users.anon_token_hash`, migration `003`). Reads (GET) with no cookie create nothing and return an empty list.
+- On load the page pulls that browser's rows from Neon, merges them with browser storage, and shows the newest translation again. After changes it pushes quietly in the background about 2 seconds later. Pushes add or update rows, and delete only rows this browser saw on the server and then removed locally. A failed or empty first load never deletes cloud rows.
+- A signed-in Google session, if present, takes precedence over the cookie identity.
+- Clearing cookies or opening another browser starts an empty Neon user. Old rows stay in Neon and are not linked.
+- With `DATABASE_URL` unset the sync routes return `501` and the app stays browser-only, skipping sync silently with no errors shown. The page still restores the newest history entry on refresh from browser storage.
+- **Limits** (constants in [`apps/web/lib/sync/limits.ts`](../apps/web/lib/sync/limits.ts)) protect Neon Free's 0.5 GB: request bodies up to 5 MB; 200 history items, 2,000 phrasebook items, 2,000 `deletedIds` and 1,000 review events per request; at most 2,000 phrasebook rows per user; and the newest 5,000 review events kept per user (older ones are trimmed). A sync over a limit gets `413 Payload too large`, which the app logs quietly in the browser console (background sync) or shows as the usual sync error toast ("Sync now").
+
+**Render setup for this mode:** apply migrations 001–004, then set only `DATABASE_URL` (Neon direct URL, `sslmode=require`). Keep `AUTH_SECRET` and `AUTH_URL` as they are. `NEXT_PUBLIC_GOOGLE_AUTH` and the Google OAuth variables are not needed.
+
+**Verify:** save a phrase, reload, and confirm History, Phrasebook, and the last translation return. In the Neon SQL editor:
+
+```sql
+SELECT count(*) FROM users WHERE anon_token_hash IS NOT NULL;
+SELECT count(*) FROM phrasebook;
+```
+
+---
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---------|----------------|
 | Sync returns **501** | `DATABASE_URL` not set on server |
 | Sync returns **503** | Neon unreachable, cold start timeout, or SQL error — check Render logs |
-| Sign-in works but sync **401** | `session.user.id` missing — JWT/user row not created; check Neon connectivity during login |
+| Signed-in data lands in an anonymous user | `session.user.id` missing (JWT/user row not created); check Neon connectivity during login |
 | `npm run db:migrate` fails SSL | Add `?sslmode=require` to URL |
 | First DB query slow after idle | Neon Free scale-to-zero (~5 min); normal on free tier |
 
