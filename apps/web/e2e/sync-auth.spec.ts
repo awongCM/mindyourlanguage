@@ -86,15 +86,19 @@ test.describe('auth and cloud sync (mocked)', () => {
     await enterSourceText(page)
     await page.getByRole('button', { name: 'Translate' }).click()
     await expect(page.getByTestId('result-translation')).toBeVisible()
-    // Only a push made after the save carries the locally saved entry.
+    await page.getByRole('button', { name: 'Save to phrasebook' }).click()
+
+    // The save schedules a background push BACKGROUND_SYNC_DEBOUNCE_MS (2 s)
+    // later. Register the wait only now, right before the click, with a window
+    // shorter than that debounce: the background push cannot land inside it,
+    // so only the manual "Sync now" click can produce this PUT.
     const pushWithSavedEntry = page.waitForRequest(
       (request) =>
         request.url().endsWith('/api/phrasebook') &&
         request.method() === 'PUT' &&
         (request.postData() ?? '').includes(SAMPLE_TEXT),
+      { timeout: 1_000 },
     )
-    await page.getByRole('button', { name: 'Save to phrasebook' }).click()
-
     await page.getByRole('button', { name: 'Sync now' }).click()
 
     const pushBody = (await pushWithSavedEntry).postDataJSON() as {
