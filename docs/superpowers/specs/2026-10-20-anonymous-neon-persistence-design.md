@@ -98,7 +98,7 @@ The three routes keep their `501` when `DATABASE_URL` is unset and `503` on data
 | New client component mounted in `app/layout.tsx` | On mount, wait for store rehydration, run `pullAllStores()`, then subscribe to the three stores and run `syncAllStores()` debounced (2 s) after changes |
 | `app/page.tsx` | After history rehydrates, if no result is shown, restore `items[0]` with the existing `restoreRecord` |
 
-**Pull before push.** `PUT /api/phrasebook` deletes server rows missing from the client list. On load the client first pulls and merges with `mergeById`, so local data is a superset of server data before any push. This keeps a partially empty browser from deleting cloud rows. The existing guard against an empty phrasebook PUT stays.
+**Pull before push.** On load the client first pulls and merges with `mergeById`, so local data is a superset of server data before any push. Pushes add or update rows, and delete only rows this browser saw on the server and then removed locally: the client names them in an explicit `deletedIds` list and the server never deletes a row that is not named. A failed or empty first load therefore never deletes cloud rows, so the old empty-list guard is no longer needed.
 
 **Restore latest result.** Reads from the local history store, so it also works with Neon unset.
 
@@ -124,14 +124,14 @@ flowchart LR
 | More data | Same tables; per-user indexes already exist (`idx_translations_user_id`, `idx_phrasebook_user_id`, `idx_review_events_user_id`). Move to Neon's pooled URL if connections become a limit. |
 | Cross-browser access | Add Google sign-in later: on first sign-in, attach the email to the current anonymous user instead of creating a new one. Existing rows keep their `user_id`. |
 | Stale anonymous users | Scheduled SQL delete of users with no recent rows. Not needed at current scale. |
-| Abuse | Per-IP limit on user creation now; payload caps and per-user limits can be added in the route layer. |
+| Abuse | Per-IP limit on user creation now; payload caps and per-user limits are already in the route layer (`apps/web/lib/sync/limits.ts`). |
 
 ---
 
 ## 8. Deploy
 
 1. Create the Neon database (direct URL, `sslmode=require`, AWS US West Oregon).
-2. Run migrations 001, 002, 003 with the existing workflow or `npm run db:migrate`.
+2. Run migrations 001–004 (004 drops the phrasebook → translations foreign key) with the existing workflow or `npm run db:migrate`.
 3. Set `DATABASE_URL` on the Render service. Keep `AUTH_SECRET` and `AUTH_URL` as they are today.
 4. Redeploy. No `NEXT_PUBLIC_GOOGLE_AUTH` change and no Google OAuth setup.
 
@@ -141,7 +141,7 @@ flowchart LR
 
 - `auth()` returns `null` without throwing when no Google provider is configured. The live translate route already depends on this.
 - Writing a cookie from a Next.js route handler works in this repo's Next.js version. Read `node_modules/next/dist/docs/` first (see `apps/web/AGENTS.md`).
-- Sync routes are not currently rate limited per user. Limiting only user creation is enough for now; payload caps are deferred.
+- Sync routes are not currently rate limited per user. Only user creation is rate limited; payload caps live in `apps/web/lib/sync/limits.ts` (request body 5 MB with `413` when over a limit, at most 2,000 phrasebook rows per user, review events trimmed on the server to the newest 5,000 per user).
 
 ## 10. Verification
 
