@@ -131,9 +131,10 @@ function removedLocally(
 }
 
 /**
- * Drop remote rows that were sent in a push but have since been removed
- * locally, so a delete made during the request is not undone by the response.
- * Rows that were never sent (for example from another tab) are kept.
+ * Drop remote rows that were local when a request started (`sent`: pushed, or
+ * present at pull start) but have since been removed locally, so a delete made
+ * during the request is not undone by the response. Rows that were not local
+ * then (for example new from another tab) are kept.
  */
 function withoutDeletedDuringPush<T extends Identifiable>(
   remote: T[],
@@ -146,7 +147,8 @@ function withoutDeletedDuringPush<T extends Identifiable>(
 
 /**
  * Merge server rows into the current local state (read at call time). Pass
- * `sent` after a push to skip rows deleted locally while it was in flight.
+ * `sent` (ids local when the request started) to skip rows deleted locally
+ * while it was in flight.
  */
 function applyRemoteRows(
   rows: {
@@ -204,6 +206,15 @@ export async function pullAllStores(): Promise<PullResult> {
   try {
     await waitForSyncStoresHydration()
 
+    // Rows that are local now; one missing when the response arrives was
+    // deleted during the request and must not be brought back.
+    const present = {
+      history: new Set(useHistoryStore.getState().items.map((row) => row.id)),
+      phrasebook: new Set(
+        usePhrasebookStore.getState().items.map((row) => row.id),
+      ),
+    }
+
     const [historyRes, phrasebookRes, eventsRes] = await Promise.all([
       fetch('/api/history'),
       fetch('/api/phrasebook'),
@@ -215,11 +226,14 @@ export async function pullAllStores(): Promise<PullResult> {
     )
     const events = await readJson<{ events: ReviewEvent[] }>(eventsRes)
 
-    applyRemoteRows({
-      history: history.items,
-      phrasebook: phrasebook.items,
-      events: events.events,
-    })
+    applyRemoteRows(
+      {
+        history: history.items,
+        phrasebook: phrasebook.items,
+        events: events.events,
+      },
+      present,
+    )
     return 'ok'
   } catch (error) {
     if (error instanceof SyncNotConfiguredError) return 'not_configured'

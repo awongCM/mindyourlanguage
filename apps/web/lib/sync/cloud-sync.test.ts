@@ -558,6 +558,70 @@ describe('cloud sync against the API', () => {
       expect(putBody('/api/phrasebook').deletedIds).toEqual([])
     })
 
+    it('does not bring back a row deleted locally while a pull is in flight', async () => {
+      serverHas(['a', 'b'])
+      await pullAllStores()
+
+      let release: () => void = () => undefined
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      let gated = true
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'PUT') {
+          const body = JSON.parse(String(init.body)) as { items: unknown[] }
+          return jsonResponse({ items: body.items })
+        }
+        if (gated) {
+          gated = false
+          await gate
+        }
+        if (url === '/api/review-events') return jsonResponse({ events: [] })
+        if (url === '/api/history') {
+          return jsonResponse({
+            items: [
+              { ...historyRecord('a', '2026-01-01T00:00:00.000Z'), translation: 'server-a' },
+              historyRecord('b', '2026-01-01T00:00:00.000Z'),
+              historyRecord('c', '2026-01-01T00:00:00.000Z'),
+            ],
+          })
+        }
+        return jsonResponse({
+          items: [phrasebookEntry('a'), phrasebookEntry('b'), phrasebookEntry('c')],
+        })
+      })
+
+      fetchMock.mockClear()
+      const pull = pullAllStores()
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+      // The user deletes "b" while the pull request is still pending.
+      useHistoryStore.setState({
+        items: useHistoryStore.getState().items.filter((row) => row.id !== 'b'),
+      })
+      usePhrasebookStore.setState({
+        items: usePhrasebookStore.getState().items.filter((row) => row.id !== 'b'),
+      })
+      release()
+      await expect(pull).resolves.toBe('ok')
+
+      // "b" stays deleted, "c" (new on the server) is kept, and "a" (local at
+      // pull start, returned by the server, still local) merges as usual.
+      const historyIds = useHistoryStore.getState().items.map((row) => row.id).sort()
+      const phrasebookIds = usePhrasebookStore.getState().items.map((row) => row.id).sort()
+      expect(historyIds).toEqual(['a', 'c'])
+      expect(phrasebookIds).toEqual(['a', 'c'])
+      expect(
+        useHistoryStore.getState().items.find((row) => row.id === 'a')?.translation,
+      ).toBe('server-a')
+
+      fetchMock.mockClear()
+      await syncAllStores({ quiet: true })
+
+      expect(putBody('/api/history').deletedIds).toEqual(['b'])
+      expect(putBody('/api/phrasebook').deletedIds).toEqual(['b'])
+    })
+
     it('does not re-send ids after the server has confirmed the delete', async () => {
       serverHas(['a', 'b'])
       await pullAllStores()
