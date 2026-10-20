@@ -443,6 +443,49 @@ describe('cloud sync against the API', () => {
       await Promise.all([first, second, third])
       await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(6))
     })
+
+    async function failingRunWithQueued(queue: Array<{ quiet?: boolean }>) {
+      let release: () => void = () => undefined
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      let firstCall = true
+      fetchMock.mockImplementation(async () => {
+        if (firstCall) {
+          firstCall = false
+          await gate
+        }
+        return jsonResponse({ error: 'Database error' }, 503)
+      })
+
+      const first = syncAllStores({ quiet: true })
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+      for (const options of queue) void syncAllStores(options)
+
+      release()
+      await first
+      // 1 failed call for the first run + 1 for the re-run (fails at /api/history)
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+
+    it('keeps a queued manual sync loud when a quiet call is queued after it', async () => {
+      await failingRunWithQueued([{}, { quiet: true }])
+
+      expect(toast.error).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps a queued manual sync loud when a quiet call was queued before it', async () => {
+      await failingRunWithQueued([{ quiet: true }, {}])
+
+      expect(toast.error).toHaveBeenCalledTimes(1)
+    })
+
+    it('stays quiet when every queued call is quiet', async () => {
+      await failingRunWithQueued([{ quiet: true }, { quiet: true }])
+
+      expect(toast.error).not.toHaveBeenCalled()
+    })
   })
 
   describe('explicit deletedIds', () => {

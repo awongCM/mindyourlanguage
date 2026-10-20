@@ -289,7 +289,10 @@ export function syncAllStores(options: SyncOptions = {}): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve()
 
   if (inFlight) {
-    queuedOptions = options
+    // A queued quiet call must not hide a queued manual one.
+    queuedOptions = {
+      quiet: Boolean(queuedOptions?.quiet ?? true) && Boolean(options.quiet),
+    }
     return inFlight
   }
 
