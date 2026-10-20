@@ -209,7 +209,7 @@ SELECT count(*) FROM phrasebook;
 |---------|----------------|
 | Sync returns **501** | `DATABASE_URL` not set on server |
 | Sync returns **503** | Neon unreachable, cold start timeout, or SQL error — check Render logs |
-| Sign-in works but sync **401** | `session.user.id` missing — JWT/user row not created; check Neon connectivity during login |
+| Signed-in data lands in an anonymous user | `session.user.id` missing (JWT/user row not created); check Neon connectivity during login |
 | `npm run db:migrate` fails SSL | Add `?sslmode=require` to URL |
 | First DB query slow after idle | Neon Free scale-to-zero (~5 min); normal on free tier |
 

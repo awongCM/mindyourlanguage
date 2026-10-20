@@ -3,7 +3,7 @@
 - **What it is:** Web app (Next.js) for intermediate Mandarin learners — translate, phrasebook, SRS practice, reliability tracking.
 - **Who it's for:** Learners who want natural phrasing, not beginner drills.
 - **Key differentiator:** Dictionary-grounded translation + practice loop (phrasebook, SRS, check attempts).
-- **Current stage:** Phase 6 merged — optional Neon cloud sync + Google OAuth; local-first still default without env.
+- **Current stage:** Phase 6 merged (optional Neon cloud sync + Google OAuth); anonymous Neon persistence (httpOnly cookie identity, background sync) implemented on `feature/anonymous-neon-persistence`; local-first still default without env.
 - **Current goals:** Deploy Render + Neon with anonymous browser persistence (cookie identity, no Google sign-in); local dev still works on `localStorage` alone.
 
 ## Positioning
