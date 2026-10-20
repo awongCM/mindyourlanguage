@@ -93,7 +93,10 @@ test.describe('auth and cloud sync (mocked)', () => {
     await page.reload()
     await page.getByRole('button', { name: 'Phrasebook' }).click()
     const drawer = page.getByRole('dialog')
-    await expect(drawer.getByText(SAMPLE_TEXT)).toBeVisible()
-    await expect(drawer.getByText('你好，很高兴认识你。')).toBeVisible()
+    // Sync now merges server rows into local state instead of replacing it, so
+    // the locally saved entry and the mocked server entry (different ids, same
+    // text) both appear.
+    await expect(drawer.getByText(SAMPLE_TEXT).first()).toBeVisible()
+    await expect(drawer.getByText('你好，很高兴认识你。').first()).toBeVisible()
   })
 })
