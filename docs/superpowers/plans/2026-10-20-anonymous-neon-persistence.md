@@ -31,6 +31,7 @@
 | `syncAllStores` merges server rows into the *current* local state and no longer does a second `GET` after each `PUT`/`POST`. | The old code replaced local state with a server snapshot, which can drop an item saved while a sync is in flight. The `PUT`/`POST` responses already return the full server list, so the extra `GET` only adds load. |
 | `syncAllStores` is single-flight with one queued re-run. | Overlapping first writes could each create an anonymous user and orphan rows. |
 | Pull/sync updates are flagged so the background subscriber ignores them. | Without the flag, applying server rows triggers another sync forever. |
+| If the initial pull fails, the next local change retries the pull and pushes only after a pull has succeeded. | The phrasebook `PUT` deletes server rows missing from the client list. Pushing from a partly empty browser after a failed pull would delete cloud rows, which breaks the spec's "pull before any push" rule. |
 | `requireUserId` is replaced by `resolveSyncUser`; routes no longer return `401`. | A missing session is now normal. |
 | `DATABASE_URL: ''` is added to the Playwright web server env. | A developer's `.env.local` with a real Neon URL would otherwise make e2e write to Neon. |
 | A test asserts `MIGRATION_FILES` equals the files in `db/migrations`. | `run-migrations.ts` hard-codes the list; forgetting `003` would silently skip it. |
@@ -1837,6 +1838,7 @@ describe('startBackgroundSync', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(syncAllStores).toHaveBeenCalledTimes(1)
     expect(syncAllStores).toHaveBeenCalledWith({ quiet: true })
+    expect(pullAllStores).toHaveBeenCalledTimes(1)
   })
 
   it('does not subscribe when sync is not configured on the server', async () => {
@@ -1849,14 +1851,23 @@ describe('startBackgroundSync', () => {
     expect(syncAllStores).not.toHaveBeenCalled()
   })
 
-  it('still subscribes after a failed pull', async () => {
-    vi.mocked(pullAllStores).mockResolvedValue('failed')
+  it('retries the pull before pushing after a failed pull, and never pushes before a pull succeeds', async () => {
+    vi.mocked(pullAllStores)
+      .mockResolvedValueOnce('failed')
+      .mockResolvedValueOnce('failed')
+      .mockResolvedValueOnce('ok')
     await start()
 
     touchHistory()
     await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS)
+    expect(pullAllStores).toHaveBeenCalledTimes(2)
+    expect(syncAllStores).not.toHaveBeenCalled()
 
+    touchHistory()
+    await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS)
+    expect(pullAllStores).toHaveBeenCalledTimes(3)
     expect(syncAllStores).toHaveBeenCalledTimes(1)
+    expect(syncAllStores).toHaveBeenCalledWith({ quiet: true })
   })
 
   it('ignores store updates that come from applying server rows', async () => {
@@ -1924,25 +1935,38 @@ export const BACKGROUND_SYNC_DEBOUNCE_MS = 2000
 
 /**
  * Pull this browser's rows once, then push (debounced, quiet) after local
- * changes. Returns a stop function. Does nothing further when the server
- * reports sync is not configured.
+ * changes. Never pushes before a pull has succeeded: if the first pull
+ * fails, the next change retries the pull and pushes only if it succeeds.
+ * Returns a stop function. Does nothing further when the server reports
+ * sync is not configured.
  */
 export function startBackgroundSync(): () => void {
   let stopped = false
+  let pulled = false
   let timer: ReturnType<typeof setTimeout> | null = null
   const unsubscribers: Array<() => void> = []
+
+  async function pushWhenPulled() {
+    if (!pulled) {
+      const result = await pullAllStores()
+      if (stopped || result !== 'ok') return
+      pulled = true
+    }
+    await syncAllStores({ quiet: true })
+  }
 
   function schedule() {
     if (isApplyingRemoteState()) return
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
       timer = null
-      void syncAllStores({ quiet: true })
+      void pushWhenPulled()
     }, BACKGROUND_SYNC_DEBOUNCE_MS)
   }
 
   void pullAllStores().then((result) => {
     if (stopped || result === 'not_configured') return
+    pulled = result === 'ok'
     unsubscribers.push(
       useHistoryStore.subscribe(schedule),
       usePhrasebookStore.subscribe(schedule),
@@ -2340,7 +2364,7 @@ git commit -m "docs: document anonymous Neon persistence setup"
 | §3 migration 003 and runner | Task 1 |
 | §4 server files | Tasks 2, 3 |
 | §5 `pullAllStores`, silent 501, mounted component, debounced sync, restore latest | Tasks 4, 5, 6 |
-| §5 pull before push | Tasks 4, 5 (`startBackgroundSync` never pushes on load) |
+| §5 pull before push | Tasks 4, 5 (`startBackgroundSync` never pushes on load, and after a failed pull it retries the pull before any push) |
 | §8 deploy steps | Task 7 |
 | §9 assumptions (`auth()` null, cookie in route handler, rate limiting scope) | Task 7 step 6.7; cookie API checked against `node_modules/next/dist/docs/01-app/03-api-reference/04-functions/cookies.md` (async, `set` supported in route handlers) |
 | §10 verification (Vitest, Playwright, manual) | Tasks 1–7 |
