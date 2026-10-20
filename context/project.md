@@ -4,7 +4,7 @@
 - **Who it's for:** Learners who want natural phrasing, not beginner drills.
 - **Key differentiator:** Dictionary-grounded translation + practice loop (phrasebook, SRS, check attempts).
 - **Current stage:** Phase 6 merged — optional Neon cloud sync + Google OAuth; local-first still default without env.
-- **Current goals:** Deploy Render + Neon when ready; owner uses local translate + `localStorage` until OAuth/Neon configured.
+- **Current goals:** Deploy Render + Neon with anonymous browser persistence (cookie identity, no Google sign-in); local dev still works on `localStorage` alone.
 
 ## Positioning
 
