@@ -1,5 +1,9 @@
 # Phase 6 — Neon cloud persistence
 
+## 2026-10-20 — Anonymous path supersedes sign-in for deploy
+
+**PR #26** adds cookie-based sync (no Google). Same Neon tables; resolution order is session `user.id` then `myl_anon`. Detailed deploy/gaps: **`context/anonymous-neon-persistence.md`**. Phase 6 Google auto-sync on login still pushes before pull — fix when OAuth is re-enabled.
+
 ## 2026-09-26 — Merged PR #23 + sync hardening
 
 **Shipped:** Neon-backed sync (history, phrasebook, review events), NextAuth Google OAuth (env-gated), `docs/neon-setup.md`, `render.yaml` without Render Postgres, local dev without Neon/Google (`NEXT_PUBLIC_GOOGLE_AUTH=false`).
