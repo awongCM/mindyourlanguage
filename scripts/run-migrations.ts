@@ -3,7 +3,11 @@ import path from 'node:path'
 import pg from 'pg'
 
 const ROOT = path.resolve(__dirname, '..')
-const MIGRATION_FILES = ['001_initial.sql', '002_cloud_sync.sql'] as const
+export const MIGRATION_FILES = [
+  '001_initial.sql',
+  '002_cloud_sync.sql',
+  '003_anon_users.sql',
+] as const
 
 function parseEnvValue(raw: string): string {
   const trimmed = raw.trim()

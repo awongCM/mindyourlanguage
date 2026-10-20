@@ -67,6 +67,7 @@ If `DATABASE_URL` is unset, the script also checks `apps/web/.env.local` for a `
 export DATABASE_URL='postgresql://…?sslmode=require'
 psql "$DATABASE_URL" -f db/migrations/001_initial.sql
 psql "$DATABASE_URL" -f db/migrations/002_cloud_sync.sql
+psql "$DATABASE_URL" -f db/migrations/003_anon_users.sql
 ```
 
 ### Option D — Neon SQL Editor
@@ -75,6 +76,7 @@ Run the contents of each file in order:
 
 1. [`db/migrations/001_initial.sql`](../db/migrations/001_initial.sql) — `users`, `translations`, `phrasebook`
 2. [`db/migrations/002_cloud_sync.sql`](../db/migrations/002_cloud_sync.sql) — sync columns + `review_events`
+3. [`db/migrations/003_anon_users.sql`](../db/migrations/003_anon_users.sql) — `users.anon_token_hash` for anonymous browser identity
 
 Re-running is safe: migrations use `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` where applicable.
 
