@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { TranslationRecord } from '@mindyourlanguage/shared'
-import { requireUserId } from '@/lib/auth-session'
+import { resolveSyncUser } from '@/lib/auth-session'
 import { isDatabaseConfigured } from '@/lib/db'
 import { listHistory, upsertHistory } from '@/lib/db/history'
 
@@ -16,12 +16,13 @@ function syncDatabaseError(): NextResponse {
 }
 
 export async function GET(): Promise<NextResponse> {
-  const userIdOrResponse = await requireUserId()
-  if (userIdOrResponse instanceof NextResponse) return userIdOrResponse
   if (!isDatabaseConfigured()) return syncNotConfigured()
 
   try {
-    const items = await listHistory(userIdOrResponse)
+    const resolution = await resolveSyncUser({ create: false })
+    if (resolution.kind !== 'user') return NextResponse.json({ items: [] })
+
+    const items = await listHistory(resolution.userId)
     return NextResponse.json({ items })
   } catch {
     return syncDatabaseError()
@@ -29,8 +30,6 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function PUT(req: NextRequest): Promise<NextResponse> {
-  const userIdOrResponse = await requireUserId()
-  if (userIdOrResponse instanceof NextResponse) return userIdOrResponse
   if (!isDatabaseConfigured()) return syncNotConfigured()
 
   let body: { items?: TranslationRecord[] }
@@ -45,7 +44,13 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const items = await upsertHistory(userIdOrResponse, body.items)
+    const resolution = await resolveSyncUser({ create: body.items.length > 0 })
+    if (resolution.kind === 'rate_limited') {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+    if (resolution.kind === 'none') return NextResponse.json({ items: [] })
+
+    const items = await upsertHistory(resolution.userId, body.items)
     return NextResponse.json({ items })
   } catch {
     return syncDatabaseError()
