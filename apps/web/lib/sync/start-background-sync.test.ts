@@ -213,21 +213,19 @@ describe('startBackgroundSync', () => {
       // be observed: a later store change alone would not show a leaked
       // subscription, because pullSettled/pulled never lead to a push here.
       const unsubscribes: Array<ReturnType<typeof vi.fn>> = []
-      for (const store of [
+      type Subscribable = { subscribe: (listener: () => void) => () => void }
+      const stores: Subscribable[] = [
         useHistoryStore,
         usePhrasebookStore,
         useReviewEventsStore,
-      ]) {
-        const realSubscribe = store.subscribe.bind(store) as (
-          listener: () => void,
-        ) => () => void
-        vi.spyOn(store, 'subscribe').mockImplementation(((
-          listener: () => void,
-        ) => {
+      ]
+      for (const store of stores) {
+        const realSubscribe = store.subscribe.bind(store)
+        vi.spyOn(store, 'subscribe').mockImplementation((listener) => {
           const wrapped = vi.fn(realSubscribe(listener))
           unsubscribes.push(wrapped)
           return wrapped
-        }) as typeof store.subscribe)
+        })
       }
 
       await startWithPendingPull()
