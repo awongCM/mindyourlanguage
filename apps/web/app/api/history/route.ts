@@ -4,6 +4,8 @@ import { resolveSyncUser } from '@/lib/auth-session'
 import { isDatabaseConfigured } from '@/lib/db'
 import { listHistory, upsertHistory } from '@/lib/db/history'
 import { normalizeDeletedIds } from '@/lib/sync/deleted-ids'
+import { HISTORY_SYNC_MAX_ITEMS, SYNC_MAX_DELETED_IDS } from '@/lib/sync/limits'
+import { payloadTooLarge, readSyncBody } from '@/lib/sync/read-body'
 
 function syncNotConfigured(): NextResponse {
   return NextResponse.json(
@@ -33,15 +35,20 @@ export async function GET(): Promise<NextResponse> {
 export async function PUT(req: NextRequest): Promise<NextResponse> {
   if (!isDatabaseConfigured()) return syncNotConfigured()
 
-  let body: { items?: TranslationRecord[]; deletedIds?: unknown }
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
-  }
+  const read = await readSyncBody(req)
+  if (!read.ok) return read.response
+  const body = read.body as { items?: TranslationRecord[]; deletedIds?: unknown }
 
   if (!Array.isArray(body.items)) {
     return NextResponse.json({ error: 'items array required' }, { status: 400 })
+  }
+
+  if (
+    body.items.length > HISTORY_SYNC_MAX_ITEMS ||
+    (Array.isArray(body.deletedIds) &&
+      body.deletedIds.length > SYNC_MAX_DELETED_IDS)
+  ) {
+    return payloadTooLarge()
   }
 
   const deletedIds = normalizeDeletedIds(body.deletedIds, body.items)

@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import type { ReviewEvent } from '@mindyourlanguage/shared'
 import { GET, POST } from './route'
+import {
+  REVIEW_EVENTS_SYNC_MAX,
+  SYNC_MAX_BODY_BYTES,
+} from '@/lib/sync/limits'
 
 vi.mock('@/lib/auth-session', () => ({
   resolveSyncUser: vi.fn(),
@@ -104,5 +108,45 @@ describe('/api/review-events', () => {
     const res = await POST(postRequest([sampleEvent]) as never)
     expect(res.status).toBe(429)
     expect(appendReviewEvents).not.toHaveBeenCalled()
+  })
+
+  it('POST returns 413 when content-length is over the body limit', async () => {
+    const req = new Request('http://localhost/api/review-events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'content-length': String(SYNC_MAX_BODY_BYTES + 1),
+      },
+      body: JSON.stringify({ events: [] }),
+    })
+
+    const res = await POST(req as never)
+    expect(res.status).toBe(413)
+    await expect(res.json()).resolves.toEqual({ error: 'Payload too large' })
+    expect(resolveSyncUser).not.toHaveBeenCalled()
+  })
+
+  it('POST returns 413 when events exceed REVIEW_EVENTS_SYNC_MAX', async () => {
+    const many = Array.from(
+      { length: REVIEW_EVENTS_SYNC_MAX + 1 },
+      () => sampleEvent,
+    )
+
+    const res = await POST(postRequest(many) as never)
+    expect(res.status).toBe(413)
+    await expect(res.json()).resolves.toEqual({ error: 'Payload too large' })
+    expect(resolveSyncUser).not.toHaveBeenCalled()
+    expect(appendReviewEvents).not.toHaveBeenCalled()
+  })
+
+  it('POST returns 400 when events is not an array', async () => {
+    const req = new Request('http://localhost/api/review-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ events: 'nope' }),
+    })
+
+    const res = await POST(req as never)
+    expect(res.status).toBe(400)
   })
 })

@@ -7,6 +7,8 @@ import {
   DEFAULT_REVIEW_EVENTS_LIMIT,
   listReviewEvents,
 } from '@/lib/db/review-events'
+import { REVIEW_EVENTS_SYNC_MAX } from '@/lib/sync/limits'
+import { payloadTooLarge, readSyncBody } from '@/lib/sync/read-body'
 
 function syncNotConfigured(): NextResponse {
   return NextResponse.json(
@@ -45,16 +47,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!isDatabaseConfigured()) return syncNotConfigured()
 
-  let body: { events?: ReviewEvent[] }
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
-  }
+  const read = await readSyncBody(req)
+  if (!read.ok) return read.response
+  const body = read.body as { events?: ReviewEvent[] }
 
   if (!Array.isArray(body.events)) {
     return NextResponse.json({ error: 'events array required' }, { status: 400 })
   }
+
+  if (body.events.length > REVIEW_EVENTS_SYNC_MAX) return payloadTooLarge()
 
   try {
     const resolution = await resolveSyncUser({ create: body.events.length > 0 })

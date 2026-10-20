@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { TranslationRecord } from '@mindyourlanguage/shared'
 import { GET, PUT } from './route'
 import { HISTORY_MAX } from '@/lib/stores/history'
+import {
+  HISTORY_SYNC_MAX_ITEMS,
+  SYNC_MAX_BODY_BYTES,
+  SYNC_MAX_DELETED_IDS,
+} from '@/lib/sync/limits'
 
 vi.mock('@/lib/auth-session', () => ({
   resolveSyncUser: vi.fn(),
@@ -245,5 +250,43 @@ describe('/api/history', () => {
     expect(res.status).toBe(200)
     await expect(res.json()).resolves.toEqual({ items: [] })
     expect(upsertHistory).not.toHaveBeenCalled()
+  })
+
+  it('PUT returns 413 when content-length is over the body limit', async () => {
+    const req = new Request('http://localhost/api/history', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'content-length': String(SYNC_MAX_BODY_BYTES + 1),
+      },
+      body: JSON.stringify({ items: [] }),
+    })
+
+    const res = await PUT(req as never)
+    expect(res.status).toBe(413)
+    await expect(res.json()).resolves.toEqual({ error: 'Payload too large' })
+    expect(resolveSyncUser).not.toHaveBeenCalled()
+  })
+
+  it('PUT returns 413 when items exceed HISTORY_SYNC_MAX_ITEMS', async () => {
+    const many = Array.from({ length: HISTORY_SYNC_MAX_ITEMS + 1 }, (_, i) =>
+      sampleRecord(i),
+    )
+
+    const res = await PUT(putRequest(many) as never)
+    expect(res.status).toBe(413)
+    await expect(res.json()).resolves.toEqual({ error: 'Payload too large' })
+    expect(resolveSyncUser).not.toHaveBeenCalled()
+    expect(upsertHistory).not.toHaveBeenCalled()
+  })
+
+  it('PUT returns 413 when deletedIds exceed SYNC_MAX_DELETED_IDS', async () => {
+    const ids = Array.from({ length: SYNC_MAX_DELETED_IDS + 1 }, (_, i) =>
+      `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+    )
+
+    const res = await PUT(putRequest([], ids) as never)
+    expect(res.status).toBe(413)
+    expect(resolveSyncUser).not.toHaveBeenCalled()
   })
 })
