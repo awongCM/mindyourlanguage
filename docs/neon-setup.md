@@ -191,6 +191,7 @@ The app can keep each browser's history, phrasebook, and practice data in Neon *
 - A signed-in Google session, if present, takes precedence over the cookie identity.
 - Clearing cookies or opening another browser starts an empty Neon user. Old rows stay in Neon and are not linked.
 - With `DATABASE_URL` unset the sync routes return `501` and the app stays browser-only, skipping sync silently with no errors shown. The page still restores the newest history entry on refresh from browser storage.
+- **Limits** (constants in [`apps/web/lib/sync/limits.ts`](../apps/web/lib/sync/limits.ts)) protect Neon Free's 0.5 GB: request bodies up to 5 MB; 200 history items, 2,000 phrasebook items, 2,000 `deletedIds` and 1,000 review events per request; at most 2,000 phrasebook rows per user; and the newest 5,000 review events kept per user (older ones are trimmed). A sync over a limit gets `413 Payload too large`, which the app logs quietly in the browser console (background sync) or shows as the usual sync error toast ("Sync now").
 
 **Render setup for this mode:** apply migrations 001–004, then set only `DATABASE_URL` (Neon direct URL, `sslmode=require`). Keep `AUTH_SECRET` and `AUTH_URL` as they are. `NEXT_PUBLIC_GOOGLE_AUTH` and the Google OAuth variables are not needed.
 
