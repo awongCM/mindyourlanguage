@@ -7,6 +7,7 @@ export const MIGRATION_FILES = [
   '001_initial.sql',
   '002_cloud_sync.sql',
   '003_anon_users.sql',
+  '004_phrasebook_drop_translation_fk.sql',
 ] as const
 
 function parseEnvValue(raw: string): string {

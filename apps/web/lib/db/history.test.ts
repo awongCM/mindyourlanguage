@@ -33,4 +33,16 @@ describe('upsertHistory', () => {
     expect(insertSql).toContain('WHERE translations.user_id = EXCLUDED.user_id')
     expect(insertSql).not.toMatch(/DO UPDATE SET\s+user_id = EXCLUDED\.user_id/)
   })
+
+  it('only trims the translations table (phrasebook is not coupled to history)', async () => {
+    await upsertHistory('user-a', [])
+
+    const deletes = vi
+      .mocked(query)
+      .mock.calls.map((call) => String(call[0]))
+      .filter((sql) => /DELETE\s+FROM/i.test(sql))
+    expect(deletes).toHaveLength(1)
+    expect(deletes[0]).toMatch(/DELETE FROM translations/)
+    expect(deletes[0]).not.toMatch(/phrasebook/i)
+  })
 })

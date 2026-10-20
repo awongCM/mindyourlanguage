@@ -68,6 +68,7 @@ export DATABASE_URL='postgresql://…?sslmode=require'
 psql "$DATABASE_URL" -f db/migrations/001_initial.sql
 psql "$DATABASE_URL" -f db/migrations/002_cloud_sync.sql
 psql "$DATABASE_URL" -f db/migrations/003_anon_users.sql
+psql "$DATABASE_URL" -f db/migrations/004_phrasebook_drop_translation_fk.sql
 ```
 
 ### Option D — Neon SQL Editor
@@ -77,6 +78,7 @@ Run the contents of each file in order:
 1. [`db/migrations/001_initial.sql`](../db/migrations/001_initial.sql) — `users`, `translations`, `phrasebook`
 2. [`db/migrations/002_cloud_sync.sql`](../db/migrations/002_cloud_sync.sql) — sync columns + `review_events`
 3. [`db/migrations/003_anon_users.sql`](../db/migrations/003_anon_users.sql) — `users.anon_token_hash` for anonymous browser identity
+4. [`db/migrations/004_phrasebook_drop_translation_fk.sql`](../db/migrations/004_phrasebook_drop_translation_fk.sql) — drops the phrasebook → translations foreign key so history trims no longer delete saved phrases
 
 Re-running is safe: migrations use `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` where applicable.
 
@@ -190,7 +192,7 @@ The app can keep each browser's history, phrasebook, and practice data in Neon *
 - Clearing cookies or opening another browser starts an empty Neon user. Old rows stay in Neon and are not linked.
 - With `DATABASE_URL` unset the sync routes return `501` and the app stays browser-only, skipping sync silently with no errors shown. The page still restores the newest history entry on refresh from browser storage.
 
-**Render setup for this mode:** apply migrations 001, 002, and 003, then set only `DATABASE_URL` (Neon direct URL, `sslmode=require`). Keep `AUTH_SECRET` and `AUTH_URL` as they are. `NEXT_PUBLIC_GOOGLE_AUTH` and the Google OAuth variables are not needed.
+**Render setup for this mode:** apply migrations 001–004, then set only `DATABASE_URL` (Neon direct URL, `sslmode=require`). Keep `AUTH_SECRET` and `AUTH_URL` as they are. `NEXT_PUBLIC_GOOGLE_AUTH` and the Google OAuth variables are not needed.
 
 **Verify:** save a phrase, reload, and confirm History, Phrasebook, and the last translation return. In the Neon SQL editor:
 
