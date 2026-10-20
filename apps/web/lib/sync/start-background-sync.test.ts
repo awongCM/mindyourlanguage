@@ -6,11 +6,17 @@ vi.mock('./cloud-sync', () => ({
   isApplyingRemoteState: vi.fn(),
 }))
 
+vi.mock('@/lib/stores/wait-for-persist-hydration', () => ({
+  waitForSyncStoresHydration: vi.fn(),
+}))
+
 import { useHistoryStore } from '@/lib/stores/history'
+import { waitForSyncStoresHydration } from '@/lib/stores/wait-for-persist-hydration'
 import {
   isApplyingRemoteState,
   pullAllStores,
   syncAllStores,
+  type PullResult,
 } from './cloud-sync'
 import {
   BACKGROUND_SYNC_DEBOUNCE_MS,
@@ -31,6 +37,9 @@ describe('startBackgroundSync', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.mocked(waitForSyncStoresHydration)
+      .mockReset()
+      .mockResolvedValue(undefined)
     vi.mocked(pullAllStores).mockReset().mockResolvedValue('ok')
     vi.mocked(syncAllStores).mockReset().mockResolvedValue(undefined)
     vi.mocked(isApplyingRemoteState).mockReset().mockReturnValue(false)
@@ -117,21 +126,121 @@ describe('startBackgroundSync', () => {
     expect(syncAllStores).not.toHaveBeenCalled()
   })
 
-  it('does not subscribe if stopped before the pull finishes', async () => {
-    let finishPull: (value: 'ok') => void = () => undefined
-    vi.mocked(pullAllStores).mockReturnValue(
-      new Promise((resolve) => {
-        finishPull = resolve
+  it('does not pull or subscribe if stopped before the stores hydrate', async () => {
+    let finishHydration: () => void = () => undefined
+    vi.mocked(waitForSyncStoresHydration).mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishHydration = resolve
       }),
     )
     stop = startBackgroundSync()
     stop()
-    finishPull('ok')
+    finishHydration()
     await vi.advanceTimersByTimeAsync(0)
 
     touchHistory()
     await vi.advanceTimersByTimeAsync(5_000)
 
+    expect(pullAllStores).not.toHaveBeenCalled()
     expect(syncAllStores).not.toHaveBeenCalled()
+  })
+
+  describe('changes made while the initial pull is in flight', () => {
+    let finishPull: (value: PullResult) => void = () => undefined
+
+    async function startWithPendingPull() {
+      vi.mocked(pullAllStores).mockReturnValueOnce(
+        new Promise<PullResult>((resolve) => {
+          finishPull = resolve
+        }),
+      )
+      await start()
+    }
+
+    it('pushes once, quietly, after the pull succeeds', async () => {
+      await startWithPendingPull()
+
+      touchHistory()
+      touchHistory()
+      await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS * 2)
+      expect(syncAllStores).not.toHaveBeenCalled()
+
+      finishPull('ok')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(syncAllStores).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS)
+      expect(syncAllStores).toHaveBeenCalledTimes(1)
+      expect(syncAllStores).toHaveBeenCalledWith({ quiet: true })
+      expect(pullAllStores).toHaveBeenCalledTimes(1)
+    })
+
+    it('retries the pull after a failed pull and pushes only if it then succeeds', async () => {
+      await startWithPendingPull()
+      vi.mocked(pullAllStores).mockResolvedValueOnce('failed')
+
+      touchHistory()
+      finishPull('failed')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(pullAllStores).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS)
+      expect(pullAllStores).toHaveBeenCalledTimes(2)
+      expect(syncAllStores).not.toHaveBeenCalled()
+
+      vi.mocked(pullAllStores).mockResolvedValueOnce('ok')
+      touchHistory()
+      await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS)
+      expect(pullAllStores).toHaveBeenCalledTimes(3)
+      expect(syncAllStores).toHaveBeenCalledTimes(1)
+      expect(syncAllStores).toHaveBeenCalledWith({ quiet: true })
+    })
+
+    it('does not push when nothing changed during the pull', async () => {
+      await startWithPendingPull()
+
+      finishPull('ok')
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(syncAllStores).not.toHaveBeenCalled()
+    })
+
+    it('does not push or react later when the pull reports not_configured', async () => {
+      await startWithPendingPull()
+
+      touchHistory()
+      finishPull('not_configured')
+      await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS * 2)
+      touchHistory()
+      await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS * 2)
+
+      expect(syncAllStores).not.toHaveBeenCalled()
+      expect(pullAllStores).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores remote applies during the pull (no dirty flag)', async () => {
+      await startWithPendingPull()
+      vi.mocked(isApplyingRemoteState).mockReturnValue(true)
+
+      touchHistory()
+      vi.mocked(isApplyingRemoteState).mockReturnValue(false)
+      finishPull('ok')
+      await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS * 2)
+
+      expect(syncAllStores).not.toHaveBeenCalled()
+    })
+
+    it('does not push if stopped before the pull resolves', async () => {
+      await startWithPendingPull()
+
+      touchHistory()
+      stop()
+      finishPull('ok')
+      await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS * 2)
+      touchHistory()
+      await vi.advanceTimersByTimeAsync(BACKGROUND_SYNC_DEBOUNCE_MS * 2)
+
+      expect(syncAllStores).not.toHaveBeenCalled()
+    })
   })
 })
