@@ -6,41 +6,14 @@ import { PracticeDrillCard } from "@/components/practice-drill-card";
 import { ReliabilityNeedle } from "@/components/reliability-needle";
 import { SpeedDrillCard } from "@/components/speed-drill-card";
 import { Button } from "@/components/ui/button";
-import { getSpeedEntries } from "@/lib/practice/fluency";
-import { getDueEntries } from "@/lib/practice/srs";
 import {
-  filterPhrasebookByTag,
-  usePhrasebookStore,
-} from "@/lib/stores/phrasebook";
-import type { PhrasebookEntry, ReviewGrade, VoiceRegion } from "@mindyourlanguage/shared";
-
-type DrillMode = "due" | "speed" | "all";
-
-function emptyCopy(
-  mode: DrillMode,
-  items: PhrasebookEntry[],
-  tagFilter: string,
-): string {
-  if (tagFilter.trim() && filterPhrasebookByTag(items, tagFilter).length === 0) {
-    return "No phrases match that tag.";
-  }
-  if (mode === "due") {
-    return "Nothing due today. Save phrases from Translate, or switch to All saved.";
-  }
-  if (mode === "all") {
-    return "No phrasebook entries yet. Translate and save a phrase to start drilling.";
-  }
-  const speaking = items.some(
-    (entry) =>
-      entry.sourceLang === "en" &&
-      entry.targetLang === "zh" &&
-      entry.practiceStats?.fluency?.graduatedAt,
-  );
-  if (speaking) {
-    return "Your phrases are in the speaking set. They come back here after about a month so they stay fast.";
-  }
-  return "Speed starts after you recall a phrase once. Grade a due card, then come back.";
-}
+  buildPracticeQueue,
+  practiceEmptyMessage,
+  resolvePracticeEntry,
+  type DrillMode,
+} from "@/lib/practice/practice-queue";
+import { usePhrasebookStore } from "@/lib/stores/phrasebook";
+import type { ReviewGrade, VoiceRegion } from "@mindyourlanguage/shared";
 
 export default function PracticePage() {
   const items = usePhrasebookStore((state) => state.items);
@@ -51,67 +24,73 @@ export default function PracticePage() {
 
   const [mode, setMode] = useState<DrillMode>("due");
   const [tagFilter, setTagFilter] = useState("");
-  const [index, setIndex] = useState(0);
+  const [queueIndex, setQueueIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  /** Keeps the speed success screen visible after the phrase leaves the queue. */
+  const [pinnedEntryId, setPinnedEntryId] = useState<string | null>(null);
   const [speedRound, setSpeedRound] = useState(0);
   const [voiceRegion] = useState<VoiceRegion>("zh-CN");
 
-  const queue = useMemo(() => {
-    const tagged = filterPhrasebookByTag(items, tagFilter);
-    if (mode === "speed") return getSpeedEntries(tagged);
-    const base = mode === "due" ? getDueEntries(tagged) : tagged;
-    return base.filter(
-      (entry) => entry.sourceLang === "en" && entry.targetLang === "zh",
-    );
-  }, [items, mode, tagFilter]);
+  const queue = useMemo(
+    () => buildPracticeQueue(items, mode, tagFilter),
+    [items, mode, tagFilter],
+  );
 
-  const safeIndex = queue.length === 0 ? 0 : Math.min(index, queue.length - 1);
-  const queued: PhrasebookEntry | undefined = queue[safeIndex];
-  const pinned = pinnedId ? items.find((item) => item.id === pinnedId) : undefined;
-  const current = mode === "speed" ? (pinned ?? queued) : queued;
+  const current = resolvePracticeEntry(
+    mode,
+    queue,
+    queueIndex,
+    items,
+    pinnedEntryId,
+  );
   const dueCount = getDueCount();
   const speedCount = getSpeedCount();
 
-  function resetCard() {
+  function resetRecallCard() {
     setRevealed(false);
+  }
+
+  function resetSessionState() {
+    setQueueIndex(0);
+    setPinnedEntryId(null);
+    setSpeedRound(0);
+    resetRecallCard();
   }
 
   function handleGrade(grade: ReviewGrade) {
     if (!current) return;
     recordReview(current.id, grade);
-    resetCard();
-    if (mode === "all") {
-      setIndex((value) => {
-        if (queue.length <= 1) return 0;
-        return (value + 1) % queue.length;
-      });
+    resetRecallCard();
+    if (mode === "all" && queue.length > 1) {
+      setQueueIndex((index) => (index + 1) % queue.length);
     }
-    // Due mode: graded card leaves the queue; keep index so the next due shifts in.
   }
 
   function handleModeChange(next: DrillMode) {
     setMode(next);
-    setIndex(0);
-    setPinnedId(null);
-    setSpeedRound(0);
-    resetCard();
+    resetSessionState();
+  }
+
+  function handleTagFilterChange(next: string) {
+    setTagFilter(next);
+    resetSessionState();
   }
 
   function handleSpeedComplete() {
     if (!current) return;
-    setPinnedId(current.id);
+    setPinnedEntryId(current.id);
     recordSpeedSession(current.id);
   }
 
   function handleSpeedNext() {
-    const id = pinnedId ?? current?.id;
-    setPinnedId(null);
+    const completedId = pinnedEntryId ?? current?.id;
+    setPinnedEntryId(null);
     setSpeedRound((round) => round + 1);
-    if (!id) return;
-    const position = queue.findIndex((entry) => entry.id === id);
-    if (position === -1 || queue.length <= 1) return;
-    setIndex((position + 1) % queue.length);
+    if (!completedId || queue.length <= 1) return;
+
+    const completedIndex = queue.findIndex((entry) => entry.id === completedId);
+    if (completedIndex === -1) return;
+    setQueueIndex((completedIndex + 1) % queue.length);
   }
 
   return (
@@ -168,12 +147,7 @@ export default function PracticePage() {
         </Button>
         <input
           value={tagFilter}
-          onChange={(event) => {
-            setTagFilter(event.target.value);
-            setIndex(0);
-            setPinnedId(null);
-            resetCard();
-          }}
+          onChange={(event) => handleTagFilterChange(event.target.value)}
           placeholder="Filter by tag"
           className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-8 sm:max-w-xs sm:flex-none sm:text-sm"
           data-testid="tag-filter"
@@ -200,7 +174,7 @@ export default function PracticePage() {
       ) : null}
       {!current ? (
         <p className="text-sm text-muted-foreground" data-testid="practice-empty">
-          {emptyCopy(mode, items, tagFilter)}
+          {practiceEmptyMessage(mode, items, tagFilter)}
         </p>
       ) : null}
     </main>
