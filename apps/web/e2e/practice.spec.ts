@@ -47,4 +47,55 @@ test.describe('practice flows (mocked)', () => {
       page.getByText('Practice a few due phrases to unlock your needle.'),
     ).toHaveCount(0)
   })
+
+  test('speed mode accepts the saved phrase across three shrinking passes', async ({
+    page,
+  }) => {
+    await enterSourceText(page)
+    await page.getByRole('button', { name: 'Translate' }).click()
+    await expect(page.getByTestId('result-translation')).toBeVisible()
+    await page.getByRole('button', { name: 'Save to phrasebook' }).click()
+
+    await page.getByRole('link', { name: 'Practice' }).click()
+    await page.getByTestId('drill-reveal').click()
+    await page.getByTestId('grade-good').click()
+
+    await page.getByTestId('mode-speed').click()
+    await expect(page.getByTestId('speed-drill-card')).toBeVisible()
+    await expect(page.getByTestId('speed-pass')).toHaveText(/Pass 1 of 3/)
+
+    for (const pass of [1, 2, 3]) {
+      await page.getByTestId('speed-attempt').fill('你好很高兴认识你')
+      await page.getByTestId('speed-check').click()
+      if (pass < 3) {
+        await expect(page.getByTestId('speed-pass')).toHaveText(
+          new RegExp(`Pass ${pass + 1} of 3`),
+        )
+      }
+    }
+
+    await expect(page.getByTestId('speed-done')).toBeVisible()
+    await expect(page.getByTestId('speed-done')).toContainText('Fast day saved')
+    await expect(page.getByTestId('speed-status')).toContainText('1 of 3')
+  })
+
+  test('speed mode shows the saved phrase when the attempt does not match', async ({
+    page,
+  }) => {
+    await enterSourceText(page)
+    await page.getByRole('button', { name: 'Translate' }).click()
+    await expect(page.getByTestId('result-translation')).toBeVisible()
+    await page.getByRole('button', { name: 'Save to phrasebook' }).click()
+
+    await page.getByRole('link', { name: 'Practice' }).click()
+    await page.getByTestId('drill-reveal').click()
+    await page.getByTestId('grade-good').click()
+    await page.getByTestId('mode-speed').click()
+
+    await page.getByTestId('speed-attempt').fill('再见')
+    await page.getByTestId('speed-check').click()
+    await expect(page.getByTestId('speed-miss')).toBeVisible()
+    await expect(page.getByTestId('speed-miss')).toContainText('你好，很高兴认识你。')
+    await expect(page.getByTestId('speed-status')).toContainText('No fast days yet')
+  })
 })

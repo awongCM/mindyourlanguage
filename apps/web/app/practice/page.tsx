@@ -4,60 +4,93 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PracticeDrillCard } from "@/components/practice-drill-card";
 import { ReliabilityNeedle } from "@/components/reliability-needle";
+import { SpeedDrillCard } from "@/components/speed-drill-card";
 import { Button } from "@/components/ui/button";
-import { getDueEntries } from "@/lib/practice/srs";
 import {
-  filterPhrasebookByTag,
-  usePhrasebookStore,
-} from "@/lib/stores/phrasebook";
-import type { PhrasebookEntry, ReviewGrade, VoiceRegion } from "@mindyourlanguage/shared";
-
-type DrillMode = "due" | "all";
+  buildPracticeQueue,
+  practiceEmptyMessage,
+  resolvePracticeEntry,
+  type DrillMode,
+} from "@/lib/practice/practice-queue";
+import { usePhrasebookStore } from "@/lib/stores/phrasebook";
+import type { ReviewGrade, VoiceRegion } from "@mindyourlanguage/shared";
 
 export default function PracticePage() {
   const items = usePhrasebookStore((state) => state.items);
   const recordReview = usePhrasebookStore((state) => state.recordReview);
+  const recordSpeedSession = usePhrasebookStore((state) => state.recordSpeedSession);
   const getDueCount = usePhrasebookStore((state) => state.getDueCount);
+  const getSpeedCount = usePhrasebookStore((state) => state.getSpeedCount);
 
   const [mode, setMode] = useState<DrillMode>("due");
   const [tagFilter, setTagFilter] = useState("");
-  const [index, setIndex] = useState(0);
+  const [queueIndex, setQueueIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  /** Keeps the speed success screen visible after the phrase leaves the queue. */
+  const [pinnedEntryId, setPinnedEntryId] = useState<string | null>(null);
+  const [speedRound, setSpeedRound] = useState(0);
   const [voiceRegion] = useState<VoiceRegion>("zh-CN");
 
-  const queue = useMemo(() => {
-    const tagged = filterPhrasebookByTag(items, tagFilter);
-    const base = mode === "due" ? getDueEntries(tagged) : tagged;
-    return base.filter(
-      (entry) => entry.sourceLang === "en" && entry.targetLang === "zh",
-    );
-  }, [items, mode, tagFilter]);
+  const queue = useMemo(
+    () => buildPracticeQueue(items, mode, tagFilter),
+    [items, mode, tagFilter],
+  );
 
-  const safeIndex = queue.length === 0 ? 0 : Math.min(index, queue.length - 1);
-  const current: PhrasebookEntry | undefined = queue[safeIndex];
+  const current = resolvePracticeEntry(
+    mode,
+    queue,
+    queueIndex,
+    items,
+    pinnedEntryId,
+  );
   const dueCount = getDueCount();
+  const speedCount = getSpeedCount();
 
-  function resetCard() {
+  function resetRecallCard() {
     setRevealed(false);
+  }
+
+  function resetSessionState() {
+    setQueueIndex(0);
+    setPinnedEntryId(null);
+    setSpeedRound(0);
+    resetRecallCard();
   }
 
   function handleGrade(grade: ReviewGrade) {
     if (!current) return;
     recordReview(current.id, grade);
-    resetCard();
-    if (mode === "all") {
-      setIndex((value) => {
-        if (queue.length <= 1) return 0;
-        return (value + 1) % queue.length;
-      });
+    resetRecallCard();
+    if (mode === "all" && queue.length > 1) {
+      setQueueIndex((index) => (index + 1) % queue.length);
     }
-    // Due mode: graded card leaves the queue; keep index so the next due shifts in.
   }
 
   function handleModeChange(next: DrillMode) {
     setMode(next);
-    setIndex(0);
-    resetCard();
+    resetSessionState();
+  }
+
+  function handleTagFilterChange(next: string) {
+    setTagFilter(next);
+    resetSessionState();
+  }
+
+  function handleSpeedComplete() {
+    if (!current) return;
+    setPinnedEntryId(current.id);
+    recordSpeedSession(current.id);
+  }
+
+  function handleSpeedNext() {
+    const completedId = pinnedEntryId ?? current?.id;
+    setPinnedEntryId(null);
+    setSpeedRound((round) => round + 1);
+    if (!completedId || queue.length <= 1) return;
+
+    const completedIndex = queue.findIndex((entry) => entry.id === completedId);
+    if (completedIndex === -1) return;
+    setQueueIndex((completedIndex + 1) % queue.length);
   }
 
   return (
@@ -68,7 +101,8 @@ export default function PracticePage() {
             Practice
           </h1>
           <p className="mt-1 hidden text-sm text-muted-foreground sm:block">
-            Drill your phrasebook with active recall and spaced review.
+            Recall phrases before they fade, then speed up the ones you already
+            know until the card can rest.
           </p>
         </div>
         <Button
@@ -95,6 +129,15 @@ export default function PracticePage() {
         </Button>
         <Button
           type="button"
+          variant={mode === "speed" ? "default" : "outline"}
+          className="touch-target-sm max-sm:flex-1 max-sm:text-sm"
+          onClick={() => handleModeChange("speed")}
+          data-testid="mode-speed"
+        >
+          Speed ({speedCount})
+        </Button>
+        <Button
+          type="button"
           variant={mode === "all" ? "default" : "outline"}
           className="touch-target-sm max-sm:flex-1 max-sm:text-sm"
           onClick={() => handleModeChange("all")}
@@ -104,18 +147,23 @@ export default function PracticePage() {
         </Button>
         <input
           value={tagFilter}
-          onChange={(event) => {
-            setTagFilter(event.target.value);
-            setIndex(0);
-            resetCard();
-          }}
+          onChange={(event) => handleTagFilterChange(event.target.value)}
           placeholder="Filter by tag"
           className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-8 sm:max-w-xs sm:flex-none sm:text-sm"
           data-testid="tag-filter"
         />
       </div>
 
-      {current ? (
+      {current && mode === "speed" ? (
+        <SpeedDrillCard
+          key={`${current.id}-${speedRound}`}
+          entry={current}
+          onSessionComplete={handleSpeedComplete}
+          onNext={handleSpeedNext}
+          voiceRegion={voiceRegion}
+        />
+      ) : null}
+      {current && mode !== "speed" ? (
         <PracticeDrillCard
           entry={current}
           revealed={revealed}
@@ -123,13 +171,12 @@ export default function PracticePage() {
           onGrade={handleGrade}
           voiceRegion={voiceRegion}
         />
-      ) : (
+      ) : null}
+      {!current ? (
         <p className="text-sm text-muted-foreground" data-testid="practice-empty">
-          {mode === "due"
-            ? "Nothing due today. Save phrases from Translate, or switch to All saved."
-            : "No phrasebook entries yet. Translate and save a phrase to start drilling."}
+          {practiceEmptyMessage(mode, items, tagFilter)}
         </p>
-      )}
+      ) : null}
     </main>
   );
 }

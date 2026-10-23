@@ -55,6 +55,7 @@ export function recordReview(
     repetitions,
     lastReviewedAt: now.toISOString(),
     nextReviewAt: addDays(now, intervalDays).toISOString(),
+    ...(stats.fluency ? { fluency: stats.fluency } : {}),
   }
 }
 
@@ -62,6 +63,7 @@ export function isDue(
   stats: PracticeStats | undefined,
   now: Date = new Date(),
 ): boolean {
+  if (stats?.fluency?.graduatedAt) return false
   if (!stats) return true
   return new Date(stats.nextReviewAt).getTime() <= now.getTime()
 }

@@ -5,12 +5,22 @@ export type Register = 'formal' | 'casual' | 'neutral'
 export type ReviewGrade = 'again' | 'hard' | 'good' | 'easy'
 export type CheckAttemptVerdict = 'close' | 'partial' | 'off'
 
+export interface FluencyStats {
+  /** UTC calendar days (YYYY-MM-DD) with a completed speed session. */
+  fastDays: string[]
+  /** Set when three fast days span at least six days. The review card pauses. */
+  graduatedAt?: string
+  /** Latest completed speed session. Sync uses this as activity time. */
+  lastSessionAt?: string
+}
+
 export interface PracticeStats {
   easeFactor: number
   intervalDays: number
   repetitions: number
   nextReviewAt: string
   lastReviewedAt?: string
+  fluency?: FluencyStats
 }
 
 export type ReviewEventMode = 'self_grade'

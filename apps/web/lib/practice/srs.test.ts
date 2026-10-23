@@ -75,6 +75,24 @@ describe('recordReview', () => {
     expect(hard.intervalDays).toBe(Math.round(6 * 1.2))
   })
 
+  it('keeps speed progress when a later review is graded', () => {
+    const prior = {
+      easeFactor: 2.5,
+      intervalDays: 1,
+      repetitions: 1,
+      nextReviewAt: now.toISOString(),
+      fluency: {
+        fastDays: ['2026-08-01'],
+        lastSessionAt: '2026-08-01T10:00:00.000Z',
+      },
+    }
+
+    const next = recordReview(prior, 'good', now)
+
+    expect(next.fluency?.fastDays).toEqual(['2026-08-01'])
+    expect(next.repetitions).toBe(2)
+  })
+
   it('never drops ease below 1.3', () => {
     const low = {
       easeFactor: 1.35,
@@ -123,6 +141,20 @@ describe('isDue / getDueEntries', () => {
 
   it('treats missing practiceStats as due', () => {
     expect(isDue(undefined, now)).toBe(true)
+  })
+
+  it('keeps a graduated phrase out of the due queue', () => {
+    const graduated = entry('graduated', '2026-08-01T00:00:00.000Z')
+    graduated.practiceStats = {
+      ...graduated.practiceStats!,
+      fluency: {
+        fastDays: ['2026-07-01', '2026-07-04', '2026-07-08'],
+        graduatedAt: '2026-07-08T00:00:00.000Z',
+      },
+    }
+
+    expect(isDue(graduated.practiceStats, now)).toBe(false)
+    expect(getDueEntries([graduated], now)).toEqual([])
   })
 
   it('filters due entries by nextReviewAt', () => {

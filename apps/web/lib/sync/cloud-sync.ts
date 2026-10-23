@@ -109,15 +109,25 @@ function reviewEventsForSync(events: ReviewEvent[]): ReviewEvent[] {
 }
 
 export function phrasebookEntryUpdatedAt(entry: PhrasebookEntry): string {
-  const reviewedAt = entry.practiceStats?.lastReviewedAt
-  if (reviewedAt) {
-    const reviewedMs = Date.parse(reviewedAt)
-    const createdMs = Date.parse(entry.createdAt)
-    if (!Number.isNaN(reviewedMs) && reviewedMs >= createdMs) {
-      return reviewedAt
+  const createdMs = Date.parse(entry.createdAt)
+  let latest = entry.createdAt
+  let latestMs = createdMs
+
+  for (const value of [
+    entry.practiceStats?.lastReviewedAt,
+    entry.practiceStats?.fluency?.lastSessionAt,
+  ]) {
+    if (!value) continue
+    const valueMs = Date.parse(value)
+    if (Number.isNaN(valueMs)) continue
+    if (!Number.isNaN(createdMs) && valueMs < createdMs) continue
+    if (Number.isNaN(latestMs) || valueMs >= latestMs) {
+      latest = value
+      latestMs = valueMs
     }
   }
-  return entry.createdAt
+
+  return latest
 }
 
 async function readJson<T>(res: Response): Promise<T> {
