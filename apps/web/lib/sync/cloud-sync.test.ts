@@ -77,6 +77,35 @@ describe('phrasebookEntryUpdatedAt', () => {
     expect(at).toBe('2026-02-01T12:00:00.000Z')
   })
 
+  it('uses a speed session when it is newer than the last review', () => {
+    const at = phrasebookEntryUpdatedAt({
+      id: '1',
+      translationId: null,
+      sourceText: 'a',
+      sourceLang: 'en',
+      targetLang: 'zh',
+      translation: 'b',
+      characterSet: 'simplified',
+      dictionaryMatches: [],
+      segments: [],
+      tags: [],
+      notes: '',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      practiceStats: {
+        easeFactor: 2.5,
+        intervalDays: 1,
+        repetitions: 1,
+        nextReviewAt: '2026-01-03T00:00:00.000Z',
+        lastReviewedAt: '2026-02-01T12:00:00.000Z',
+        fluency: {
+          fastDays: ['2026-03-01'],
+          lastSessionAt: '2026-03-01T15:00:00.000Z',
+        },
+      },
+    })
+    expect(at).toBe('2026-03-01T15:00:00.000Z')
+  })
+
   it('falls back to createdAt when practice stats are absent', () => {
     expect(
       phrasebookEntryUpdatedAt({

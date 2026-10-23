@@ -164,6 +164,37 @@ describe("usePhrasebookStore", () => {
     ).toBe(1);
   });
 
+  it("records a speed session without logging a review grade", () => {
+    usePhrasebookStore.setState({ items: [] });
+    useReviewEventsStore.setState({ events: [] });
+    const now = new Date("2026-08-02T10:00:00.000Z");
+    const entry = createPhrasebookEntry({
+      translationId: "abc",
+      sourceText: "Hello",
+      sourceLang: "en",
+      targetLang: "zh",
+      translation: "你好",
+      characterSet: "simplified",
+      dictionaryMatches: [],
+      segments: [],
+      practiceStats: {
+        easeFactor: 2.5,
+        intervalDays: 0,
+        repetitions: 1,
+        nextReviewAt: now.toISOString(),
+      },
+    });
+
+    usePhrasebookStore.getState().add(entry);
+    usePhrasebookStore.getState().recordSpeedSession(entry.id, now);
+
+    const updated = usePhrasebookStore.getState().items[0];
+    expect(updated.practiceStats?.fluency?.fastDays).toEqual(["2026-08-02"]);
+    expect(updated.practiceStats?.repetitions).toBe(1);
+    expect(usePhrasebookStore.getState().getSpeedCount(now)).toBe(1);
+    expect(useReviewEventsStore.getState().events).toHaveLength(0);
+  });
+
   it("appends a review event when grading", () => {
     const entry = createPhrasebookEntry({
       translationId: "abc",

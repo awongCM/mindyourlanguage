@@ -109,6 +109,10 @@ describe('phrasebook mappers', () => {
       intervalDays: 1,
       repetitions: 1,
       nextReviewAt: '2026-01-21T12:00:00.000Z',
+      fluency: {
+        fastDays: ['2026-01-20'],
+        lastSessionAt: '2026-01-20T12:00:00.000Z',
+      },
     },
   }
 

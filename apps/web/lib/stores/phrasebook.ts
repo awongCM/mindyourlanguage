@@ -5,6 +5,7 @@ import type {
   PracticeStats,
   ReviewGrade,
 } from "@mindyourlanguage/shared";
+import { applySpeedSession, getSpeedEntries } from "@/lib/practice/fluency";
 import {
   createInitialPracticeStats,
   getDueEntries,
@@ -32,7 +33,9 @@ interface PhrasebookStore {
     entry: Pick<PhrasebookEntry, "translationId" | "sourceText" | "translation">,
   ) => boolean;
   recordReview: (id: string, grade: ReviewGrade, now?: Date) => void;
+  recordSpeedSession: (id: string, now?: Date) => void;
   getDueCount: (now?: Date) => number;
+  getSpeedCount: (now?: Date) => number;
 }
 
 export function phrasebookEntryKey(
@@ -111,7 +114,24 @@ export const usePhrasebookStore = create<PhrasebookStore>()(
           mode: "self_grade",
         });
       },
+      recordSpeedSession: (id, now = new Date()) => {
+        const exists = get().items.some((item) => item.id === id);
+        if (!exists) return;
+
+        set((state) => ({
+          items: state.items.map((item) => {
+            if (item.id !== id) return item;
+            const prior: PracticeStats =
+              item.practiceStats ?? createInitialPracticeStats(now);
+            return {
+              ...item,
+              practiceStats: applySpeedSession(prior, now),
+            };
+          }),
+        }));
+      },
       getDueCount: (now = new Date()) => getDueEntries(get().items, now).length,
+      getSpeedCount: (now = new Date()) => getSpeedEntries(get().items, now).length,
     }),
     { name: "myl-phrasebook" },
   ),
