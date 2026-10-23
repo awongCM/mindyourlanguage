@@ -116,10 +116,9 @@ export function SpeedDrillCard({
         ) : null}
 
         {session.phase === "done" ? (
-          <div className="flex flex-col gap-2" data-testid="speed-done">
-            <p className="text-sm text-foreground">Fast day saved.</p>
-            <p className="text-sm text-muted-foreground">{progress}</p>
-          </div>
+          <p className="text-sm text-foreground" data-testid="speed-done">
+            Fast day saved.
+          </p>
         ) : null}
       </CardContent>
 
