@@ -1,7 +1,28 @@
-import type { LearnableKind, LearnableSuggestion } from '@mindyourlanguage/shared'
+import type {
+  CharacterSet,
+  LearnableKind,
+  LearnableSuggestion,
+} from '@mindyourlanguage/shared'
 
 /** Cap so spaced repetition stays light. */
 export const MAX_LEARNABLE_SUGGESTIONS = 3
+
+/** Fields used when saving a suggestion as a phrasebook / SRS card. */
+export function phrasebookFieldsFromLearnable(
+  item: LearnableSuggestion,
+  characterSet: CharacterSet,
+) {
+  return {
+    translationId: null as null,
+    sourceText: item.gloss,
+    sourceLang: 'en' as const,
+    targetLang: 'zh' as const,
+    translation: item.chinese,
+    characterSet,
+    tags: [item.kind],
+    notes: `${item.exampleChinese}\n${item.exampleEnglish}`,
+  }
+}
 
 const KINDS = new Set<string>(['noun', 'verb', 'phrase'])
 

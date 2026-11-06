@@ -371,7 +371,7 @@ export default function Home() {
             isSaved={isSaved}
             onToggleSave={handleToggleSave}
             phrasebookHint={
-              isEnglishToChinese
+              isEnglishToChinese && learnables.visible
                 ? "Or pick a few new bits to learn below."
                 : undefined
             }

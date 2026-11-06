@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
+import { createInitialPracticeStats } from './practice/srs'
+import {
+  createPhrasebookEntry,
+  isChineseAlreadySaved,
+  usePhrasebookStore,
+} from './stores/phrasebook'
 import {
   filterNewLearnables,
   MAX_LEARNABLE_SUGGESTIONS,
   normalizeChineseKey,
   parseLearnablesResponse,
+  phrasebookFieldsFromLearnable,
 } from './learnables-shared'
 
 const sample = {
@@ -74,5 +81,43 @@ describe('parseLearnablesResponse', () => {
     }))
 
     expect(parseLearnablesResponse(JSON.stringify({ items }))).toHaveLength(3)
+  })
+})
+
+describe('phrasebookFieldsFromLearnable', () => {
+  it('maps a suggestion onto a due SRS phrasebook card', () => {
+    const entry = createPhrasebookEntry({
+      ...phrasebookFieldsFromLearnable(sample, 'simplified'),
+      dictionaryMatches: [],
+      segments: [],
+      practiceStats: createInitialPracticeStats(),
+    })
+
+    expect(entry.translationId).toBeNull()
+    expect(entry.sourceText).toBe('to get to know')
+    expect(entry.translation).toBe('认识')
+    expect(entry.tags).toEqual(['verb'])
+    expect(entry.notes).toBe('很高兴认识你。\nNice to meet you.')
+    expect(entry.practiceStats?.repetitions).toBe(0)
+    expect(
+      new Date(entry.practiceStats!.nextReviewAt).getTime(),
+    ).toBeLessThanOrEqual(Date.now())
+  })
+
+  it('skips saving chinese that is already in the phrasebook', () => {
+    usePhrasebookStore.setState({ items: [] })
+    const first = createPhrasebookEntry({
+      ...phrasebookFieldsFromLearnable(sample, 'simplified'),
+      dictionaryMatches: [],
+      segments: [],
+    })
+    usePhrasebookStore.getState().add(first)
+
+    expect(
+      isChineseAlreadySaved(usePhrasebookStore.getState().items, sample.chinese),
+    ).toBe(true)
+    expect(
+      isChineseAlreadySaved(usePhrasebookStore.getState().items, '高兴'),
+    ).toBe(false)
   })
 })

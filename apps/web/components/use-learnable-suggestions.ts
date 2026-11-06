@@ -2,7 +2,10 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { filterNewLearnables } from "@/lib/learnables-shared";
+import {
+  filterNewLearnables,
+  phrasebookFieldsFromLearnable,
+} from "@/lib/learnables-shared";
 import { createInitialPracticeStats } from "@/lib/practice/srs";
 import {
   createPhrasebookEntry,
@@ -63,8 +66,11 @@ export function useLearnableSuggestions(
       }
 
       const data = (await response.json()) as LearnablesResponse;
-      // Client re-filters in case the phrasebook changed while the request was in flight.
-      setItems(filterNewLearnables(data.items ?? [], knownTranslations));
+      // Re-filter against the live phrasebook in case it changed while we waited.
+      const knownNow = usePhrasebookStore
+        .getState()
+        .items.map((entry) => entry.translation);
+      setItems(filterNewLearnables(data.items ?? [], knownNow));
     } catch {
       if (requestId === requestIdRef.current) setItems([]);
     } finally {
@@ -78,22 +84,17 @@ export function useLearnableSuggestions(
 
     for (const item of selected) {
       // Re-read after each add so two identical chinese picks in one click still dedupe.
-      if (isChineseAlreadySaved(usePhrasebookStore.getState().items, item.chinese)) {
+      if (
+        isChineseAlreadySaved(usePhrasebookStore.getState().items, item.chinese)
+      ) {
         continue;
       }
 
       add(
         createPhrasebookEntry({
-          translationId: null,
-          sourceText: item.gloss,
-          sourceLang: "en",
-          targetLang: "zh",
-          translation: item.chinese,
-          characterSet,
+          ...phrasebookFieldsFromLearnable(item, characterSet),
           dictionaryMatches: [],
           segments: [],
-          tags: [item.kind],
-          notes: `${item.exampleChinese}\n${item.exampleEnglish}`,
           practiceStats: createInitialPracticeStats(),
         }),
       );
