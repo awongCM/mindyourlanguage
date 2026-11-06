@@ -1,10 +1,8 @@
-/** Learnable suggestions: parse, fetch from OpenAI, save into phrasebook. */
+/**
+ * Public learnables API.
+ * Internals (parse helpers, field mapping) stay in ./parse and are not re-exported.
+ */
 
-export {
-  MAX_LEARNABLE_SUGGESTIONS,
-  filterNewLearnables,
-  parseLearnablesResponse,
-  phrasebookFieldsFromLearnable,
-} from './parse'
+export { filterNewLearnables } from './parse'
 export { fetchLearnables } from './fetch'
 export { saveLearnablesToPhrasebook } from './save'

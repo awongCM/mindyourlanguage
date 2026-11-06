@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialPracticeStats } from '@/lib/practice/srs'
-import {
-  createPhrasebookEntry,
-  isChineseAlreadySaved,
-  usePhrasebookStore,
-} from '@/lib/stores/phrasebook'
+import { createPhrasebookEntry } from '@/lib/stores/phrasebook'
 import {
   filterNewLearnables,
   MAX_LEARNABLE_SUGGESTIONS,
@@ -94,23 +90,5 @@ describe('phrasebookFieldsFromLearnable', () => {
     expect(
       new Date(entry.practiceStats!.nextReviewAt).getTime(),
     ).toBeLessThanOrEqual(Date.now())
-  })
-
-  it('skips saving chinese that is already in the phrasebook', () => {
-    usePhrasebookStore.setState({ items: [] })
-    usePhrasebookStore.getState().add(
-      createPhrasebookEntry({
-        ...phrasebookFieldsFromLearnable(sample, 'simplified'),
-        dictionaryMatches: [],
-        segments: [],
-      }),
-    )
-
-    expect(
-      isChineseAlreadySaved(usePhrasebookStore.getState().items, sample.chinese),
-    ).toBe(true)
-    expect(
-      isChineseAlreadySaved(usePhrasebookStore.getState().items, '高兴'),
-    ).toBe(false)
   })
 })

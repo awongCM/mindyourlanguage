@@ -4,7 +4,6 @@ import {
   entryMatchesSaved,
   filterPhrasebookByTag,
   isChineseAlreadySaved,
-  normalizeChineseKey,
   phrasebookEntryKey,
   usePhrasebookStore,
 } from "./phrasebook";
@@ -33,7 +32,7 @@ describe("phrasebook helpers", () => {
       tags: ["verb"],
     });
 
-    expect(normalizeChineseKey(" 认 识 ")).toBe("认识");
+    expect(isChineseAlreadySaved([saved], " 认 识 ")).toBe(true);
     expect(isChineseAlreadySaved([saved], "认识")).toBe(true);
     expect(isChineseAlreadySaved([saved], "高兴")).toBe(false);
   });

@@ -6,16 +6,17 @@ import {
   filterNewLearnables,
   saveLearnablesToPhrasebook,
 } from "@/lib/learnables";
-import {
-  isChineseAlreadySaved,
-  usePhrasebookStore,
-} from "@/lib/stores/phrasebook";
+import { usePhrasebookStore } from "@/lib/stores/phrasebook";
 import type {
   CharacterSet,
   LearnableSuggestion,
   LearnablesResponse,
   VoiceRegion,
 } from "@mindyourlanguage/shared";
+
+function phrasebookChineseTexts(): string[] {
+  return usePhrasebookStore.getState().items.map((entry) => entry.translation);
+}
 
 /**
  * After EN→ZH translate: fetch a few new learnables, let the user save them.
@@ -65,10 +66,7 @@ export function useLearnableSuggestions(
 
       const data = (await response.json()) as LearnablesResponse;
       // Re-filter against the live phrasebook in case it changed while we waited.
-      const knownNow = usePhrasebookStore
-        .getState()
-        .items.map((entry) => entry.translation);
-      setItems(filterNewLearnables(data.items ?? [], knownNow));
+      setItems(filterNewLearnables(data.items ?? [], phrasebookChineseTexts()));
     } catch {
       if (requestId === requestIdRef.current) setItems([]);
     } finally {
@@ -84,10 +82,7 @@ export function useLearnableSuggestions(
       return;
     }
 
-    const afterSave = usePhrasebookStore.getState().items;
-    setItems((prev) =>
-      prev.filter((item) => !isChineseAlreadySaved(afterSave, item.chinese)),
-    );
+    setItems((prev) => filterNewLearnables(prev, phrasebookChineseTexts()));
     toast.success(
       savedCount === 1
         ? "Saved 1 new bit to phrasebook"

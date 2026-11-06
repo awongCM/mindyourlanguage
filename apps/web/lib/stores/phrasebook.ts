@@ -14,8 +14,6 @@ import {
 } from "@/lib/practice/srs";
 import { useReviewEventsStore } from "./review-events";
 
-export { normalizeChineseKey };
-
 function createEntryId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
