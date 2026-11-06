@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { HistoryDrawer } from "@/components/history-drawer";
 import { ComparisonPanel } from "@/components/comparison-panel";
 import { GroundingPanel } from "@/components/grounding-panel";
+import { LearnableSuggestionsCard } from "@/components/learnables/learnable-suggestions-card";
+import { useLearnableSuggestions } from "@/components/learnables/use-learnable-suggestions";
 import { NativeAlternativeCard } from "@/components/native-alternative-card";
 import { PhrasebookDrawer } from "@/components/phrasebook-drawer";
 import { ResultCard } from "@/components/result-card";
@@ -80,6 +82,8 @@ export default function Home() {
   const addPhrasebook = usePhrasebookStore((state) => state.add);
   const removePhrasebook = usePhrasebookStore((state) => state.remove);
 
+  const learnables = useLearnableSuggestions(voiceRegion, characterSet);
+
   const isEnglishToChinese =
     direction.sourceLang === "en" && direction.targetLang === "zh";
   const isChineseToEnglish =
@@ -108,6 +112,7 @@ export default function Home() {
   }, [isEnglishToChinese, tryFirstEnabled, userAttempt]);
 
   function restoreRecord(record: TranslationRecord) {
+    learnables.clear();
     setDirection({
       sourceLang: record.sourceLang,
       targetLang: record.targetLang,
@@ -132,6 +137,7 @@ export default function Home() {
   }, [historyItems]);
 
   function restorePhrasebook(entry: PhrasebookEntry) {
+    learnables.clear();
     setDirection({
       sourceLang: entry.sourceLang,
       targetLang: entry.targetLang,
@@ -144,6 +150,7 @@ export default function Home() {
 
   function handleClear() {
     cancelSpeech();
+    learnables.clear();
     setSourceText("");
     setUserAttempt("");
     setResult(null);
@@ -194,6 +201,7 @@ export default function Home() {
   async function handleTranslate(text: string) {
     setIsLoading(true);
     setError(null);
+    learnables.clear();
 
     const body: TranslateRequest = {
       text,
@@ -249,6 +257,14 @@ export default function Home() {
           characterSet,
         }),
       );
+
+      if (isEnglishToChinese) {
+        void learnables.load(
+          text,
+          data.translation,
+          phrasebookItems.map((item) => item.translation),
+        );
+      }
     } catch {
       setError("Translation service unavailable. Try again.");
       setResult(null);
@@ -354,7 +370,20 @@ export default function Home() {
             voiceRegion={voiceRegion}
             isSaved={isSaved}
             onToggleSave={handleToggleSave}
+            phrasebookHint={
+              isEnglishToChinese && learnables.visible
+                ? "Or pick a few new bits to learn below."
+                : undefined
+            }
           />
+          {isEnglishToChinese && learnables.visible ? (
+            <LearnableSuggestionsCard
+              items={learnables.items}
+              loading={learnables.loading}
+              characterSet={characterSet}
+              onSaveSelected={learnables.saveSelected}
+            />
+          ) : null}
           {submittedAttempt ? (
             <ComparisonPanel
               sourceText={sourceText}

@@ -120,3 +120,24 @@ export interface CheckAttemptResponse {
   corrections?: string[]
   betterPhrasing?: string
 }
+
+export type LearnableKind = 'noun' | 'verb' | 'phrase'
+
+export interface LearnableSuggestion {
+  chinese: string
+  gloss: string
+  kind: LearnableKind
+  exampleChinese: string
+  exampleEnglish: string
+}
+
+export interface LearnablesRequest {
+  sourceText: string
+  translation: string
+  knownTranslations?: string[]
+  voiceRegion?: VoiceRegion
+}
+
+export interface LearnablesResponse {
+  items: LearnableSuggestion[]
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toTraditionalChars } from "@/lib/characters";
+import { displayForCharacterSet } from "@/lib/characters";
 import { registerLabel } from "@/lib/native-alternative-shared";
 import type { CharacterSet, Register } from "@mindyourlanguage/shared";
 
@@ -18,8 +18,7 @@ export function NativeAlternativeCard({
   note,
   characterSet,
 }: NativeAlternativeCardProps) {
-  const displayText =
-    characterSet === "traditional" ? toTraditionalChars(alternative) : alternative;
+  const displayText = displayForCharacterSet(alternative, characterSet);
 
   return (
     <Card>

@@ -5,6 +5,7 @@ import type {
   PracticeStats,
   ReviewGrade,
 } from "@mindyourlanguage/shared";
+import { normalizeChineseKey } from "@/lib/characters";
 import { applySpeedSession, getSpeedEntries } from "@/lib/practice/fluency";
 import {
   createInitialPracticeStats,
@@ -53,6 +54,17 @@ export function entryMatchesSaved(
   >,
 ): boolean {
   return phrasebookEntryKey(saved) === phrasebookEntryKey(candidate);
+}
+
+export function isChineseAlreadySaved(
+  items: PhrasebookEntry[],
+  chinese: string,
+): boolean {
+  const key = normalizeChineseKey(chinese);
+  if (!key) return false;
+  return items.some(
+    (item) => normalizeChineseKey(item.translation) === key,
+  );
 }
 
 export function filterPhrasebookByTag(

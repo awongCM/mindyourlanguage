@@ -30,6 +30,7 @@ interface ResultCardProps {
   voiceRegion?: VoiceRegion;
   isSaved?: boolean;
   onToggleSave?: () => void;
+  phrasebookHint?: string;
 }
 
 function displayedChineseText(
@@ -108,6 +109,7 @@ export function ResultCard({
   voiceRegion = "zh-CN",
   isSaved = false,
   onToggleSave,
+  phrasebookHint,
 }: ResultCardProps) {
   const isChineseSource = layout === "chinese-source";
   const displayText = isChineseSource
@@ -245,6 +247,11 @@ export function ResultCard({
           <Copy />
           Copy
         </Button>
+        {phrasebookHint ? (
+          <p className="basis-full text-sm text-muted-foreground">
+            {phrasebookHint}
+          </p>
+        ) : null}
       </CardFooter>
     </Card>
   );

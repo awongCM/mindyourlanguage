@@ -3,6 +3,7 @@ import {
   createPhrasebookEntry,
   entryMatchesSaved,
   filterPhrasebookByTag,
+  isChineseAlreadySaved,
   phrasebookEntryKey,
   usePhrasebookStore,
 } from "./phrasebook";
@@ -16,6 +17,24 @@ describe("phrasebook helpers", () => {
       translation: "你好",
     });
     expect(key).toBe("id:abc");
+  });
+
+  it("matches saved chinese by normalized translation text", () => {
+    const saved = createPhrasebookEntry({
+      translationId: null,
+      sourceText: "to get to know",
+      sourceLang: "en",
+      targetLang: "zh",
+      translation: "认识",
+      characterSet: "simplified",
+      dictionaryMatches: [],
+      segments: [],
+      tags: ["verb"],
+    });
+
+    expect(isChineseAlreadySaved([saved], " 认 识 ")).toBe(true);
+    expect(isChineseAlreadySaved([saved], "认识")).toBe(true);
+    expect(isChineseAlreadySaved([saved], "高兴")).toBe(false);
   });
 
   it("matches saved entries by translation id", () => {

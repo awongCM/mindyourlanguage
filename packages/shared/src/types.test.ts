@@ -138,3 +138,28 @@ describe('PhrasebookEntry type', () => {
     expect(entry.notes).toBe('Casual hello')
   })
 })
+
+describe('LearnableSuggestion types', () => {
+  it('accepts learnables request and response shapes', () => {
+    const request: import('./types').LearnablesRequest = {
+      sourceText: 'Nice to meet you.',
+      translation: '认识你很高兴。',
+      knownTranslations: ['你好'],
+      voiceRegion: 'zh-CN',
+    }
+    const response: import('./types').LearnablesResponse = {
+      items: [
+        {
+          chinese: '认识',
+          gloss: 'to get to know',
+          kind: 'verb',
+          exampleChinese: '很高兴认识你。',
+          exampleEnglish: 'Nice to meet you.',
+        },
+      ],
+    }
+
+    expect(request.knownTranslations).toContain('你好')
+    expect(response.items[0]?.kind).toBe('verb')
+  })
+})
