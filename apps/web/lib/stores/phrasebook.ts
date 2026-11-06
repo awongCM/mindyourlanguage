@@ -5,6 +5,7 @@ import type {
   PracticeStats,
   ReviewGrade,
 } from "@mindyourlanguage/shared";
+import { normalizeChineseKey } from "@/lib/learnables-shared";
 import { applySpeedSession, getSpeedEntries } from "@/lib/practice/fluency";
 import {
   createInitialPracticeStats,
@@ -12,6 +13,8 @@ import {
   recordReview as scheduleReview,
 } from "@/lib/practice/srs";
 import { useReviewEventsStore } from "./review-events";
+
+export { normalizeChineseKey };
 
 function createEntryId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -53,10 +56,6 @@ export function entryMatchesSaved(
   >,
 ): boolean {
   return phrasebookEntryKey(saved) === phrasebookEntryKey(candidate);
-}
-
-export function normalizeChineseKey(value: string): string {
-  return value.replace(/\s+/g, "").trim();
 }
 
 export function isChineseAlreadySaved(

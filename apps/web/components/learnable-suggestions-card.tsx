@@ -27,10 +27,53 @@ function displayChinese(text: string, characterSet: CharacterSet): string {
   return characterSet === "traditional" ? toTraditionalChars(text) : text;
 }
 
-function kindLabel(kind: LearnableSuggestion["kind"]): string {
-  if (kind === "noun") return "noun";
-  if (kind === "verb") return "verb";
-  return "phrase";
+function chineseKeys(items: LearnableSuggestion[]): Set<string> {
+  return new Set(items.map((item) => item.chinese));
+}
+
+function LearnableRow({
+  item,
+  checked,
+  characterSet,
+  onToggle,
+}: {
+  item: LearnableSuggestion;
+  checked: boolean;
+  characterSet: CharacterSet;
+  onToggle: () => void;
+}) {
+  const inputId = `learnable-${item.chinese}`;
+
+  return (
+    <li className="flex flex-col gap-1 border-b border-border pb-3 last:border-b-0 last:pb-0">
+      <label htmlFor={inputId} className="flex cursor-pointer items-start gap-3">
+        <input
+          id={inputId}
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          className="mt-1 size-4 rounded border-foreground/20"
+        />
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="flex flex-wrap items-baseline gap-2">
+            <span className="text-lg font-medium text-foreground">
+              {displayChinese(item.chinese, characterSet)}
+            </span>
+            <span className="text-sm text-muted-foreground">{item.gloss}</span>
+            <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+              {item.kind}
+            </span>
+          </span>
+          <span className="text-sm text-foreground/90">
+            {displayChinese(item.exampleChinese, characterSet)}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {item.exampleEnglish}
+          </span>
+        </span>
+      </label>
+    </li>
+  );
 }
 
 export function LearnableSuggestionsCard({
@@ -39,12 +82,10 @@ export function LearnableSuggestionsCard({
   characterSet,
   onSaveSelected,
 }: LearnableSuggestionsCardProps) {
-  const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(items.map((item) => item.chinese)),
-  );
+  const [selected, setSelected] = useState(() => chineseKeys(items));
 
   useEffect(() => {
-    setSelected(new Set(items.map((item) => item.chinese)));
+    setSelected(chineseKeys(items));
   }, [items]);
 
   if (loading) {
@@ -85,48 +126,15 @@ export function LearnableSuggestionsCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <ul className="flex flex-col gap-3" aria-label="Learnable suggestions">
-          {items.map((item) => {
-            const checked = selected.has(item.chinese);
-            const id = `learnable-${item.chinese}`;
-            return (
-              <li
-                key={item.chinese}
-                className="flex flex-col gap-1 border-b border-border pb-3 last:border-b-0 last:pb-0"
-              >
-                <label
-                  htmlFor={id}
-                  className="flex cursor-pointer items-start gap-3"
-                >
-                  <input
-                    id={id}
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggle(item.chinese)}
-                    className="mt-1 size-4 rounded border-foreground/20"
-                  />
-                  <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="flex flex-wrap items-baseline gap-2">
-                      <span className="text-lg font-medium text-foreground">
-                        {displayChinese(item.chinese, characterSet)}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {item.gloss}
-                      </span>
-                      <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                        {kindLabel(item.kind)}
-                      </span>
-                    </span>
-                    <span className="text-sm text-foreground/90">
-                      {displayChinese(item.exampleChinese, characterSet)}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {item.exampleEnglish}
-                    </span>
-                  </span>
-                </label>
-              </li>
-            );
-          })}
+          {items.map((item) => (
+            <LearnableRow
+              key={item.chinese}
+              item={item}
+              checked={selected.has(item.chinese)}
+              characterSet={characterSet}
+              onToggle={() => toggle(item.chinese)}
+            />
+          ))}
         </ul>
       </CardContent>
       <CardFooter>

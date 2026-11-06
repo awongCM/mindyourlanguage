@@ -14,6 +14,20 @@ import type {
 const MAX_CHARS = 1000
 const MAX_KNOWN = 200
 
+function emptyResponse(): NextResponse {
+  const body: LearnablesResponse = { items: [] }
+  return NextResponse.json(body)
+}
+
+function sanitizeKnownTranslations(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((text): text is string => typeof text === 'string')
+    .map((text) => text.trim())
+    .filter((text) => text.length > 0)
+    .slice(0, MAX_KNOWN)
+}
+
 export async function POST(req: NextRequest) {
   let body: LearnablesRequest
   try {
@@ -46,14 +60,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
-  const knownTranslations = Array.isArray(body.knownTranslations)
-    ? body.knownTranslations
-        .filter((text): text is string => typeof text === 'string')
-        .map((text) => text.trim())
-        .filter((text) => text.length > 0)
-        .slice(0, MAX_KNOWN)
-    : []
-
   const voiceRegion: VoiceRegion =
     body.voiceRegion === 'zh-TW' ? 'zh-TW' : 'zh-CN'
 
@@ -61,14 +67,13 @@ export async function POST(req: NextRequest) {
     const items = await fetchLearnables({
       sourceText: body.sourceText.trim(),
       translation: body.translation.trim(),
-      knownTranslations,
+      knownTranslations: sanitizeKnownTranslations(body.knownTranslations),
       voiceRegion,
     })
     const response: LearnablesResponse = { items }
     return NextResponse.json(response)
   } catch (err) {
     console.error('learnables failed', err)
-    const response: LearnablesResponse = { items: [] }
-    return NextResponse.json(response)
+    return emptyResponse()
   }
 }

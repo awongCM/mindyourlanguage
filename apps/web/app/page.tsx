@@ -16,18 +16,14 @@ import {
   TranslatorForm,
   type TranslateDirection,
 } from "@/components/translator-form";
+import { useLearnableSuggestions } from "@/components/use-learnable-suggestions";
 import { Button } from "@/components/ui/button";
-import {
-  filterNewLearnables,
-  formatLearnableNotes,
-} from "@/lib/learnables-shared";
 import {
   createInitialPracticeStats,
 } from "@/lib/practice/srs";
 import {
   createPhrasebookEntry,
   entryMatchesSaved,
-  isChineseAlreadySaved,
   usePhrasebookStore,
 } from "@/lib/stores/phrasebook";
 import { useHistoryStore } from "@/lib/stores/history";
@@ -38,8 +34,6 @@ import {
 import { cancelSpeech } from "@/lib/speech";
 import type {
   CharacterSet,
-  LearnableSuggestion,
-  LearnablesResponse,
   PhrasebookEntry,
   TranslateRequest,
   TranslateResponse,
@@ -80,16 +74,15 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [phrasebookOpen, setPhrasebookOpen] = useState(false);
-  const [learnables, setLearnables] = useState<LearnableSuggestion[]>([]);
-  const [learnablesLoading, setLearnablesLoading] = useState(false);
 
   const addHistory = useHistoryStore((state) => state.add);
   const historyItems = useHistoryStore((state) => state.items);
   const restoredLatestRef = useRef(false);
-  const learnablesRequestIdRef = useRef(0);
   const phrasebookItems = usePhrasebookStore((state) => state.items);
   const addPhrasebook = usePhrasebookStore((state) => state.add);
   const removePhrasebook = usePhrasebookStore((state) => state.remove);
+
+  const learnables = useLearnableSuggestions(voiceRegion, characterSet);
 
   const isEnglishToChinese =
     direction.sourceLang === "en" && direction.targetLang === "zh";
@@ -118,51 +111,8 @@ export default function Home() {
     return userAttempt.trim();
   }, [isEnglishToChinese, tryFirstEnabled, userAttempt]);
 
-  function clearLearnables() {
-    learnablesRequestIdRef.current += 1;
-    setLearnables([]);
-    setLearnablesLoading(false);
-  }
-
-  async function loadLearnables(
-    text: string,
-    translation: string,
-    known: string[],
-  ) {
-    const requestId = ++learnablesRequestIdRef.current;
-    setLearnables([]);
-    setLearnablesLoading(true);
-    try {
-      const response = await fetch("/api/learnables", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sourceText: text,
-          translation,
-          knownTranslations: known,
-          voiceRegion,
-        }),
-      });
-      if (requestId !== learnablesRequestIdRef.current) return;
-      if (!response.ok) {
-        setLearnables([]);
-        return;
-      }
-      const data = (await response.json()) as LearnablesResponse;
-      const items = filterNewLearnables(data.items ?? [], known);
-      setLearnables(items);
-    } catch {
-      if (requestId !== learnablesRequestIdRef.current) return;
-      setLearnables([]);
-    } finally {
-      if (requestId === learnablesRequestIdRef.current) {
-        setLearnablesLoading(false);
-      }
-    }
-  }
-
   function restoreRecord(record: TranslationRecord) {
-    clearLearnables();
+    learnables.clear();
     setDirection({
       sourceLang: record.sourceLang,
       targetLang: record.targetLang,
@@ -187,7 +137,7 @@ export default function Home() {
   }, [historyItems]);
 
   function restorePhrasebook(entry: PhrasebookEntry) {
-    clearLearnables();
+    learnables.clear();
     setDirection({
       sourceLang: entry.sourceLang,
       targetLang: entry.targetLang,
@@ -200,50 +150,11 @@ export default function Home() {
 
   function handleClear() {
     cancelSpeech();
-    clearLearnables();
+    learnables.clear();
     setSourceText("");
     setUserAttempt("");
     setResult(null);
     setError(null);
-  }
-
-  function handleSaveLearnables(items: LearnableSuggestion[]) {
-    let savedCount = 0;
-    for (const item of items) {
-      const currentItems = usePhrasebookStore.getState().items;
-      if (isChineseAlreadySaved(currentItems, item.chinese)) continue;
-      addPhrasebook(
-        createPhrasebookEntry({
-          translationId: null,
-          sourceText: item.gloss,
-          sourceLang: "en",
-          targetLang: "zh",
-          translation: item.chinese,
-          characterSet,
-          dictionaryMatches: [],
-          segments: [],
-          tags: [item.kind],
-          notes: formatLearnableNotes(item),
-          practiceStats: createInitialPracticeStats(),
-        }),
-      );
-      savedCount += 1;
-    }
-
-    if (savedCount === 0) {
-      toast.success("Those are already in your phrasebook");
-      return;
-    }
-
-    const afterSave = usePhrasebookStore.getState().items;
-    setLearnables((prev) =>
-      prev.filter((item) => !isChineseAlreadySaved(afterSave, item.chinese)),
-    );
-    toast.success(
-      savedCount === 1
-        ? "Saved 1 new bit to phrasebook"
-        : `Saved ${savedCount} new bits to phrasebook`,
-    );
   }
 
   function handleToggleSave() {
@@ -290,7 +201,7 @@ export default function Home() {
   async function handleTranslate(text: string) {
     setIsLoading(true);
     setError(null);
-    clearLearnables();
+    learnables.clear();
 
     const body: TranslateRequest = {
       text,
@@ -348,8 +259,11 @@ export default function Home() {
       );
 
       if (isEnglishToChinese) {
-        const known = phrasebookItems.map((item) => item.translation);
-        void loadLearnables(text, data.translation, known);
+        void learnables.load(
+          text,
+          data.translation,
+          phrasebookItems.map((item) => item.translation),
+        );
       }
     } catch {
       setError("Translation service unavailable. Try again.");
@@ -462,13 +376,12 @@ export default function Home() {
                 : undefined
             }
           />
-          {isEnglishToChinese &&
-          (learnablesLoading || learnables.length > 0) ? (
+          {isEnglishToChinese && learnables.visible ? (
             <LearnableSuggestionsCard
-              items={learnables}
-              loading={learnablesLoading}
+              items={learnables.items}
+              loading={learnables.loading}
               characterSet={characterSet}
-              onSaveSelected={handleSaveLearnables}
+              onSaveSelected={learnables.saveSelected}
             />
           ) : null}
           {submittedAttempt ? (

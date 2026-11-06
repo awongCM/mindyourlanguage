@@ -1,15 +1,16 @@
 import type { LearnableKind, LearnableSuggestion } from '@mindyourlanguage/shared'
 
+/** Hard cap so spaced-repetition stays light — a few new bits, not a dump. */
 export const MAX_LEARNABLE_SUGGESTIONS = 3
 
-const LEARNABLE_KINDS: ReadonlySet<string> = new Set([
+const LEARNABLE_KINDS: ReadonlySet<LearnableKind> = new Set([
   'noun',
   'verb',
   'phrase',
 ])
 
 function isLearnableKind(value: unknown): value is LearnableKind {
-  return typeof value === 'string' && LEARNABLE_KINDS.has(value)
+  return typeof value === 'string' && LEARNABLE_KINDS.has(value as LearnableKind)
 }
 
 function asNonEmptyString(value: unknown): string | null {
@@ -18,10 +19,15 @@ function asNonEmptyString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null
 }
 
+/** Compare Chinese phrasebook text without caring about spaces. */
 export function normalizeChineseKey(value: string): string {
   return value.replace(/\s+/g, '').trim()
 }
 
+/**
+ * Keep only unseen learnables, drop duplicates, and cap at
+ * {@link MAX_LEARNABLE_SUGGESTIONS}.
+ */
 export function filterNewLearnables(
   items: LearnableSuggestion[],
   knownTranslations: string[],
@@ -66,6 +72,7 @@ function parseSuggestion(value: unknown): LearnableSuggestion | null {
   }
 }
 
+/** Parse model JSON and apply the new/known/cap filter. */
 export function parseLearnablesResponse(
   content: string,
   knownTranslations: string[] = [],
@@ -79,9 +86,8 @@ export function parseLearnablesResponse(
 
   if (!parsed || typeof parsed !== 'object') return []
 
-  const data = parsed as Record<string, unknown>
-  const rawItems = Array.isArray(data.items) ? data.items : null
-  if (!rawItems) return []
+  const rawItems = (parsed as { items?: unknown }).items
+  if (!Array.isArray(rawItems)) return []
 
   const items: LearnableSuggestion[] = []
   for (const raw of rawItems) {
@@ -92,6 +98,7 @@ export function parseLearnablesResponse(
   return filterNewLearnables(items, knownTranslations)
 }
 
+/** Store the usage example on the phrasebook card notes field. */
 export function formatLearnableNotes(item: LearnableSuggestion): string {
   return `${item.exampleChinese}\n${item.exampleEnglish}`
 }
