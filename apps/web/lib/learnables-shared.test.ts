@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   filterNewLearnables,
-  formatLearnableNotes,
   MAX_LEARNABLE_SUGGESTIONS,
   normalizeChineseKey,
   parseLearnablesResponse,
@@ -75,13 +74,5 @@ describe('parseLearnablesResponse', () => {
     }))
 
     expect(parseLearnablesResponse(JSON.stringify({ items }))).toHaveLength(3)
-  })
-})
-
-describe('formatLearnableNotes', () => {
-  it('joins example chinese and english', () => {
-    expect(formatLearnableNotes(sample)).toBe(
-      '很高兴认识你。\nNice to meet you.',
-    )
   })
 })

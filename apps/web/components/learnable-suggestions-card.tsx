@@ -23,57 +23,8 @@ interface LearnableSuggestionsCardProps {
   onSaveSelected: (items: LearnableSuggestion[]) => void;
 }
 
-function displayChinese(text: string, characterSet: CharacterSet): string {
+function zh(text: string, characterSet: CharacterSet): string {
   return characterSet === "traditional" ? toTraditionalChars(text) : text;
-}
-
-function chineseKeys(items: LearnableSuggestion[]): Set<string> {
-  return new Set(items.map((item) => item.chinese));
-}
-
-function LearnableRow({
-  item,
-  checked,
-  characterSet,
-  onToggle,
-}: {
-  item: LearnableSuggestion;
-  checked: boolean;
-  characterSet: CharacterSet;
-  onToggle: () => void;
-}) {
-  const inputId = `learnable-${item.chinese}`;
-
-  return (
-    <li className="flex flex-col gap-1 border-b border-border pb-3 last:border-b-0 last:pb-0">
-      <label htmlFor={inputId} className="flex cursor-pointer items-start gap-3">
-        <input
-          id={inputId}
-          type="checkbox"
-          checked={checked}
-          onChange={onToggle}
-          className="mt-1 size-4 rounded border-foreground/20"
-        />
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="flex flex-wrap items-baseline gap-2">
-            <span className="text-lg font-medium text-foreground">
-              {displayChinese(item.chinese, characterSet)}
-            </span>
-            <span className="text-sm text-muted-foreground">{item.gloss}</span>
-            <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-              {item.kind}
-            </span>
-          </span>
-          <span className="text-sm text-foreground/90">
-            {displayChinese(item.exampleChinese, characterSet)}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            {item.exampleEnglish}
-          </span>
-        </span>
-      </label>
-    </li>
-  );
 }
 
 export function LearnableSuggestionsCard({
@@ -82,10 +33,12 @@ export function LearnableSuggestionsCard({
   characterSet,
   onSaveSelected,
 }: LearnableSuggestionsCardProps) {
-  const [selected, setSelected] = useState(() => chineseKeys(items));
+  const [selected, setSelected] = useState(
+    () => new Set(items.map((item) => item.chinese)),
+  );
 
   useEffect(() => {
-    setSelected(chineseKeys(items));
+    setSelected(new Set(items.map((item) => item.chinese)));
   }, [items]);
 
   if (loading) {
@@ -107,15 +60,6 @@ export function LearnableSuggestionsCard({
 
   const selectedItems = items.filter((item) => selected.has(item.chinese));
 
-  function toggle(chinese: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(chinese)) next.delete(chinese);
-      else next.add(chinese);
-      return next;
-    });
-  }
-
   return (
     <Card data-testid="learnable-suggestions">
       <CardHeader>
@@ -124,17 +68,57 @@ export function LearnableSuggestionsCard({
           Pick a few new words or short phrases — skip what you already know.
         </p>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent>
         <ul className="flex flex-col gap-3" aria-label="Learnable suggestions">
-          {items.map((item) => (
-            <LearnableRow
-              key={item.chinese}
-              item={item}
-              checked={selected.has(item.chinese)}
-              characterSet={characterSet}
-              onToggle={() => toggle(item.chinese)}
-            />
-          ))}
+          {items.map((item) => {
+            const id = `learnable-${item.chinese}`;
+            const checked = selected.has(item.chinese);
+            return (
+              <li
+                key={item.chinese}
+                className="border-b border-border pb-3 last:border-b-0 last:pb-0"
+              >
+                <label
+                  htmlFor={id}
+                  className="flex cursor-pointer items-start gap-3"
+                >
+                  <input
+                    id={id}
+                    type="checkbox"
+                    checked={checked}
+                    className="mt-1 size-4 rounded border-foreground/20"
+                    onChange={() => {
+                      setSelected((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(item.chinese)) next.delete(item.chinese);
+                        else next.add(item.chinese);
+                        return next;
+                      });
+                    }}
+                  />
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="flex flex-wrap items-baseline gap-2">
+                      <span className="text-lg font-medium text-foreground">
+                        {zh(item.chinese, characterSet)}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {item.gloss}
+                      </span>
+                      <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                        {item.kind}
+                      </span>
+                    </span>
+                    <span className="text-sm text-foreground/90">
+                      {zh(item.exampleChinese, characterSet)}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {item.exampleEnglish}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            );
+          })}
         </ul>
       </CardContent>
       <CardFooter>

@@ -2,11 +2,13 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { filterNewLearnables } from "@/lib/learnables-shared";
+import { createInitialPracticeStats } from "@/lib/practice/srs";
 import {
-  filterNewLearnables,
-} from "@/lib/learnables-shared";
-import { saveNewLearnables } from "@/lib/learnables-to-phrasebook";
-import { isChineseAlreadySaved, usePhrasebookStore } from "@/lib/stores/phrasebook";
+  createPhrasebookEntry,
+  isChineseAlreadySaved,
+  usePhrasebookStore,
+} from "@/lib/stores/phrasebook";
 import type {
   CharacterSet,
   LearnableSuggestion,
@@ -15,8 +17,8 @@ import type {
 } from "@mindyourlanguage/shared";
 
 /**
- * Loads "new bits to learn" after an EN→ZH translate and saves selected ones.
- * Keeps request/response and phrasebook write logic out of the home page.
+ * After EN→ZH translate: fetch a few new learnables, let the user save them.
+ * Lives here so the home page stays orchestration.
  */
 export function useLearnableSuggestions(
   voiceRegion: VoiceRegion,
@@ -24,7 +26,7 @@ export function useLearnableSuggestions(
 ) {
   const [items, setItems] = useState<LearnableSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
-  // Bumped on clear / new load so a slow response cannot overwrite newer state.
+  // Ignore late responses after clear() or a newer load().
   const requestIdRef = useRef(0);
 
   function clear() {
@@ -53,7 +55,6 @@ export function useLearnableSuggestions(
           voiceRegion,
         }),
       });
-
       if (requestId !== requestIdRef.current) return;
 
       if (!response.ok) {
@@ -62,19 +63,42 @@ export function useLearnableSuggestions(
       }
 
       const data = (await response.json()) as LearnablesResponse;
+      // Client re-filters in case the phrasebook changed while the request was in flight.
       setItems(filterNewLearnables(data.items ?? [], knownTranslations));
     } catch {
-      if (requestId !== requestIdRef.current) return;
-      setItems([]);
+      if (requestId === requestIdRef.current) setItems([]);
     } finally {
-      if (requestId === requestIdRef.current) {
-        setLoading(false);
-      }
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }
 
   function saveSelected(selected: LearnableSuggestion[]) {
-    const savedCount = saveNewLearnables(selected, characterSet);
+    const { add } = usePhrasebookStore.getState();
+    let savedCount = 0;
+
+    for (const item of selected) {
+      // Re-read after each add so two identical chinese picks in one click still dedupe.
+      if (isChineseAlreadySaved(usePhrasebookStore.getState().items, item.chinese)) {
+        continue;
+      }
+
+      add(
+        createPhrasebookEntry({
+          translationId: null,
+          sourceText: item.gloss,
+          sourceLang: "en",
+          targetLang: "zh",
+          translation: item.chinese,
+          characterSet,
+          dictionaryMatches: [],
+          segments: [],
+          tags: [item.kind],
+          notes: `${item.exampleChinese}\n${item.exampleEnglish}`,
+          practiceStats: createInitialPracticeStats(),
+        }),
+      );
+      savedCount += 1;
+    }
 
     if (savedCount === 0) {
       toast.success("Those are already in your phrasebook");
@@ -85,7 +109,6 @@ export function useLearnableSuggestions(
     setItems((prev) =>
       prev.filter((item) => !isChineseAlreadySaved(afterSave, item.chinese)),
     );
-
     toast.success(
       savedCount === 1
         ? "Saved 1 new bit to phrasebook"
