@@ -1,9 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Bookmark } from "lucide-react";
 import { LearnableItem } from "@/components/learnables/learnable-item";
 import { LearnableLoadingCard } from "@/components/learnables/learnable-loading-card";
-import { useKeyedSelection } from "@/components/learnables/use-keyed-selection";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,12 +31,27 @@ export function LearnableSuggestionsCard({
   characterSet,
   onSaveSelected,
 }: LearnableSuggestionsCardProps) {
-  const selection = useKeyedSelection(items.map((item) => item.chinese));
+  const [selected, setSelected] = useState(
+    () => new Set(items.map((item) => item.chinese)),
+  );
+
+  useEffect(() => {
+    setSelected(new Set(items.map((item) => item.chinese)));
+  }, [items]);
 
   if (loading) return <LearnableLoadingCard />;
   if (items.length === 0) return null;
 
-  const selectedItems = selection.selectedItems(items, (item) => item.chinese);
+  const selectedItems = items.filter((item) => selected.has(item.chinese));
+
+  function toggle(chinese: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(chinese)) next.delete(chinese);
+      else next.add(chinese);
+      return next;
+    });
+  }
 
   return (
     <Card data-testid="learnable-suggestions">
@@ -52,9 +67,9 @@ export function LearnableSuggestionsCard({
             <LearnableItem
               key={item.chinese}
               item={item}
-              checked={selection.has(item.chinese)}
+              checked={selected.has(item.chinese)}
               characterSet={characterSet}
-              onToggle={() => selection.toggle(item.chinese)}
+              onToggle={() => toggle(item.chinese)}
             />
           ))}
         </ul>
