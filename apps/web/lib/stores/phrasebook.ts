@@ -55,6 +55,21 @@ export function entryMatchesSaved(
   return phrasebookEntryKey(saved) === phrasebookEntryKey(candidate);
 }
 
+export function normalizeChineseKey(value: string): string {
+  return value.replace(/\s+/g, "").trim();
+}
+
+export function isChineseAlreadySaved(
+  items: PhrasebookEntry[],
+  chinese: string,
+): boolean {
+  const key = normalizeChineseKey(chinese);
+  if (!key) return false;
+  return items.some(
+    (item) => normalizeChineseKey(item.translation) === key,
+  );
+}
+
 export function filterPhrasebookByTag(
   items: PhrasebookEntry[],
   tagFilter: string,
