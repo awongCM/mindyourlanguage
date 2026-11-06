@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { fetchLearnables } from './learnables'
+import { fetchLearnables } from './fetch'
 
 const originalOpenAiKey = process.env.OPENAI_API_KEY
 const originalLearnablesModel = process.env.LEARNABLES_MODEL

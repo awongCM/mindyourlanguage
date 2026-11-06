@@ -1,18 +1,16 @@
 import { describe, expect, it } from 'vitest'
-
-import { createInitialPracticeStats } from './practice/srs'
+import { createInitialPracticeStats } from '@/lib/practice/srs'
 import {
   createPhrasebookEntry,
   isChineseAlreadySaved,
   usePhrasebookStore,
-} from './stores/phrasebook'
+} from '@/lib/stores/phrasebook'
 import {
   filterNewLearnables,
   MAX_LEARNABLE_SUGGESTIONS,
-  normalizeChineseKey,
   parseLearnablesResponse,
   phrasebookFieldsFromLearnable,
-} from './learnables-shared'
+} from './parse'
 
 const sample = {
   chinese: '认识',
@@ -21,12 +19,6 @@ const sample = {
   exampleChinese: '很高兴认识你。',
   exampleEnglish: 'Nice to meet you.',
 }
-
-describe('normalizeChineseKey', () => {
-  it('strips whitespace', () => {
-    expect(normalizeChineseKey(' 认 识 ')).toBe('认识')
-  })
-})
 
 describe('filterNewLearnables', () => {
   it('drops known chinese and caps at three', () => {
@@ -106,12 +98,13 @@ describe('phrasebookFieldsFromLearnable', () => {
 
   it('skips saving chinese that is already in the phrasebook', () => {
     usePhrasebookStore.setState({ items: [] })
-    const first = createPhrasebookEntry({
-      ...phrasebookFieldsFromLearnable(sample, 'simplified'),
-      dictionaryMatches: [],
-      segments: [],
-    })
-    usePhrasebookStore.getState().add(first)
+    usePhrasebookStore.getState().add(
+      createPhrasebookEntry({
+        ...phrasebookFieldsFromLearnable(sample, 'simplified'),
+        dictionaryMatches: [],
+        segments: [],
+      }),
+    )
 
     expect(
       isChineseAlreadySaved(usePhrasebookStore.getState().items, sample.chinese),

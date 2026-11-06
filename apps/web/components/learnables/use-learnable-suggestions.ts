@@ -4,11 +4,9 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   filterNewLearnables,
-  phrasebookFieldsFromLearnable,
-} from "@/lib/learnables-shared";
-import { createInitialPracticeStats } from "@/lib/practice/srs";
+  saveLearnablesToPhrasebook,
+} from "@/lib/learnables";
 import {
-  createPhrasebookEntry,
   isChineseAlreadySaved,
   usePhrasebookStore,
 } from "@/lib/stores/phrasebook";
@@ -79,27 +77,7 @@ export function useLearnableSuggestions(
   }
 
   function saveSelected(selected: LearnableSuggestion[]) {
-    const { add } = usePhrasebookStore.getState();
-    let savedCount = 0;
-
-    for (const item of selected) {
-      // Re-read after each add so two identical chinese picks in one click still dedupe.
-      if (
-        isChineseAlreadySaved(usePhrasebookStore.getState().items, item.chinese)
-      ) {
-        continue;
-      }
-
-      add(
-        createPhrasebookEntry({
-          ...phrasebookFieldsFromLearnable(item, characterSet),
-          dictionaryMatches: [],
-          segments: [],
-          practiceStats: createInitialPracticeStats(),
-        }),
-      );
-      savedCount += 1;
-    }
+    const savedCount = saveLearnablesToPhrasebook(selected, characterSet);
 
     if (savedCount === 0) {
       toast.success("Those are already in your phrasebook");

@@ -5,7 +5,7 @@ import type {
   PracticeStats,
   ReviewGrade,
 } from "@mindyourlanguage/shared";
-import { normalizeChineseKey } from "@/lib/learnables-shared";
+import { normalizeChineseKey } from "@/lib/characters";
 import { applySpeedSession, getSpeedEntries } from "@/lib/practice/fluency";
 import {
   createInitialPracticeStats,

@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { HistoryDrawer } from "@/components/history-drawer";
 import { ComparisonPanel } from "@/components/comparison-panel";
 import { GroundingPanel } from "@/components/grounding-panel";
-import { LearnableSuggestionsCard } from "@/components/learnable-suggestions-card";
+import { LearnableSuggestionsCard } from "@/components/learnables/learnable-suggestions-card";
+import { useLearnableSuggestions } from "@/components/learnables/use-learnable-suggestions";
 import { NativeAlternativeCard } from "@/components/native-alternative-card";
 import { PhrasebookDrawer } from "@/components/phrasebook-drawer";
 import { ResultCard } from "@/components/result-card";
@@ -16,7 +17,6 @@ import {
   TranslatorForm,
   type TranslateDirection,
 } from "@/components/translator-form";
-import { useLearnableSuggestions } from "@/components/use-learnable-suggestions";
 import { Button } from "@/components/ui/button";
 import {
   createInitialPracticeStats,

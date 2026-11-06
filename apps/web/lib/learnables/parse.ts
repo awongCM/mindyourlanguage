@@ -3,9 +3,12 @@ import type {
   LearnableKind,
   LearnableSuggestion,
 } from '@mindyourlanguage/shared'
+import { normalizeChineseKey } from '@/lib/characters'
 
 /** Cap so spaced repetition stays light. */
 export const MAX_LEARNABLE_SUGGESTIONS = 3
+
+const KINDS = new Set<string>(['noun', 'verb', 'phrase'])
 
 /** Fields used when saving a suggestion as a phrasebook / SRS card. */
 export function phrasebookFieldsFromLearnable(
@@ -22,13 +25,6 @@ export function phrasebookFieldsFromLearnable(
     tags: [item.kind],
     notes: `${item.exampleChinese}\n${item.exampleEnglish}`,
   }
-}
-
-const KINDS = new Set<string>(['noun', 'verb', 'phrase'])
-
-/** Compare Chinese phrasebook text without caring about spaces. */
-export function normalizeChineseKey(value: string): string {
-  return value.replace(/\s+/g, '').trim()
 }
 
 /** Drop known/duplicate items and keep at most {@link MAX_LEARNABLE_SUGGESTIONS}. */
