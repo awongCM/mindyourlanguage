@@ -11,6 +11,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type { PhrasebookEntry } from "@mindyourlanguage/shared";
+import { SyncPhraseForm } from "@/components/sync-phrase-form";
 import {
   filterPhrasebookByTag,
   usePhrasebookStore,
@@ -151,6 +152,8 @@ export function PhrasebookDrawer({
             ))}
           </ul>
         )}
+
+        <SyncPhraseForm hasPhrases={items.length > 0} />
 
         <SheetFooter>
           <Button

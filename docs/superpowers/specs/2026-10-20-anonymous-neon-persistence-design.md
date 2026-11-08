@@ -117,12 +117,14 @@ flowchart LR
 
 ---
 
-## 7. Growth path (not built now)
+## 7. Growth path
+
+Cross-browser access is the sync phrase (`myl_sync`, migration 005). The other rows are not built.
 
 | Later need | How the design allows it |
 |---|---|
 | More data | Same tables; per-user indexes already exist (`idx_translations_user_id`, `idx_phrasebook_user_id`, `idx_review_events_user_id`). Move to Neon's pooled URL if connections become a limit. |
-| Cross-browser access | Add Google sign-in later: on first sign-in, attach the email to the current anonymous user instead of creating a new one. Existing rows keep their `user_id`. |
+| Cross-browser access | A sync phrase (migration `005`, cookie `myl_sync`) opens the same user in every browser. Save it where the phrases already show, then enter it in the other browser. Google sign-in stays optional and still wins when a session exists. |
 | Stale anonymous users | Scheduled SQL delete of users with no recent rows. Not needed at current scale. |
 | Abuse | Per-IP limit on user creation now; payload caps and per-user limits are already in the route layer (`apps/web/lib/sync/limits.ts`). |
 
@@ -131,7 +133,7 @@ flowchart LR
 ## 8. Deploy
 
 1. Create the Neon database (direct URL, `sslmode=require`, AWS US West Oregon).
-2. Run migrations 001–004 (004 drops the phrasebook → translations foreign key) with the existing workflow or `npm run db:migrate`.
+2. Run migrations 001–005 (004 drops the phrasebook → translations foreign key; 005 adds the sync phrase hash) with the existing workflow or `npm run db:migrate`.
 3. Set `DATABASE_URL` on the Render service. Keep `AUTH_SECRET` and `AUTH_URL` as they are today.
 4. Redeploy. No `NEXT_PUBLIC_GOOGLE_AUTH` change and no Google OAuth setup.
 
