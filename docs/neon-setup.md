@@ -69,6 +69,7 @@ psql "$DATABASE_URL" -f db/migrations/001_initial.sql
 psql "$DATABASE_URL" -f db/migrations/002_cloud_sync.sql
 psql "$DATABASE_URL" -f db/migrations/003_anon_users.sql
 psql "$DATABASE_URL" -f db/migrations/004_phrasebook_drop_translation_fk.sql
+psql "$DATABASE_URL" -f db/migrations/005_sync_key.sql
 ```
 
 ### Option D — Neon SQL Editor
@@ -79,6 +80,7 @@ Run the contents of each file in order:
 2. [`db/migrations/002_cloud_sync.sql`](../db/migrations/002_cloud_sync.sql) — sync columns + `review_events`
 3. [`db/migrations/003_anon_users.sql`](../db/migrations/003_anon_users.sql) — `users.anon_token_hash` for anonymous browser identity
 4. [`db/migrations/004_phrasebook_drop_translation_fk.sql`](../db/migrations/004_phrasebook_drop_translation_fk.sql) — drops the phrasebook → translations foreign key so history trims no longer delete saved phrases
+5. [`db/migrations/005_sync_key.sql`](../db/migrations/005_sync_key.sql) — `users.sync_key_hash` so one phrase opens the same phrasebook in every browser
 
 Re-running is safe: migrations use `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` where applicable.
 
@@ -189,11 +191,12 @@ The app can keep each browser's history, phrasebook, and practice data in Neon *
 - The server sets an httpOnly `myl_anon` cookie the first time that browser saves something. Only a SHA-256 hash of its token is stored (`users.anon_token_hash`, migration `003`). Reads (GET) with no cookie create nothing and return an empty list.
 - On load the page pulls that browser's rows from Neon, merges them with browser storage, and shows the newest translation again. After changes it pushes quietly in the background about 2 seconds later. Pushes add or update rows, and delete only rows this browser saw on the server and then removed locally. A failed or empty first load never deletes cloud rows.
 - A signed-in Google session, if present, takes precedence over the cookie identity.
-- Clearing cookies or opening another browser starts an empty Neon user. Old rows stay in Neon and are not linked.
+- Clearing cookies or opening another browser starts an empty Neon user. Old rows stay in Neon until that browser opens them with a sync phrase.
+- In the browser that already shows the phrases, open Phrasebook, type a private phrase of at least two words and 12 characters, and choose **Save phrase**. Saving does nothing in a browser that has not already synced. In Safari, Brave, or any other browser, type that same phrase and choose **Open phrase**. Letter case and extra spaces do not matter. The server stores only a SHA-256 hash (`users.sync_key_hash`, migration `005`) and sets an httpOnly `myl_sync` cookie. That cookie wins over `myl_anon`, so the other browser loads the same history, phrasebook, and reviews. **Use this browser only** clears `myl_sync` and returns to that browser's own cookie.
 - With `DATABASE_URL` unset the sync routes return `501` and the app stays browser-only, skipping sync silently with no errors shown. The page still restores the newest history entry on refresh from browser storage.
 - **Limits** (constants in [`apps/web/lib/sync/limits.ts`](../apps/web/lib/sync/limits.ts)) protect Neon Free's 0.5 GB: request bodies up to 5 MB; 200 history items, 2,000 phrasebook items, 2,000 `deletedIds` and 1,000 review events per request; at most 2,000 phrasebook rows per user; and the newest 5,000 review events kept per user (older ones are trimmed). A sync over a limit gets `413 Payload too large`, which the app logs quietly in the browser console (background sync) or shows as the usual sync error toast ("Sync now").
 
-**Render setup for this mode:** apply migrations 001–004, then set only `DATABASE_URL` (Neon direct URL, `sslmode=require`). Keep `AUTH_SECRET` and `AUTH_URL` as they are. `NEXT_PUBLIC_GOOGLE_AUTH` and the Google OAuth variables are not needed.
+**Render setup for this mode:** apply migrations 001–005, then set only `DATABASE_URL` (Neon direct URL, `sslmode=require`). Keep `AUTH_SECRET` and `AUTH_URL` as they are. `NEXT_PUBLIC_GOOGLE_AUTH` and the Google OAuth variables are not needed. Opening the same phrasebook in a second browser needs migration `005`.
 
 **Verify:** save a phrase, reload, and confirm History, Phrasebook, and the last translation return. In the Neon SQL editor:
 

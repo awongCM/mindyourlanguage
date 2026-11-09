@@ -31,3 +31,49 @@ export async function createAnonUser(tokenHash: string): Promise<string> {
   )
   return rows[0].id
 }
+
+export async function findUserIdBySyncKeyHash(
+  syncKeyHash: string,
+): Promise<string | null> {
+  const rows = await query<{ id: string }>(
+    'SELECT id FROM users WHERE sync_key_hash = $1 LIMIT 1',
+    [syncKeyHash],
+  )
+  return rows[0]?.id ?? null
+}
+
+export async function findSyncKeyHashByUserId(
+  userId: string,
+): Promise<string | null> {
+  const rows = await query<{ sync_key_hash: string | null }>(
+    'SELECT sync_key_hash FROM users WHERE id = $1 LIMIT 1',
+    [userId],
+  )
+  return rows[0]?.sync_key_hash ?? null
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === '23505'
+  )
+}
+
+/** Attach a sync phrase hash to this user. `taken` when another user already has it. */
+export async function setUserSyncKeyHash(
+  userId: string,
+  syncKeyHash: string,
+): Promise<'ok' | 'taken' | 'missing'> {
+  try {
+    const rows = await query<{ id: string }>(
+      'UPDATE users SET sync_key_hash = $1 WHERE id = $2 RETURNING id',
+      [syncKeyHash, userId],
+    )
+    return rows[0] ? 'ok' : 'missing'
+  } catch (error) {
+    if (isUniqueViolation(error)) return 'taken'
+    throw error
+  }
+}
