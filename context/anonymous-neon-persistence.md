@@ -26,9 +26,9 @@
 
 **Local e2e:** Playwright `webServer` sets `DATABASE_URL: ''`. Chromium may live at `~/Library/Caches/ms-playwright` — use `PLAYWRIGHT_BROWSERS_PATH=$HOME/Library/Caches/ms-playwright`. Sandbox blocks Next dev server; run e2e outside sandbox.
 
-## 2026-11-09 — Sync phrase across browsers
+## 2026-11-10 — Retrieve on open (no sync phrase UI)
 
-Cookie `myl_anon` stays per browser. Phrasebook, history, and reviews follow a remembered sync phrase instead: save it on the browser that already has the rows (`users.sync_key_hash`, migration 005), then open that phrase in Safari, Brave, or any other browser (`myl_sync` cookie, hashed, wins over `myl_anon`).
+Opening Phrasebook triggers another cloud pull. Cross-browser without login uses optional server env `MYL_SHARED_ANON_TOKEN` so every browser adopts the same `myl_anon` identity.
 
 **Known gaps (accepted for v1):**
 
