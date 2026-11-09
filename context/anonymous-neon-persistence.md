@@ -28,7 +28,7 @@
 
 ## 2026-11-09 — Sync phrase across browsers
 
-Cookie `myl_anon` stays per browser. Phrasebook, history, and reviews follow a remembered sync phrase instead: save it on the browser that already has the rows (`users.sync_key_hash`, migration 005), then open that phrase in Safari, Brave, or any other browser (`myl_sync` cookie, hashed, wins over `myl_anon`).
+Cookie `myl_anon` stays per browser. Phrasebook, history, and reviews follow a remembered sync phrase instead: save it on the browser that already shows the rows (`users.sync_key_hash`, migration 005), then open that phrase in Safari, Brave, or any other browser (`myl_sync` cookie, hashed, wins over `myl_anon`). Save uploads the rows on that screen, including when they exist only in localStorage and no cookie is sent. A save with no phrases does not create a user.
 
 **Known gaps (accepted for v1):**
 

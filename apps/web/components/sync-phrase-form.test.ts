@@ -2,7 +2,9 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  bodyForSyncAction,
   followupAfterSyncAction,
+  messageAfterOpen,
   SyncPhraseForm,
 } from './sync-phrase-form'
 
@@ -31,6 +33,38 @@ describe('SyncPhraseForm', () => {
     const openButton = html.slice(html.lastIndexOf('<button'), html.indexOf('Open phrase'))
     expect(saveButton).toMatch(/\sdisabled[\s=>]/)
     expect(openButton).not.toMatch(/\sdisabled[\s=>]/)
+  })
+})
+
+describe('bodyForSyncAction', () => {
+  it('sends the phrases this browser is showing when saving', () => {
+    const shown = {
+      phrasebook: [{ id: 'p1' }],
+      history: [{ id: 'h1' }],
+      events: [{ id: 'e1' }],
+    }
+    expect(bodyForSyncAction('save', 'river lantern', shown)).toEqual({
+      action: 'save',
+      phrase: 'river lantern',
+      phrasebook: shown.phrasebook,
+      history: shown.history,
+      events: shown.events,
+    })
+    expect(bodyForSyncAction('open', 'river lantern', shown)).toEqual({
+      action: 'open',
+      phrase: 'river lantern',
+    })
+    expect(bodyForSyncAction('forget', 'river lantern', shown)).toEqual({
+      action: 'forget',
+    })
+  })
+})
+
+describe('messageAfterOpen', () => {
+  it('does not claim the phrasebook opened when nothing was loaded', () => {
+    expect(messageAfterOpen('ok', 0)).toMatch(/no saved phrases/i)
+    expect(messageAfterOpen('ok', 2)).toMatch(/Opened your phrasebook/)
+    expect(messageAfterOpen('failed', 2)).toMatch(/did not load/)
   })
 })
 

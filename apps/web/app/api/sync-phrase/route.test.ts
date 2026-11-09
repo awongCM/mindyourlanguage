@@ -8,6 +8,9 @@ import {
   findUserIdBySyncKeyHash,
   setUserSyncKeyHash,
 } from '@/lib/db/users'
+import { upsertHistory } from '@/lib/db/history'
+import { upsertPhrasebook } from '@/lib/db/phrasebook'
+import { appendReviewEvents } from '@/lib/db/review-events'
 import { checkRateLimitForKey } from '@/lib/rate-limit'
 import {
   SYNC_PHRASE_COOKIE,
@@ -52,6 +55,18 @@ vi.mock('@/lib/db/users', () => ({
   findUserIdBySyncKeyHash: vi.fn(),
   findSyncKeyHashByUserId: vi.fn(),
   setUserSyncKeyHash: vi.fn(),
+}))
+
+vi.mock('@/lib/db/phrasebook', () => ({
+  upsertPhrasebook: vi.fn(),
+}))
+
+vi.mock('@/lib/db/history', () => ({
+  upsertHistory: vi.fn(),
+}))
+
+vi.mock('@/lib/db/review-events', () => ({
+  appendReviewEvents: vi.fn(),
 }))
 
 vi.mock('@/lib/rate-limit', () => ({
@@ -108,6 +123,12 @@ describe('/api/sync-phrase', () => {
     vi.mocked(checkRateLimitForKey).mockReset()
     vi.mocked(checkRateLimitForKey).mockReturnValue(true)
     vi.mocked(findUserIdBySyncKeyHash).mockResolvedValue(null)
+    vi.mocked(upsertPhrasebook).mockReset()
+    vi.mocked(upsertHistory).mockReset()
+    vi.mocked(appendReviewEvents).mockReset()
+    vi.mocked(upsertPhrasebook).mockResolvedValue([])
+    vi.mocked(upsertHistory).mockResolvedValue([])
+    vi.mocked(appendReviewEvents).mockResolvedValue([])
   })
 
   it('GET reports linked only when the sync phrase cookie matches a user', async () => {
@@ -148,6 +169,70 @@ describe('/api/sync-phrase', () => {
     const res = await POST(post({ phrase, action: 'open' }) as never)
     expect(res.status).toBe(429)
     expect(findUserIdBySyncKeyHash).not.toHaveBeenCalled()
+  })
+
+  it('save with the phrases on screen stores them, then links the phrase, even with no cookie', async () => {
+    const entry = { id: '11111111-1111-4111-8111-111111111111', sourceText: 'Hello' }
+    vi.mocked(createAnonUser).mockResolvedValue('user-new')
+    vi.mocked(setUserSyncKeyHash).mockResolvedValue('ok')
+
+    const res = await POST(
+      post({
+        phrase,
+        action: 'save',
+        phrasebook: [entry],
+        history: [{ id: '22222222-2222-4222-8222-222222222222' }],
+        events: [{ id: '33333333-3333-4333-8333-333333333333' }],
+      }) as never,
+    )
+
+    expect(res.status).toBe(200)
+    expect(createAnonUser).toHaveBeenCalledOnce()
+    expect(upsertPhrasebook).toHaveBeenCalledWith('user-new', [entry], [])
+    expect(upsertHistory).toHaveBeenCalledWith(
+      'user-new',
+      [{ id: '22222222-2222-4222-8222-222222222222' }],
+      [],
+    )
+    expect(appendReviewEvents).toHaveBeenCalledWith('user-new', [
+      { id: '33333333-3333-4333-8333-333333333333' },
+    ])
+    expect(setUserSyncKeyHash).toHaveBeenCalledWith('user-new', phraseHash)
+    expect(cookieJar.get(SYNC_PHRASE_COOKIE)).toBe(encodeSyncPhraseCookie(phrase))
+    expect(cookieJar.has(ANON_COOKIE)).toBe(true)
+  })
+
+  it('save with phrases still refuses a phrase another phrasebook already uses', async () => {
+    vi.mocked(findUserIdBySyncKeyHash).mockResolvedValue('user-other')
+
+    const res = await POST(
+      post({
+        phrase,
+        action: 'save',
+        phrasebook: [{ id: '11111111-1111-4111-8111-111111111111' }],
+      }) as never,
+    )
+
+    expect(res.status).toBe(409)
+    expect(createAnonUser).not.toHaveBeenCalled()
+    expect(upsertPhrasebook).not.toHaveBeenCalled()
+    expect(setUserSyncKeyHash).not.toHaveBeenCalled()
+  })
+
+  it('save stores the phrases this browser is showing on its existing user', async () => {
+    const entry = { id: '11111111-1111-4111-8111-111111111111', sourceText: 'Hello' }
+    cookieJar.set(ANON_COOKIE, 'anon-tok')
+    vi.mocked(findUserIdByAnonTokenHash).mockResolvedValue('user-chrome')
+    vi.mocked(setUserSyncKeyHash).mockResolvedValue('ok')
+
+    const res = await POST(
+      post({ phrase, action: 'save', phrasebook: [entry] }) as never,
+    )
+
+    expect(res.status).toBe(200)
+    expect(createAnonUser).not.toHaveBeenCalled()
+    expect(upsertPhrasebook).toHaveBeenCalledWith('user-chrome', [entry], [])
+    expect(setUserSyncKeyHash).toHaveBeenCalledWith('user-chrome', phraseHash)
   })
 
   it('save stores the hash on the current browser user and sets the cookie', async () => {

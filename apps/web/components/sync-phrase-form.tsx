@@ -2,9 +2,45 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { pullAllStores } from "@/lib/sync/cloud-sync";
+import { useHistoryStore } from "@/lib/stores/history";
+import { usePhrasebookStore } from "@/lib/stores/phrasebook";
+import { useReviewEventsStore } from "@/lib/stores/review-events";
+import { pullAllStores, type PullResult } from "@/lib/sync/cloud-sync";
 
 export type SyncPhraseAction = "save" | "open" | "forget";
+
+type ShownRows = {
+  phrasebook: readonly unknown[];
+  history: readonly unknown[];
+  events: readonly unknown[];
+};
+
+/** Save sends the rows on screen so a device-only phrasebook can be opened elsewhere. */
+export function bodyForSyncAction(
+  action: SyncPhraseAction,
+  phrase: string,
+  shown: ShownRows,
+) {
+  if (action === "forget") return { action };
+  if (action === "open") return { action, phrase };
+  return {
+    action,
+    phrase,
+    phrasebook: shown.phrasebook,
+    history: shown.history,
+    events: shown.events,
+  };
+}
+
+export function messageAfterOpen(result: PullResult, phraseCount: number): string {
+  if (result !== "ok") {
+    return "The phrase was accepted, but the phrasebook did not load. Reload and try Open phrase again.";
+  }
+  if (phraseCount === 0) {
+    return "Opened the phrase, but it has no saved phrases yet. Save it in the browser that shows your phrases, then choose Open phrase here again.";
+  }
+  return "Opened your phrasebook on this browser.";
+}
 
 /** Open and forget reload this browser. A failed request must not pull. */
 export function followupAfterSyncAction(
@@ -59,7 +95,11 @@ export function SyncPhraseForm({ hasPhrases }: { hasPhrases: boolean }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          action === "forget" ? { action } : { phrase, action },
+          bodyForSyncAction(action, phrase, {
+            phrasebook: usePhrasebookStore.getState().items,
+            history: useHistoryStore.getState().items,
+            events: useReviewEventsStore.getState().events,
+          }),
         ),
       });
       const data = (await response.json().catch(() => ({}))) as {
@@ -84,9 +124,7 @@ export function SyncPhraseForm({ hasPhrases }: { hasPhrases: boolean }) {
         }
         setLinked(true);
         setMessage(
-          result === "ok"
-            ? "Opened your phrasebook on this browser."
-            : "The phrase was accepted, but the phrasebook did not load. Reload and try Open phrase again.",
+          messageAfterOpen(result, usePhrasebookStore.getState().items.length),
         );
         return;
       }
@@ -165,7 +203,7 @@ export function SyncPhraseForm({ hasPhrases }: { hasPhrases: boolean }) {
         </Button>
       ) : null}
       {message ? (
-        <p className="text-xs text-muted-foreground" role="status">
+        <p className="text-sm text-foreground" role="status">
           {message}
         </p>
       ) : null}

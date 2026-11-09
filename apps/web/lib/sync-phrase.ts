@@ -30,11 +30,11 @@ const PHRASE_TOO_SHORT =
 const PHRASE_TOO_LONG = 'Use at most 80 characters.'
 const PHRASE_UNKNOWN =
   'No phrasebook uses that phrase yet. Save it in the browser that already shows your phrases.'
-const PHRASE_TAKEN =
+export const PHRASE_TAKEN =
   'That phrase already belongs to another phrasebook. Pick a different phrase in the browser that shows your phrases.'
 const PHRASE_REPLACE_BLOCKED =
   'This browser does not hold the current sync phrase, so it cannot replace it.'
-const TOO_MANY = 'Too many attempts. Wait a moment.'
+export const TOO_MANY = 'Too many attempts. Wait a moment.'
 
 const phraseFailures = new Map<string, number[]>()
 
