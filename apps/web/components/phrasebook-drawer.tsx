@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import type { PhrasebookEntry } from "@mindyourlanguage/shared";
 import { SyncPhraseForm } from "@/components/sync-phrase-form";
+import { useHistoryStore } from "@/lib/stores/history";
 import {
   filterPhrasebookByTag,
   usePhrasebookStore,
@@ -35,6 +36,7 @@ export function PhrasebookDrawer({
   onSelect,
 }: PhrasebookDrawerProps) {
   const items = usePhrasebookStore((state) => state.items);
+  const historyCount = useHistoryStore((state) => state.items.length);
   const update = usePhrasebookStore((state) => state.update);
   const remove = usePhrasebookStore((state) => state.remove);
   const clear = usePhrasebookStore((state) => state.clear);
@@ -153,7 +155,7 @@ export function PhrasebookDrawer({
           </ul>
         )}
 
-        <SyncPhraseForm hasPhrases={items.length > 0} />
+        <SyncPhraseForm hasPhrases={items.length > 0 || historyCount > 0} />
 
         <SheetFooter>
           <Button

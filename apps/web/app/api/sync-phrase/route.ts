@@ -4,6 +4,7 @@ import { isDatabaseConfigured } from '@/lib/db'
 import {
   beginSyncPhraseAttempt,
   findUserIdFromSyncPhraseCookie,
+  forgetSyncPhrase,
   openPreparedSyncPhrase,
   savePreparedSyncPhrase,
 } from '@/lib/sync-phrase'
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const phrase = typeof read.body.phrase === 'string' ? read.body.phrase : ''
   const action = read.body.action
-  if (action !== 'save' && action !== 'open') {
+  if (action !== 'save' && action !== 'open' && action !== 'forget') {
     return NextResponse.json(
       { error: 'Choose save or open.' },
       { status: 400 },
@@ -43,6 +44,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    if (action === 'forget') {
+      await forgetSyncPhrase()
+      return NextResponse.json({ linked: false })
+    }
+
     const started = await beginSyncPhraseAttempt(phrase)
     if (!started.ok) {
       return NextResponse.json(
@@ -62,15 +68,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ linked: true })
     }
 
-    const resolution = await resolveSyncUser({ create: true })
-    if (resolution.kind === 'rate_limited') {
-      return NextResponse.json(
-        { error: 'Too many attempts. Wait a moment.' },
-        { status: 429 },
-      )
-    }
+    const resolution = await resolveSyncUser({ create: false })
     if (resolution.kind !== 'user') {
-      return NextResponse.json({ error: 'Database error' }, { status: 503 })
+      return NextResponse.json(
+        {
+          error:
+            'Save the phrase in the browser that already shows your phrases.',
+        },
+        { status: 400 },
+      )
     }
 
     const saved = await savePreparedSyncPhrase(
@@ -80,7 +86,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!saved.ok) {
       return NextResponse.json({ error: saved.error }, { status: saved.status })
     }
-    return NextResponse.json({ linked: true })
+    return NextResponse.json({ linked: true, replaced: Boolean(saved.replaced) })
   } catch {
     return NextResponse.json({ error: 'Database error' }, { status: 503 })
   }

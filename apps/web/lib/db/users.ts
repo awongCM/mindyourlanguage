@@ -42,6 +42,16 @@ export async function findUserIdBySyncKeyHash(
   return rows[0]?.id ?? null
 }
 
+export async function findSyncKeyHashByUserId(
+  userId: string,
+): Promise<string | null> {
+  const rows = await query<{ sync_key_hash: string | null }>(
+    'SELECT sync_key_hash FROM users WHERE id = $1 LIMIT 1',
+    [userId],
+  )
+  return rows[0]?.sync_key_hash ?? null
+}
+
 function isUniqueViolation(error: unknown): boolean {
   return (
     typeof error === 'object' &&

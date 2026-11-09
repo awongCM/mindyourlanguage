@@ -4,6 +4,18 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { pullAllStores } from "@/lib/sync/cloud-sync";
 
+export type SyncPhraseAction = "save" | "open" | "forget";
+
+/** Open and forget reload this browser. A failed request must not pull. */
+export function followupAfterSyncAction(
+  action: SyncPhraseAction,
+  ok: boolean,
+): "pull" | "none" {
+  if (!ok) return "none";
+  if (action === "open" || action === "forget") return "pull";
+  return "none";
+}
+
 /**
  * One remembered phrase opens the same Neon phrasebook in every browser.
  * Save it where the phrases already show, then open it everywhere else.
@@ -12,7 +24,7 @@ export function SyncPhraseForm({ hasPhrases }: { hasPhrases: boolean }) {
   const [phrase, setPhrase] = useState("");
   const [linked, setLinked] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [busy, setBusy] = useState<"save" | "open" | null>(null);
+  const [busy, setBusy] = useState<SyncPhraseAction | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,26 +51,38 @@ export function SyncPhraseForm({ hasPhrases }: { hasPhrases: boolean }) {
 
   if (hidden) return null;
 
-  async function submit(action: "save" | "open") {
+  async function submit(action: SyncPhraseAction) {
     setBusy(action);
     setMessage(null);
     try {
       const response = await fetch("/api/sync-phrase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phrase, action }),
+        body: JSON.stringify(
+          action === "forget" ? { action } : { phrase, action },
+        ),
       });
       const data = (await response.json().catch(() => ({}))) as {
         error?: string;
+        replaced?: boolean;
       };
       if (!response.ok) {
         setMessage(data.error ?? "Could not use that sync phrase.");
         return;
       }
 
-      setLinked(true);
-      if (action === "open") {
+      if (followupAfterSyncAction(action, true) === "pull") {
         const result = await pullAllStores();
+        if (action === "forget") {
+          setLinked(false);
+          setMessage(
+            result === "ok"
+              ? "This browser is back to its own saved phrases."
+              : "Stopped using the sync phrase, but the list did not reload. Reload the page.",
+          );
+          return;
+        }
+        setLinked(true);
         setMessage(
           result === "ok"
             ? "Opened your phrasebook on this browser."
@@ -67,8 +91,11 @@ export function SyncPhraseForm({ hasPhrases }: { hasPhrases: boolean }) {
         return;
       }
 
+      setLinked(true);
       setMessage(
-        "Saved. In each other browser, type this same phrase and choose Open phrase.",
+        data.replaced
+          ? "Saved the new phrase. Other browsers still using the previous one must type this phrase and choose Open phrase."
+          : "Saved. In each other browser, type this same phrase and choose Open phrase.",
       );
     } catch {
       setMessage("Could not reach the server. Try again.");
@@ -77,14 +104,14 @@ export function SyncPhraseForm({ hasPhrases }: { hasPhrases: boolean }) {
     }
   }
 
-  const savePrimary = hasPhrases || linked;
+  const canSave = hasPhrases || linked;
 
   return (
     <form
       className="flex flex-col gap-2 px-4"
       onSubmit={(event) => {
         event.preventDefault();
-        void submit(savePrimary ? "save" : "open");
+        void submit(canSave ? "save" : "open");
       }}
     >
       <label className="flex flex-col gap-1 text-sm">
@@ -110,8 +137,8 @@ export function SyncPhraseForm({ hasPhrases }: { hasPhrases: boolean }) {
         <Button
           type="button"
           size="sm"
-          variant={savePrimary ? "default" : "outline"}
-          disabled={busy !== null}
+          variant={canSave ? "default" : "outline"}
+          disabled={busy !== null || !canSave}
           onClick={() => void submit("save")}
         >
           {busy === "save" ? "Saving…" : "Save phrase"}
@@ -119,13 +146,24 @@ export function SyncPhraseForm({ hasPhrases }: { hasPhrases: boolean }) {
         <Button
           type="button"
           size="sm"
-          variant={savePrimary ? "outline" : "default"}
+          variant={canSave ? "outline" : "default"}
           disabled={busy !== null}
           onClick={() => void submit("open")}
         >
           {busy === "open" ? "Opening…" : "Open phrase"}
         </Button>
       </div>
+      {linked ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={busy !== null}
+          onClick={() => void submit("forget")}
+        >
+          Use this browser only
+        </Button>
+      ) : null}
       {message ? (
         <p className="text-xs text-muted-foreground" role="status">
           {message}

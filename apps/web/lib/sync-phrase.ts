@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { cookies, headers } from 'next/headers'
 import { ANON_COOKIE_MAX_AGE_SECONDS } from '@/lib/anon-identity'
 import {
+  findSyncKeyHashByUserId,
   findUserIdBySyncKeyHash,
   setUserSyncKeyHash,
 } from '@/lib/db/users'
@@ -11,8 +12,10 @@ import {
 } from '@/lib/rate-limit'
 
 export const SYNC_PHRASE_COOKIE = 'myl_sync'
-export const SYNC_PHRASE_MIN_LENGTH = 8
+export const SYNC_PHRASE_MIN_LENGTH = 12
 export const SYNC_PHRASE_MAX_LENGTH = 80
+const PHRASE_FAILURE_LIMIT = 5
+const PHRASE_FAILURE_WINDOW_MS = 10 * 60 * 1000
 
 export type SyncPhraseFailure = {
   ok: false
@@ -20,26 +23,57 @@ export type SyncPhraseFailure = {
   error: string
 }
 
-export type SyncPhraseSuccess = { ok: true }
+export type SyncPhraseSuccess = { ok: true; replaced?: boolean }
 
-const PHRASE_TOO_SHORT = `Use a sync phrase of at least ${SYNC_PHRASE_MIN_LENGTH} characters.`
+const PHRASE_TOO_SHORT =
+  'Use at least two words and 12 characters. Pick something other people would not guess.'
+const PHRASE_TOO_LONG = 'Use at most 80 characters.'
 const PHRASE_UNKNOWN =
   'No phrasebook uses that phrase yet. Save it in the browser that already shows your phrases.'
 const PHRASE_TAKEN =
-  'That phrase already belongs to another phrasebook. Choose Open phrase instead.'
+  'That phrase already belongs to another phrasebook. Pick a different phrase in the browser that shows your phrases.'
+const PHRASE_REPLACE_BLOCKED =
+  'This browser does not hold the current sync phrase, so it cannot replace it.'
 const TOO_MANY = 'Too many attempts. Wait a moment.'
 
-/** Trim and normalize. Null when the phrase is too short, too long, or has a line break. */
-export function normalizeSyncPhrase(raw: string): string | null {
-  const phrase = raw.normalize('NFC').trim()
-  if (
-    phrase.length < SYNC_PHRASE_MIN_LENGTH ||
-    phrase.length > SYNC_PHRASE_MAX_LENGTH
-  ) {
-    return null
+const phraseFailures = new Map<string, number[]>()
+
+/** Fold case and collapse whitespace so two browsers can type the same words. */
+export function normalizeSyncPhrase(raw: string): string {
+  return raw.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+export function parseSyncPhrase(
+  raw: string,
+): { ok: true; phrase: string } | { ok: false; error: string } {
+  const phrase = normalizeSyncPhrase(raw)
+  if (phrase.length > SYNC_PHRASE_MAX_LENGTH) {
+    return { ok: false, error: PHRASE_TOO_LONG }
   }
-  if (/[\r\n]/.test(phrase)) return null
-  return phrase
+  if (phrase.length < SYNC_PHRASE_MIN_LENGTH || !phrase.includes(' ')) {
+    return { ok: false, error: PHRASE_TOO_SHORT }
+  }
+  return { ok: true, phrase }
+}
+
+export function resetSyncPhraseFailuresForTests(): void {
+  phraseFailures.clear()
+}
+
+function phraseFailureBlocked(phrase: string, now = Date.now()): boolean {
+  const stamps = (phraseFailures.get(phrase) ?? []).filter(
+    (stamp) => now - stamp < PHRASE_FAILURE_WINDOW_MS,
+  )
+  phraseFailures.set(phrase, stamps)
+  return stamps.length >= PHRASE_FAILURE_LIMIT
+}
+
+function notePhraseFailure(phrase: string, now = Date.now()): void {
+  const stamps = (phraseFailures.get(phrase) ?? []).filter(
+    (stamp) => now - stamp < PHRASE_FAILURE_WINDOW_MS,
+  )
+  stamps.push(now)
+  phraseFailures.set(phrase, stamps)
 }
 
 export function hashSyncPhrase(phrase: string): string {
@@ -52,7 +86,10 @@ export function encodeSyncPhraseCookie(phrase: string): string {
 
 export function decodeSyncPhraseCookie(value: string): string | null {
   try {
-    return normalizeSyncPhrase(Buffer.from(value, 'base64url').toString('utf8'))
+    const parsed = parseSyncPhrase(
+      Buffer.from(value, 'base64url').toString('utf8'),
+    )
+    return parsed.ok ? parsed.phrase : null
   } catch {
     return null
   }
@@ -72,10 +109,17 @@ export async function findUserIdFromSyncPhraseCookie(): Promise<string | null> {
   return findUserIdBySyncKeyHash(hashSyncPhrase(phrase))
 }
 
+function clientIp(requestHeaders: {
+  get(name: string): string | null
+}): string {
+  const cloudflare = requestHeaders.get('cf-connecting-ip')?.trim()
+  if (cloudflare) return cloudflare
+  return clientIpFromForwardedFor(requestHeaders.get('x-forwarded-for'))
+}
+
 async function allowAttempt(): Promise<boolean> {
   const requestHeaders = await headers()
-  const ip = clientIpFromForwardedFor(requestHeaders.get('x-forwarded-for'))
-  return checkRateLimitForKey(`sync-phrase:${ip}`)
+  return checkRateLimitForKey(`sync-phrase:${clientIp(requestHeaders)}`)
 }
 
 async function rememberPhrase(phrase: string): Promise<void> {
@@ -97,9 +141,9 @@ export async function beginSyncPhraseAttempt(
     return { ok: false, status: 429, error: TOO_MANY }
   }
 
-  const phrase = normalizeSyncPhrase(rawPhrase)
-  if (!phrase) return { ok: false, status: 400, error: PHRASE_TOO_SHORT }
-  return { ok: true, phrase }
+  const parsed = parseSyncPhrase(rawPhrase)
+  if (!parsed.ok) return { ok: false, status: 400, error: parsed.error }
+  return { ok: true, phrase: parsed.phrase }
 }
 
 /**
@@ -109,11 +153,30 @@ export async function beginSyncPhraseAttempt(
 export async function openPreparedSyncPhrase(
   phrase: string,
 ): Promise<SyncPhraseSuccess | SyncPhraseFailure> {
+  if (phraseFailureBlocked(phrase)) {
+    return { ok: false, status: 429, error: TOO_MANY }
+  }
+
   const userId = await findUserIdBySyncKeyHash(hashSyncPhrase(phrase))
-  if (!userId) return { ok: false, status: 404, error: PHRASE_UNKNOWN }
+  if (!userId) {
+    notePhraseFailure(phrase)
+    return { ok: false, status: 404, error: PHRASE_UNKNOWN }
+  }
 
   await rememberPhrase(phrase)
   return { ok: true }
+}
+
+/** Drop myl_sync so this browser falls back to its own myl_anon cookie. */
+export async function forgetSyncPhrase(): Promise<void> {
+  const cookieStore = await cookies()
+  cookieStore.set(SYNC_PHRASE_COOKIE, '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 0,
+  })
 }
 
 /**
@@ -130,6 +193,16 @@ export async function savePreparedSyncPhrase(
     return { ok: false, status: 409, error: PHRASE_TAKEN }
   }
 
+  const currentHash = await findSyncKeyHashByUserId(userId)
+  const cookiePhrase = await readPhraseFromCookie()
+  const holdsCurrent =
+    currentHash !== null &&
+    cookiePhrase !== null &&
+    hashSyncPhrase(cookiePhrase) === currentHash
+  if (currentHash && currentHash !== hash && !holdsCurrent) {
+    return { ok: false, status: 409, error: PHRASE_REPLACE_BLOCKED }
+  }
+
   if (ownerId !== userId) {
     const saved = await setUserSyncKeyHash(userId, hash)
     if (saved === 'taken') {
@@ -141,5 +214,5 @@ export async function savePreparedSyncPhrase(
   }
 
   await rememberPhrase(phrase)
-  return { ok: true }
+  return { ok: true, replaced: Boolean(currentHash && currentHash !== hash) }
 }
