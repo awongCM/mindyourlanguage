@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { pullAllStores } from "@/lib/sync/cloud-sync";
 import {
   Sheet,
   SheetContent,
@@ -11,8 +12,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type { PhrasebookEntry } from "@mindyourlanguage/shared";
-import { SyncPhraseForm } from "@/components/sync-phrase-form";
-import { useHistoryStore } from "@/lib/stores/history";
 import {
   filterPhrasebookByTag,
   usePhrasebookStore,
@@ -36,7 +35,6 @@ export function PhrasebookDrawer({
   onSelect,
 }: PhrasebookDrawerProps) {
   const items = usePhrasebookStore((state) => state.items);
-  const historyCount = useHistoryStore((state) => state.items.length);
   const update = usePhrasebookStore((state) => state.update);
   const remove = usePhrasebookStore((state) => state.remove);
   const clear = usePhrasebookStore((state) => state.clear);
@@ -46,6 +44,11 @@ export function PhrasebookDrawer({
     () => filterPhrasebookByTag(items, tagFilter),
     [items, tagFilter],
   );
+
+  useEffect(() => {
+    if (!open) return;
+    void pullAllStores();
+  }, [open]);
 
   function handleClear() {
     if (items.length === 0) return;
@@ -154,8 +157,6 @@ export function PhrasebookDrawer({
             ))}
           </ul>
         )}
-
-        <SyncPhraseForm hasPhrases={items.length > 0 || historyCount > 0} />
 
         <SheetFooter>
           <Button

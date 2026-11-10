@@ -22,10 +22,39 @@ export function hashAnonToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
+/** When set on the server, every browser uses the same Neon phrasebook (no login). */
+export function sharedAnonTokenFromEnv(): string | null {
+  const value = process.env.MYL_SHARED_ANON_TOKEN?.trim()
+  return value ? value : null
+}
+
+async function setAnonCookie(token: string): Promise<void> {
+  const cookieStore = await cookies()
+  cookieStore.set(ANON_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: ANON_COOKIE_MAX_AGE_SECONDS,
+  })
+}
+
+async function resolveKnownAnonToken(
+  token: string,
+): Promise<{ kind: 'user'; userId: string } | null> {
+  const userId = await findUserIdByAnonTokenHash(hashAnonToken(token))
+  if (!userId) return null
+  await setAnonCookie(token)
+  return { kind: 'user', userId }
+}
+
 /**
  * Resolve the anonymous user for this request's cookie.
  * Reads never create a user. With `create: true`, a missing or stale cookie
  * creates a user and sets a new httpOnly cookie (route handlers only).
+ *
+ * When `MYL_SHARED_ANON_TOKEN` is set, a browser with no matching cookie
+ * adopts that token so Safari and Chrome load the same persisted rows.
  */
 export async function resolveAnonUser(options: {
   create: boolean
@@ -38,6 +67,23 @@ export async function resolveAnonUser(options: {
     if (existing) return { kind: 'user', userId: existing }
   }
 
+  const shared = sharedAnonTokenFromEnv()
+  if (shared) {
+    const resolved = await resolveKnownAnonToken(shared)
+    if (resolved) return resolved
+    if (!options.create) return { kind: 'none' }
+
+    const requestHeaders = await headers()
+    const ip = clientIpFromForwardedFor(requestHeaders.get('x-forwarded-for'))
+    if (!checkRateLimitForKey(`anon-create:${ip}`)) {
+      return { kind: 'rate_limited' }
+    }
+
+    const userId = await createAnonUser(hashAnonToken(shared))
+    await setAnonCookie(shared)
+    return { kind: 'user', userId }
+  }
+
   if (!options.create) return { kind: 'none' }
 
   const requestHeaders = await headers()
@@ -48,12 +94,6 @@ export async function resolveAnonUser(options: {
 
   const newToken = generateAnonToken()
   const userId = await createAnonUser(hashAnonToken(newToken))
-  cookieStore.set(ANON_COOKIE, newToken, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: ANON_COOKIE_MAX_AGE_SECONDS,
-  })
+  await setAnonCookie(newToken)
   return { kind: 'user', userId }
 }

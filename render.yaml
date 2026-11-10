@@ -23,6 +23,9 @@ services:
       # Phase 6: Neon direct URL with sslmode=require (Dashboard secret)
       - key: DATABASE_URL
         sync: false
+      # Optional: one shared anonymous phrasebook across all browsers (no sign-in)
+      - key: MYL_SHARED_ANON_TOKEN
+        sync: false
       - key: AUTH_SECRET
         sync: false
       - key: AUTH_GOOGLE_ID

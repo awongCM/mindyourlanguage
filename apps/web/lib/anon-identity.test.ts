@@ -26,6 +26,7 @@ import {
   generateAnonToken,
   hashAnonToken,
   resolveAnonUser,
+  sharedAnonTokenFromEnv,
 } from './anon-identity'
 
 describe('anon token helpers', () => {
@@ -133,6 +134,42 @@ describe('resolveAnonUser', () => {
       kind: 'none',
     })
     expect(createAnonUser).not.toHaveBeenCalled()
+  })
+
+  it('uses MYL_SHARED_ANON_TOKEN when the browser has no cookie', async () => {
+    vi.stubEnv('MYL_SHARED_ANON_TOKEN', 'shared-tok')
+    expect(sharedAnonTokenFromEnv()).toBe('shared-tok')
+    vi.mocked(findUserIdByAnonTokenHash).mockResolvedValue('user-shared')
+
+    await expect(resolveAnonUser({ create: false })).resolves.toEqual({
+      kind: 'user',
+      userId: 'user-shared',
+    })
+    expect(findUserIdByAnonTokenHash).toHaveBeenCalledWith(
+      hashAnonToken('shared-tok'),
+    )
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      ANON_COOKIE,
+      'shared-tok',
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax' }),
+    )
+  })
+
+  it('creates the shared-token user on first write when it does not exist yet', async () => {
+    vi.stubEnv('MYL_SHARED_ANON_TOKEN', 'shared-tok')
+    vi.mocked(findUserIdByAnonTokenHash).mockResolvedValue(null)
+    vi.mocked(createAnonUser).mockResolvedValue('user-new')
+
+    await expect(resolveAnonUser({ create: true })).resolves.toEqual({
+      kind: 'user',
+      userId: 'user-new',
+    })
+    expect(createAnonUser).toHaveBeenCalledWith(hashAnonToken('shared-tok'))
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      ANON_COOKIE,
+      'shared-tok',
+      expect.any(Object),
+    )
   })
 
   it('returns rate_limited without creating a user when the IP is over the limit', async () => {
