@@ -24,6 +24,31 @@ export async function findUserIdByAnonTokenHash(
   return rows[0]?.id ?? null
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+export async function findUserById(userId: string): Promise<string | null> {
+  if (!UUID_RE.test(userId)) return null
+  const rows = await query<{ id: string }>(
+    'SELECT id FROM users WHERE id = $1::uuid LIMIT 1',
+    [userId],
+  )
+  return rows[0]?.id ?? null
+}
+
+/** Neon user that already has the most saved phrases (ties: oldest user). */
+export async function findPrimaryPhrasebookUserId(): Promise<string | null> {
+  const rows = await query<{ id: string }>(
+    `SELECT u.id
+     FROM users u
+     WHERE EXISTS (SELECT 1 FROM phrasebook p WHERE p.user_id = u.id)
+     ORDER BY (SELECT count(*)::int FROM phrasebook p WHERE p.user_id = u.id) DESC,
+              u.created_at ASC
+     LIMIT 1`,
+  )
+  return rows[0]?.id ?? null
+}
+
 export async function createAnonUser(tokenHash: string): Promise<string> {
   const rows = await query<{ id: string }>(
     'INSERT INTO users (anon_token_hash) VALUES ($1) RETURNING id',

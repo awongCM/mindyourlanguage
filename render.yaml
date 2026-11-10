@@ -23,8 +23,13 @@ services:
       # Phase 6: Neon direct URL with sslmode=require (Dashboard secret)
       - key: DATABASE_URL
         sync: false
-      # Optional: one shared anonymous phrasebook across all browsers (no sign-in)
+      # Load the same Neon phrasebook in every browser (no sign-in). Set false for multi-tenant.
+      - key: MYL_AUTO_PRIMARY_PHRASEBOOK
+        value: "true"
+      # Optional override: shared token or fixed user id (see docs/neon-setup.md §8)
       - key: MYL_SHARED_ANON_TOKEN
+        sync: false
+      - key: MYL_FIXED_PHRASEBOOK_USER_ID
         sync: false
       - key: AUTH_SECRET
         sync: false

@@ -1,6 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { cookies, headers } from 'next/headers'
-import { createAnonUser, findUserIdByAnonTokenHash } from '@/lib/db/users'
+import {
+  createAnonUser,
+  findPrimaryPhrasebookUserId,
+  findUserById,
+  findUserIdByAnonTokenHash,
+} from '@/lib/db/users'
 import {
   checkRateLimitForKey,
   clientIpFromForwardedFor,
@@ -8,11 +13,15 @@ import {
 
 export const ANON_COOKIE = 'myl_anon'
 export const ANON_COOKIE_MAX_AGE_SECONDS = 400 * 24 * 60 * 60
+export const PRIMARY_ANON_COOKIE_PREFIX = 'myl-primary:'
 
 export type AnonResolution =
   | { kind: 'user'; userId: string }
   | { kind: 'none' }
   | { kind: 'rate_limited' }
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export function generateAnonToken(): string {
   return randomBytes(32).toString('base64url')
@@ -28,6 +37,26 @@ export function sharedAnonTokenFromEnv(): string | null {
   return value ? value : null
 }
 
+/**
+ * Default on: bind every browser to one Neon phrasebook when data already exists.
+ * Set `MYL_AUTO_PRIMARY_PHRASEBOOK=false` on multi-tenant deployments.
+ */
+export function autoPrimaryPhrasebookEnabled(): boolean {
+  const raw = process.env.MYL_AUTO_PRIMARY_PHRASEBOOK?.trim().toLowerCase()
+  if (raw === 'false' || raw === '0' || raw === 'no') return false
+  return true
+}
+
+export function primaryAnonCookieValue(userId: string): string {
+  return `${PRIMARY_ANON_COOKIE_PREFIX}${userId}`
+}
+
+export function fixedPhrasebookUserIdFromEnv(): string | null {
+  const value = process.env.MYL_FIXED_PHRASEBOOK_USER_ID?.trim()
+  if (!value || !UUID_RE.test(value)) return null
+  return value
+}
+
 async function setAnonCookie(token: string): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.set(ANON_COOKIE, token, {
@@ -39,6 +68,17 @@ async function setAnonCookie(token: string): Promise<void> {
   })
 }
 
+/** Map an httpOnly cookie value to a Neon user id, or null when it does not match. */
+export async function resolveUserIdFromAnonCookie(
+  value: string,
+): Promise<string | null> {
+  if (value.startsWith(PRIMARY_ANON_COOKIE_PREFIX)) {
+    const userId = value.slice(PRIMARY_ANON_COOKIE_PREFIX.length)
+    return findUserById(userId)
+  }
+  return findUserIdByAnonTokenHash(hashAnonToken(value))
+}
+
 async function resolveKnownAnonToken(
   token: string,
 ): Promise<{ kind: 'user'; userId: string } | null> {
@@ -48,13 +88,29 @@ async function resolveKnownAnonToken(
   return { kind: 'user', userId }
 }
 
+async function resolveConfiguredPrimaryUserId(): Promise<string | null> {
+  const fixed = fixedPhrasebookUserIdFromEnv()
+  if (fixed) {
+    const userId = await findUserById(fixed)
+    if (userId) return userId
+  }
+  return findPrimaryPhrasebookUserId()
+}
+
+async function adoptPrimaryPhrasebookUser(
+  userId: string,
+): Promise<AnonResolution> {
+  await setAnonCookie(primaryAnonCookieValue(userId))
+  return { kind: 'user', userId }
+}
+
 /**
  * Resolve the anonymous user for this request's cookie.
  * Reads never create a user. With `create: true`, a missing or stale cookie
  * creates a user and sets a new httpOnly cookie (route handlers only).
  *
- * When `MYL_SHARED_ANON_TOKEN` is set, a browser with no matching cookie
- * adopts that token so Safari and Chrome load the same persisted rows.
+ * When phrasebook data already exists, auto-primary mode rebinds Safari, Brave,
+ * and other browsers to that Neon user (no manual token or sync phrase).
  */
 export async function resolveAnonUser(options: {
   create: boolean
@@ -62,8 +118,21 @@ export async function resolveAnonUser(options: {
   const cookieStore = await cookies()
   const token = cookieStore.get(ANON_COOKIE)?.value
 
+  if (autoPrimaryPhrasebookEnabled()) {
+    const primaryId = await resolveConfiguredPrimaryUserId()
+    if (primaryId) {
+      if (token) {
+        const currentId = await resolveUserIdFromAnonCookie(token)
+        if (currentId === primaryId) {
+          return { kind: 'user', userId: primaryId }
+        }
+      }
+      return adoptPrimaryPhrasebookUser(primaryId)
+    }
+  }
+
   if (token) {
-    const existing = await findUserIdByAnonTokenHash(hashAnonToken(token))
+    const existing = await resolveUserIdFromAnonCookie(token)
     if (existing) return { kind: 'user', userId: existing }
   }
 

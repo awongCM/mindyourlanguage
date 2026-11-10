@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { PhrasebookEntry } from '@mindyourlanguage/shared'
+import { autoPrimaryPhrasebookEnabled } from '@/lib/anon-identity'
 import { resolveSyncUser } from '@/lib/auth-session'
 import { isDatabaseConfigured } from '@/lib/db'
-import { listPhrasebook, upsertPhrasebook } from '@/lib/db/phrasebook'
+import {
+  listAllPhrasebooks,
+  listPhrasebook,
+  upsertPhrasebook,
+} from '@/lib/db/phrasebook'
 import { normalizeDeletedIds } from '@/lib/sync/deleted-ids'
 import {
   PayloadTooLargeError,
@@ -29,7 +34,9 @@ export async function GET(): Promise<NextResponse> {
     const resolution = await resolveSyncUser({ create: false })
     if (resolution.kind !== 'user') return NextResponse.json({ items: [] })
 
-    const items = await listPhrasebook(resolution.userId)
+    const items = autoPrimaryPhrasebookEnabled()
+      ? await listAllPhrasebooks()
+      : await listPhrasebook(resolution.userId)
     return NextResponse.json({ items })
   } catch {
     return syncDatabaseError()
