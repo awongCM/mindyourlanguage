@@ -11,6 +11,8 @@ vi.mock('next/headers', () => ({
 vi.mock('@/lib/db/users', () => ({
   findUserIdByAnonTokenHash: vi.fn(),
   createAnonUser: vi.fn(),
+  findPrimaryPhrasebookUserId: vi.fn(),
+  findUserById: vi.fn(),
 }))
 
 vi.mock('@/lib/rate-limit', () => ({
@@ -18,13 +20,19 @@ vi.mock('@/lib/rate-limit', () => ({
   clientIpFromForwardedFor: vi.fn(() => '203.0.113.9'),
 }))
 
-import { createAnonUser, findUserIdByAnonTokenHash } from '@/lib/db/users'
+import {
+  createAnonUser,
+  findPrimaryPhrasebookUserId,
+  findUserById,
+  findUserIdByAnonTokenHash,
+} from '@/lib/db/users'
 import { checkRateLimitForKey } from '@/lib/rate-limit'
 import {
   ANON_COOKIE,
   ANON_COOKIE_MAX_AGE_SECONDS,
   generateAnonToken,
   hashAnonToken,
+  primaryAnonCookieValue,
   resolveAnonUser,
   sharedAnonTokenFromEnv,
 } from './anon-identity'
@@ -52,9 +60,13 @@ describe('resolveAnonUser', () => {
     headerStore.get.mockReset()
     cookieStore.get.mockReturnValue(undefined)
     vi.mocked(findUserIdByAnonTokenHash).mockReset()
+    vi.mocked(findPrimaryPhrasebookUserId).mockReset()
+    vi.mocked(findUserById).mockReset()
     vi.mocked(createAnonUser).mockReset()
     vi.mocked(checkRateLimitForKey).mockReset()
     vi.mocked(checkRateLimitForKey).mockReturnValue(true)
+    vi.mocked(findPrimaryPhrasebookUserId).mockResolvedValue(null)
+    vi.stubEnv('MYL_AUTO_PRIMARY_PHRASEBOOK', 'false')
   })
 
   afterEach(() => {
@@ -134,6 +146,38 @@ describe('resolveAnonUser', () => {
       kind: 'none',
     })
     expect(createAnonUser).not.toHaveBeenCalled()
+  })
+
+  it('adopts the primary phrasebook user when auto mode is on', async () => {
+    vi.stubEnv('MYL_AUTO_PRIMARY_PHRASEBOOK', 'true')
+    vi.mocked(findPrimaryPhrasebookUserId).mockResolvedValue('user-primary')
+
+    await expect(resolveAnonUser({ create: false })).resolves.toEqual({
+      kind: 'user',
+      userId: 'user-primary',
+    })
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      ANON_COOKIE,
+      primaryAnonCookieValue('user-primary'),
+      expect.objectContaining({ httpOnly: true }),
+    )
+  })
+
+  it('rebinds a stale browser cookie to the primary phrasebook user', async () => {
+    vi.stubEnv('MYL_AUTO_PRIMARY_PHRASEBOOK', 'true')
+    vi.mocked(findPrimaryPhrasebookUserId).mockResolvedValue('user-primary')
+    cookieStore.get.mockReturnValue({ value: 'stale-empty-browser' })
+    vi.mocked(findUserIdByAnonTokenHash).mockResolvedValue('user-empty')
+
+    await expect(resolveAnonUser({ create: false })).resolves.toEqual({
+      kind: 'user',
+      userId: 'user-primary',
+    })
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      ANON_COOKIE,
+      primaryAnonCookieValue('user-primary'),
+      expect.any(Object),
+    )
   })
 
   it('uses MYL_SHARED_ANON_TOKEN when the browser has no cookie', async () => {

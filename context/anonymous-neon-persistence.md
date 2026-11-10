@@ -26,9 +26,9 @@
 
 **Local e2e:** Playwright `webServer` sets `DATABASE_URL: ''`. Chromium may live at `~/Library/Caches/ms-playwright` — use `PLAYWRIGHT_BROWSERS_PATH=$HOME/Library/Caches/ms-playwright`. Sandbox blocks Next dev server; run e2e outside sandbox.
 
-## 2026-11-10 — Retrieve on open (no sync phrase UI)
+## 2026-11-10 — Auto-primary phrasebook (no sync phrase)
 
-Opening Phrasebook triggers another cloud pull. Cross-browser without login uses optional server env `MYL_SHARED_ANON_TOKEN` so every browser adopts the same `myl_anon` identity.
+Opening Phrasebook triggers another cloud pull. With `MYL_AUTO_PRIMARY_PHRASEBOOK=true` (default in `render.yaml`), GET `/api/phrasebook` returns every saved row and each browser is rebound to the Neon user with the most phrases (cookie `myl-primary:<userId>`). Override with `MYL_FIXED_PHRASEBOOK_USER_ID` or `MYL_SHARED_ANON_TOKEN`.
 
 **Known gaps (accepted for v1):**
 

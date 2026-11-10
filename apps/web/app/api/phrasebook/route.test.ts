@@ -18,12 +18,17 @@ vi.mock('@/lib/db', () => ({
 
 vi.mock('@/lib/db/phrasebook', () => ({
   listPhrasebook: vi.fn(),
+  listAllPhrasebooks: vi.fn(),
   upsertPhrasebook: vi.fn(),
 }))
 
 import { resolveSyncUser } from '@/lib/auth-session'
 import { isDatabaseConfigured } from '@/lib/db'
-import { listPhrasebook, upsertPhrasebook } from '@/lib/db/phrasebook'
+import {
+  listAllPhrasebooks,
+  listPhrasebook,
+  upsertPhrasebook,
+} from '@/lib/db/phrasebook'
 
 const sampleEntry: PhrasebookEntry = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -59,8 +64,11 @@ describe('/api/phrasebook', () => {
     vi.mocked(resolveSyncUser).mockReset()
     vi.mocked(isDatabaseConfigured).mockReset()
     vi.mocked(listPhrasebook).mockReset()
+    vi.mocked(listAllPhrasebooks).mockReset()
     vi.mocked(upsertPhrasebook).mockReset()
     vi.mocked(isDatabaseConfigured).mockReturnValue(true)
+    vi.unstubAllEnvs()
+    vi.stubEnv('MYL_AUTO_PRIMARY_PHRASEBOOK', 'false')
   })
 
   it('GET returns 501 when the database is not configured', async () => {
@@ -77,6 +85,21 @@ describe('/api/phrasebook', () => {
     expect(res.status).toBe(200)
     await expect(res.json()).resolves.toEqual({ items: [] })
     expect(resolveSyncUser).toHaveBeenCalledWith({ create: false })
+    expect(listPhrasebook).not.toHaveBeenCalled()
+  })
+
+  it('GET returns every saved phrase when auto-primary mode is on', async () => {
+    vi.stubEnv('MYL_AUTO_PRIMARY_PHRASEBOOK', 'true')
+    vi.mocked(resolveSyncUser).mockResolvedValue({
+      kind: 'user',
+      userId: 'user-1',
+    })
+    vi.mocked(listAllPhrasebooks).mockResolvedValue([sampleEntry])
+
+    const res = await GET()
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ items: [sampleEntry] })
+    expect(listAllPhrasebooks).toHaveBeenCalled()
     expect(listPhrasebook).not.toHaveBeenCalled()
   })
 

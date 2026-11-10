@@ -7,6 +7,24 @@ import {
   type PhrasebookRow,
 } from '@/lib/db/mappers'
 
+/** Every saved phrase in the database, newest first, one row per id. */
+export async function listAllPhrasebooks(): Promise<PhrasebookEntry[]> {
+  const rows = await query<PhrasebookRow>(
+    `SELECT id, user_id, translation_id, source_text, source_lang, target_lang,
+            translation, traditional, pinyin, character_set, register,
+            native_alternative, native_note, dictionary_matches, segments,
+            practice_stats, tags, notes, created_at
+     FROM phrasebook
+     ORDER BY created_at DESC`,
+  )
+  const byId = new Map<string, PhrasebookEntry>()
+  for (const row of rows) {
+    const entry = phrasebookRowToEntry(row)
+    if (!byId.has(entry.id)) byId.set(entry.id, entry)
+  }
+  return [...byId.values()]
+}
+
 export async function listPhrasebook(userId: string): Promise<PhrasebookEntry[]> {
   const rows = await query<PhrasebookRow>(
     `SELECT id, user_id, translation_id, source_text, source_lang, target_lang,
