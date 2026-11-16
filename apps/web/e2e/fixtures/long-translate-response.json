@@ -1,0 +1,14 @@
+{
+  "id": "e2e-long-translate-1",
+  "translation": "当你学习一门新语言的时候，每天坚持练习非常重要。短语和句子帮助你建立流利度，而不是一次背完整段文章。",
+  "traditional": "當你學習一門新語言的時候，每天堅持練習非常重要。短語和句子幫助你建立流利度，而不是一次背完整段文章。",
+  "pinyin": "dāng nǐ xué xí yī mén xīn yǔ yán de shí hou , měi tiān jiān chí liàn xí fēi cháng zhòng yào .",
+  "detectedLang": "en",
+  "segments": [
+    { "text": "当", "pinyin": "dāng" },
+    { "text": "你", "pinyin": "nǐ" },
+    { "text": "学习", "pinyin": "xué xí" }
+  ],
+  "dictionaryMatches": [],
+  "register": "neutral"
+}
