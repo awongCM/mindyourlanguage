@@ -142,6 +142,38 @@ describe('phrasebook mappers', () => {
 
     expect(parsed).toEqual(entry)
   })
+
+  it('round-trips parentId', () => {
+    const withChild: PhrasebookEntry = {
+      ...entry,
+      parentId: '44444444-4444-4444-8444-444444444444',
+    }
+    const row = entryToPhrasebookRow(withChild)
+    expect(row.parent_id).toBe('44444444-4444-4444-8444-444444444444')
+    const parsed = phrasebookRowToEntry({
+      id: row.id,
+      user_id: '22222222-2222-4222-8222-222222222222',
+      translation_id: row.translation_id,
+      source_text: row.source_text,
+      source_lang: row.source_lang,
+      target_lang: row.target_lang,
+      translation: row.translation,
+      traditional: row.traditional,
+      pinyin: row.pinyin,
+      character_set: row.character_set,
+      register: row.register,
+      native_alternative: row.native_alternative,
+      native_note: row.native_note,
+      dictionary_matches: row.dictionary_matches,
+      segments: row.segments,
+      practice_stats: row.practice_stats,
+      tags: row.tags,
+      notes: row.notes,
+      parent_id: row.parent_id,
+      created_at: new Date(entry.createdAt),
+    })
+    expect(parsed.parentId).toBe(withChild.parentId)
+  })
 })
 
 describe('reviewEventRowToEvent', () => {

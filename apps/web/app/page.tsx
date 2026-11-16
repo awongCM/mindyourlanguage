@@ -8,6 +8,13 @@ import { ComparisonPanel } from "@/components/comparison-panel";
 import { GroundingPanel } from "@/components/grounding-panel";
 import { LearnableSuggestionsCard } from "@/components/learnables/learnable-suggestions-card";
 import { useLearnableSuggestions } from "@/components/learnables/use-learnable-suggestions";
+import { PracticeChunksCard } from "@/components/practice-chunks/practice-chunks-card";
+import { usePracticeChunks } from "@/components/practice-chunks/use-practice-chunks";
+import {
+  MIN_CHUNKABLE_ZH_CHARS,
+  zhCharLength,
+} from "@/lib/practice/chunk-lock";
+import type { PracticeChunkParentInput } from "@/lib/practice-chunks";
 import { NativeAlternativeCard } from "@/components/native-alternative-card";
 import { PhrasebookDrawer } from "@/components/phrasebook-drawer";
 import { ResultCard } from "@/components/result-card";
@@ -83,6 +90,7 @@ export default function Home() {
   const removePhrasebook = usePhrasebookStore((state) => state.remove);
 
   const learnables = useLearnableSuggestions(voiceRegion, characterSet);
+  const practiceChunks = usePracticeChunks(voiceRegion, characterSet);
 
   const isEnglishToChinese =
     direction.sourceLang === "en" && direction.targetLang === "zh";
@@ -111,8 +119,40 @@ export default function Home() {
     return userAttempt.trim();
   }, [isEnglishToChinese, tryFirstEnabled, userAttempt]);
 
+  function buildParentFieldsFromResult(): PracticeChunkParentInput | null {
+    if (!result || !sourceText.trim()) return null;
+
+    const candidate = {
+      translationId: result.id,
+      sourceText,
+      translation: result.translation,
+    };
+    const existing = phrasebookItems.find((item) =>
+      entryMatchesSaved(item, candidate),
+    );
+
+    return {
+      id: existing?.id,
+      translationId: result.id,
+      sourceText,
+      sourceLang: direction.sourceLang,
+      targetLang: direction.targetLang,
+      translation: result.translation,
+      traditional: result.traditional,
+      pinyin: result.pinyin,
+      characterSet,
+      register: result.register,
+      nativeAlternative: result.nativeAlternative,
+      nativeNote: result.nativeNote,
+      dictionaryMatches: result.dictionaryMatches,
+      segments: result.segments,
+      practiceStats: existing?.practiceStats ?? createInitialPracticeStats(),
+    };
+  }
+
   function restoreRecord(record: TranslationRecord) {
     learnables.clear();
+    practiceChunks.clear();
     setDirection({
       sourceLang: record.sourceLang,
       targetLang: record.targetLang,
@@ -138,6 +178,7 @@ export default function Home() {
 
   function restorePhrasebook(entry: PhrasebookEntry) {
     learnables.clear();
+    practiceChunks.clear();
     setDirection({
       sourceLang: entry.sourceLang,
       targetLang: entry.targetLang,
@@ -151,6 +192,7 @@ export default function Home() {
   function handleClear() {
     cancelSpeech();
     learnables.clear();
+    practiceChunks.clear();
     setSourceText("");
     setUserAttempt("");
     setResult(null);
@@ -202,6 +244,7 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     learnables.clear();
+    practiceChunks.clear();
 
     const body: TranslateRequest = {
       text,
@@ -264,6 +307,9 @@ export default function Home() {
           data.translation,
           phrasebookItems.map((item) => item.translation),
         );
+        if (zhCharLength(data.translation) >= MIN_CHUNKABLE_ZH_CHARS) {
+          void practiceChunks.load(text, data.translation);
+        }
       }
     } catch {
       setError("Translation service unavailable. Try again.");
@@ -371,11 +417,29 @@ export default function Home() {
             isSaved={isSaved}
             onToggleSave={handleToggleSave}
             phrasebookHint={
-              isEnglishToChinese && learnables.visible
-                ? "Or pick a few new bits to learn below."
+              isEnglishToChinese &&
+              (learnables.visible || practiceChunks.visible)
+                ? practiceChunks.visible && learnables.visible
+                  ? "Save the full phrase, pick practice chunks, or learn a few new bits below."
+                  : practiceChunks.visible
+                    ? "Save the full phrase or confirm practice chunks below."
+                    : "Or pick a few new bits to learn below."
                 : undefined
             }
           />
+          {isEnglishToChinese && practiceChunks.visible ? (
+            <PracticeChunksCard
+              items={practiceChunks.items}
+              loading={practiceChunks.loading}
+              characterSet={characterSet}
+              onSaveFullOnly={handleToggleSave}
+              onSaveSelected={(selected) => {
+                const parent = buildParentFieldsFromResult();
+                if (!parent) return;
+                practiceChunks.saveSelected(selected, parent);
+              }}
+            />
+          ) : null}
           {isEnglishToChinese && learnables.visible ? (
             <LearnableSuggestionsCard
               items={learnables.items}

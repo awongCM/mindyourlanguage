@@ -6,6 +6,7 @@ import { PracticeDrillCard } from "@/components/practice-drill-card";
 import { ReliabilityNeedle } from "@/components/reliability-needle";
 import { SpeedDrillCard } from "@/components/speed-drill-card";
 import { Button } from "@/components/ui/button";
+import { parentChunkStatus } from "@/lib/practice/chunk-lock";
 import {
   buildPracticeQueue,
   practiceEmptyMessage,
@@ -45,6 +46,8 @@ export default function PracticePage() {
   );
   const dueCount = getDueCount();
   const speedCount = getSpeedCount();
+  const chunkStatus =
+    current && mode === "all" ? parentChunkStatus(items, current) : null;
 
   function resetRecallCard() {
     setRevealed(false);
@@ -162,6 +165,11 @@ export default function PracticePage() {
           onNext={handleSpeedNext}
           voiceRegion={voiceRegion}
         />
+      ) : null}
+      {chunkStatus ? (
+        <p className="text-sm text-muted-foreground" data-testid="parent-chunk-status">
+          {chunkStatus}
+        </p>
       ) : null}
       {current && mode !== "speed" ? (
         <PracticeDrillCard

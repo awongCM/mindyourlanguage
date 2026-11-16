@@ -11,7 +11,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { PhrasebookEntry } from "@mindyourlanguage/shared";
+import type { CharacterSet, PhrasebookEntry } from "@mindyourlanguage/shared";
+import { PracticeChunksCard } from "@/components/practice-chunks/practice-chunks-card";
+import { usePracticeChunks } from "@/components/practice-chunks/use-practice-chunks";
+import { eligibleForChunkSuggest } from "@/lib/practice/chunk-lock";
 import {
   filterPhrasebookByTag,
   usePhrasebookStore,
@@ -39,6 +42,12 @@ export function PhrasebookDrawer({
   const remove = usePhrasebookStore((state) => state.remove);
   const clear = usePhrasebookStore((state) => state.clear);
   const [tagFilter, setTagFilter] = useState("");
+  const [chunkingEntry, setChunkingEntry] = useState<PhrasebookEntry | null>(
+    null,
+  );
+  const [chunkCharacterSet, setChunkCharacterSet] =
+    useState<CharacterSet>("simplified");
+  const practiceChunks = usePracticeChunks("zh-CN", chunkCharacterSet);
 
   const filteredItems = useMemo(
     () => filterPhrasebookByTag(items, tagFilter),
@@ -55,6 +64,17 @@ export function PhrasebookDrawer({
     if (window.confirm("Clear all saved phrases?")) {
       clear();
     }
+  }
+
+  function beginChunkSuggest(entry: PhrasebookEntry) {
+    setChunkCharacterSet(entry.characterSet);
+    setChunkingEntry(entry);
+    void practiceChunks.load(entry.sourceText, entry.translation);
+  }
+
+  function closeChunkSuggest() {
+    setChunkingEntry(null);
+    practiceChunks.clear();
   }
 
   return (
@@ -144,6 +164,18 @@ export function PhrasebookDrawer({
                   />
                 </label>
 
+                {eligibleForChunkSuggest(item, items) ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => beginChunkSuggest(item)}
+                  >
+                    Suggest chunks
+                  </Button>
+                ) : null}
+
                 <Button
                   type="button"
                   variant="ghost"
@@ -157,6 +189,47 @@ export function PhrasebookDrawer({
             ))}
           </ul>
         )}
+
+        {chunkingEntry && practiceChunks.visible ? (
+          <div className="px-4 pb-2">
+            <PracticeChunksCard
+              items={practiceChunks.items}
+              loading={practiceChunks.loading}
+              characterSet={chunkingEntry.characterSet}
+              onSaveSelected={(selected) => {
+                practiceChunks.saveSelected(selected, {
+                  id: chunkingEntry.id,
+                  translationId: chunkingEntry.translationId,
+                  sourceText: chunkingEntry.sourceText,
+                  sourceLang: chunkingEntry.sourceLang,
+                  targetLang: chunkingEntry.targetLang,
+                  translation: chunkingEntry.translation,
+                  traditional: chunkingEntry.traditional,
+                  pinyin: chunkingEntry.pinyin,
+                  characterSet: chunkingEntry.characterSet,
+                  register: chunkingEntry.register,
+                  nativeAlternative: chunkingEntry.nativeAlternative,
+                  nativeNote: chunkingEntry.nativeNote,
+                  dictionaryMatches: chunkingEntry.dictionaryMatches,
+                  segments: chunkingEntry.segments,
+                  practiceStats: chunkingEntry.practiceStats,
+                  tags: chunkingEntry.tags,
+                  notes: chunkingEntry.notes,
+                });
+                closeChunkSuggest();
+              }}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+              onClick={closeChunkSuggest}
+            >
+              Cancel chunks
+            </Button>
+          </div>
+        ) : null}
 
         <SheetFooter>
           <Button

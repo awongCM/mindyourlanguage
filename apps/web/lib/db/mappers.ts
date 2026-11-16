@@ -49,6 +49,7 @@ export type PhrasebookRow = {
   practice_stats: PracticeStats | string | null
   tags: string[] | null
   notes: string | null
+  parent_id?: string | null
   created_at: Date | string
 }
 
@@ -150,6 +151,7 @@ export function phrasebookRowToEntry(row: PhrasebookRow): PhrasebookEntry {
         ? undefined
         : (parseJsonField<PracticeStats | null>(row.practice_stats, null) ??
           undefined),
+    parentId: row.parent_id ?? undefined,
   }
 }
 
@@ -174,6 +176,7 @@ export function entryToPhrasebookRow(
     practice_stats: entry.practiceStats ?? null,
     tags: entry.tags,
     notes: entry.notes,
+    parent_id: entry.parentId ?? null,
     created_at: entry.createdAt,
   }
 }

@@ -6,7 +6,9 @@ import type {
   ReviewGrade,
 } from "@mindyourlanguage/shared";
 import { normalizeChineseKey } from "@/lib/characters";
+import { isLockedParent } from "@/lib/practice/chunk-lock";
 import { applySpeedSession, getSpeedEntries } from "@/lib/practice/fluency";
+import { isEnToZh } from "@/lib/practice/practice-queue";
 import {
   createInitialPracticeStats,
   getDueEntries,
@@ -98,7 +100,9 @@ export const usePhrasebookStore = create<PhrasebookStore>()(
         })),
       remove: (id) =>
         set((state) => ({
-          items: state.items.filter((item) => item.id !== id),
+          items: state.items.filter(
+            (item) => item.id !== id && item.parentId !== id,
+          ),
         })),
       clear: () => set({ items: [] }),
       isSaved: (entry) =>
@@ -142,8 +146,18 @@ export const usePhrasebookStore = create<PhrasebookStore>()(
           }),
         }));
       },
-      getDueCount: (now = new Date()) => getDueEntries(get().items, now).length,
-      getSpeedCount: (now = new Date()) => getSpeedEntries(get().items, now).length,
+      getDueCount: (now = new Date()) => {
+        const items = get().items;
+        return getDueEntries(items, now).filter(
+          (entry) => isEnToZh(entry) && !isLockedParent(items, entry),
+        ).length;
+      },
+      getSpeedCount: (now = new Date()) => {
+        const items = get().items;
+        return getSpeedEntries(items, now).filter(
+          (entry) => isEnToZh(entry) && !isLockedParent(items, entry),
+        ).length;
+      },
     }),
     { name: "myl-phrasebook" },
   ),
@@ -175,5 +189,6 @@ export function createPhrasebookEntry(
     dictionaryMatches: input.dictionaryMatches ?? [],
     segments: input.segments ?? [],
     practiceStats: input.practiceStats ?? createInitialPracticeStats(),
+    parentId: input.parentId,
   };
 }

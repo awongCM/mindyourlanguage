@@ -13,7 +13,7 @@ export async function listAllPhrasebooks(): Promise<PhrasebookEntry[]> {
     `SELECT id, user_id, translation_id, source_text, source_lang, target_lang,
             translation, traditional, pinyin, character_set, register,
             native_alternative, native_note, dictionary_matches, segments,
-            practice_stats, tags, notes, created_at
+            practice_stats, tags, notes, parent_id, created_at
      FROM phrasebook
      ORDER BY created_at DESC`,
   )
@@ -30,7 +30,7 @@ export async function listPhrasebook(userId: string): Promise<PhrasebookEntry[]>
     `SELECT id, user_id, translation_id, source_text, source_lang, target_lang,
             translation, traditional, pinyin, character_set, register,
             native_alternative, native_note, dictionary_matches, segments,
-            practice_stats, tags, notes, created_at
+            practice_stats, tags, notes, parent_id, created_at
      FROM phrasebook
      WHERE user_id = $1
      ORDER BY created_at DESC`,
@@ -64,12 +64,12 @@ export async function upsertPhrasebook(
          id, user_id, translation_id, source_text, source_lang, target_lang,
          translation, traditional, pinyin, character_set, register,
          native_alternative, native_note, dictionary_matches, segments,
-         practice_stats, tags, notes, created_at, updated_at
+         practice_stats, tags, notes, parent_id, created_at, updated_at
        ) VALUES (
          $1, $2, $3, $4, $5, $6,
          $7, $8, $9, $10, $11,
          $12, $13, $14::jsonb, $15::jsonb,
-         $16::jsonb, $17, $18, $19::timestamptz, now()
+         $16::jsonb, $17, $18, $19, $20::timestamptz, now()
        )
        ON CONFLICT (id) DO UPDATE SET
          translation_id = EXCLUDED.translation_id,
@@ -88,6 +88,7 @@ export async function upsertPhrasebook(
          practice_stats = EXCLUDED.practice_stats,
          tags = EXCLUDED.tags,
          notes = EXCLUDED.notes,
+         parent_id = EXCLUDED.parent_id,
          created_at = EXCLUDED.created_at,
          updated_at = now()
        WHERE phrasebook.user_id = EXCLUDED.user_id`,
@@ -110,6 +111,7 @@ export async function upsertPhrasebook(
         row.practice_stats ? JSON.stringify(row.practice_stats) : null,
         row.tags,
         row.notes,
+        row.parent_id,
         row.created_at ?? item.createdAt,
       ],
     )

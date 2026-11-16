@@ -1,0 +1,106 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import {
+  savePracticeChunksToPhrasebook,
+  type PracticeChunkParentInput,
+} from "@/lib/practice-chunks";
+import type {
+  CharacterSet,
+  PracticeChunkSuggestion,
+  PracticeChunksResponse,
+  VoiceRegion,
+} from "@mindyourlanguage/shared";
+
+export function usePracticeChunks(
+  voiceRegion: VoiceRegion,
+  characterSet: CharacterSet,
+) {
+  const [items, setItems] = useState<PracticeChunkSuggestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const requestIdRef = useRef(0);
+
+  function clear() {
+    requestIdRef.current += 1;
+    setItems([]);
+    setLoading(false);
+  }
+
+  async function load(sourceText: string, translation: string) {
+    const requestId = ++requestIdRef.current;
+    setItems([]);
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/practice-chunks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceText,
+          translation,
+          characterSet,
+          voiceRegion,
+        }),
+      });
+      if (requestId !== requestIdRef.current) return;
+
+      if (!response.ok) {
+        setItems([]);
+        return;
+      }
+
+      const data = (await response.json()) as PracticeChunksResponse;
+      if (requestId !== requestIdRef.current) return;
+      setItems(data.items ?? []);
+    } catch {
+      if (requestId === requestIdRef.current) setItems([]);
+    } finally {
+      if (requestId === requestIdRef.current) setLoading(false);
+    }
+  }
+
+  function saveSelected(
+    selected: PracticeChunkSuggestion[],
+    parent: PracticeChunkParentInput,
+  ) {
+    if (selected.length === 0) {
+      toast.error("Pick at least one chunk");
+      return;
+    }
+    const valid = selected.filter(
+      (item) => item.english.trim() && item.chinese.trim(),
+    );
+    if (valid.length === 0) {
+      toast.error("Each selected chunk needs English and Chinese text");
+      return;
+    }
+
+    const { savedChunkCount } = savePracticeChunksToPhrasebook({
+      parent,
+      chunks: valid,
+      characterSet,
+    });
+
+    if (savedChunkCount === 0) {
+      toast.success("Phrase saved; those chunks are already in your phrasebook");
+      return;
+    }
+
+    toast.success(
+      savedChunkCount === 1
+        ? "Saved phrase and 1 practice chunk"
+        : `Saved phrase and ${savedChunkCount} practice chunks`,
+    );
+    clear();
+  }
+
+  return {
+    items,
+    loading,
+    visible: loading || items.length > 0,
+    clear,
+    load,
+    saveSelected,
+  };
+}

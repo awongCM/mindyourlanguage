@@ -237,4 +237,35 @@ describe("usePhrasebookStore", () => {
     expect(events[0]?.mode).toBe("self_grade");
     expect(events[0]?.reviewedAt).toBe("2026-08-06T12:00:00.000Z");
   });
+
+  it("preserves parentId on create and cascade-removes children", () => {
+    usePhrasebookStore.setState({ items: [] });
+    const parent = createPhrasebookEntry({
+      translationId: null,
+      sourceText: "Long",
+      sourceLang: "en",
+      targetLang: "zh",
+      translation: "很长的句子用来测试。",
+      characterSet: "simplified",
+      dictionaryMatches: [],
+      segments: [],
+    });
+    const child = createPhrasebookEntry({
+      translationId: null,
+      sourceText: "Bit",
+      sourceLang: "en",
+      targetLang: "zh",
+      translation: "一句",
+      characterSet: "simplified",
+      dictionaryMatches: [],
+      segments: [],
+      parentId: parent.id,
+    });
+    expect(child.parentId).toBe(parent.id);
+
+    usePhrasebookStore.getState().add(parent);
+    usePhrasebookStore.getState().add(child);
+    usePhrasebookStore.getState().remove(parent.id);
+    expect(usePhrasebookStore.getState().items).toHaveLength(0);
+  });
 });
