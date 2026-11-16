@@ -1,11 +1,12 @@
 # Bite-size practice chunks (parent + child cards)
 
 **Date:** 2026-11-16  
-**Status:** Draft — awaiting user review  
+**Status:** Approved  
 **Author:** awongCM + Cursor Agent  
 **Parent spec:** `docs/superpowers/specs/2026-07-13-mindyourlanguage-v2-design.md`  
 **Prior practice:** Phase 5 production practice (`docs/superpowers/specs/2026-07-19-phase-5-production-practice-design.md`)  
 **Depends on:** Phrasebook + SRS + fluency graduation already shipped  
+**Implementation plan:** `docs/superpowers/plans/2026-11-16-bite-size-practice-chunks.md`  
 
 ---
 
