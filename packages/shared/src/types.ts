@@ -82,6 +82,8 @@ export interface PhrasebookEntry {
   notes: string
   createdAt: string
   practiceStats?: PracticeStats
+  /** Set on clause-sized chunk cards pointing at the full-paragraph parent id. */
+  parentId?: string
 }
 
 export interface TranslateRequest {
@@ -140,4 +142,21 @@ export interface LearnablesRequest {
 
 export interface LearnablesResponse {
   items: LearnableSuggestion[]
+}
+
+export interface PracticeChunkSuggestion {
+  english: string
+  chinese: string
+  pinyin?: string
+}
+
+export interface PracticeChunksRequest {
+  sourceText: string
+  translation: string
+  characterSet: CharacterSet
+  voiceRegion?: VoiceRegion
+}
+
+export interface PracticeChunksResponse {
+  items: PracticeChunkSuggestion[]
 }

@@ -1,4 +1,5 @@
 import type { PhrasebookEntry } from '@mindyourlanguage/shared'
+import { isLockedParent } from '@/lib/practice/chunk-lock'
 import { getSpeedEntries } from '@/lib/practice/fluency'
 import { getDueEntries } from '@/lib/practice/srs'
 import { filterPhrasebookByTag } from '@/lib/stores/phrasebook'
@@ -9,6 +10,13 @@ export function isEnToZh(entry: PhrasebookEntry): boolean {
   return entry.sourceLang === 'en' && entry.targetLang === 'zh'
 }
 
+function withoutLockedParents(
+  items: PhrasebookEntry[],
+  pool: PhrasebookEntry[],
+): PhrasebookEntry[] {
+  return pool.filter((entry) => !isLockedParent(items, entry))
+}
+
 /** Phrases shown for the active practice mode (after tag filter). */
 export function buildPracticeQueue(
   items: PhrasebookEntry[],
@@ -16,9 +24,13 @@ export function buildPracticeQueue(
   tagFilter: string,
 ): PhrasebookEntry[] {
   const tagged = filterPhrasebookByTag(items, tagFilter)
-  if (mode === 'speed') return getSpeedEntries(tagged)
+  if (mode === 'speed') {
+    return withoutLockedParents(items, getSpeedEntries(tagged))
+  }
   const base = mode === 'due' ? getDueEntries(tagged) : tagged
-  return base.filter(isEnToZh)
+  const enZh = base.filter(isEnToZh)
+  if (mode === 'all') return enZh
+  return withoutLockedParents(items, enZh)
 }
 
 /**
@@ -49,6 +61,12 @@ export function practiceEmptyMessage(
     return 'No phrases match that tag.'
   }
   if (mode === 'due') {
+    const hasLockedParent = items.some(
+      (entry) => isEnToZh(entry) && isLockedParent(items, entry),
+    )
+    if (hasLockedParent) {
+      return 'Nothing due today. Full paragraphs unlock after their practice chunks graduate.'
+    }
     return 'Nothing due today. Save phrases from Translate, or switch to All saved.'
   }
   if (mode === 'all') {

@@ -163,3 +163,48 @@ describe('LearnableSuggestion types', () => {
     expect(response.items[0]?.kind).toBe('verb')
   })
 })
+
+describe('Practice chunks types', () => {
+  it('accepts parentId on PhrasebookEntry and chunk request/response', () => {
+    const parent: import('./types').PhrasebookEntry = {
+      id: 'parent-1',
+      translationId: null,
+      sourceText: 'Long English paragraph…',
+      sourceLang: 'en',
+      targetLang: 'zh',
+      translation: '很长的中文段落……',
+      characterSet: 'simplified',
+      dictionaryMatches: [],
+      segments: [],
+      tags: [],
+      notes: '',
+      createdAt: new Date().toISOString(),
+    }
+    const child: import('./types').PhrasebookEntry = {
+      ...parent,
+      id: 'child-1',
+      sourceText: 'One idea',
+      translation: '一个意思',
+      parentId: 'parent-1',
+    }
+    const request: import('./types').PracticeChunksRequest = {
+      sourceText: parent.sourceText,
+      translation: parent.translation,
+      characterSet: 'simplified',
+      voiceRegion: 'zh-CN',
+    }
+    const response: import('./types').PracticeChunksResponse = {
+      items: [
+        {
+          english: 'One idea',
+          chinese: '一个意思',
+          pinyin: 'yī gè yì si',
+        },
+      ],
+    }
+
+    expect(child.parentId).toBe('parent-1')
+    expect(request.translation.length).toBeGreaterThan(0)
+    expect(response.items[0]?.chinese).toBe('一个意思')
+  })
+})
