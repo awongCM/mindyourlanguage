@@ -96,6 +96,30 @@ describe('parentChunkStatus', () => {
     const items = [parent, entry('c', { parentId: 'p' })]
     expect(parentChunkStatus(items, parent)).toBe('Chunks in progress')
   })
+
+  it('returns unlocked label when every child graduated', () => {
+    const graduated = {
+      easeFactor: 2.5,
+      intervalDays: 1,
+      repetitions: 3,
+      nextReviewAt: '2026-11-16T00:00:00.000Z',
+      fluency: {
+        graduatedAt: '2026-11-10T00:00:00.000Z',
+        fastDays: ['2026-11-01', '2026-11-05', '2026-11-10'],
+      },
+    }
+    const parent = entry('p', {
+      translation: '这是一段比较长的中文内容用来练习。',
+    })
+    const items = [
+      parent,
+      entry('c1', { parentId: 'p', practiceStats: graduated }),
+      entry('c2', { parentId: 'p', practiceStats: graduated }),
+    ]
+    expect(parentChunkStatus(items, parent)).toBe(
+      'Unlocked — full paragraph ready',
+    )
+  })
 })
 
 describe('eligibleForChunkSuggest', () => {

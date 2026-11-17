@@ -67,6 +67,7 @@ describe('POST /api/practice-chunks', () => {
       sourceText: 'Long English paragraph.',
       translation: '这是一段比较长的中文内容用来练习记忆的句子。',
       voiceRegion: 'zh-CN',
+      characterSet: 'simplified',
     })
   })
 

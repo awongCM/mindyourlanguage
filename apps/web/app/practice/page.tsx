@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PracticeDrillCard } from "@/components/practice-drill-card";
 import { ReliabilityNeedle } from "@/components/reliability-needle";
@@ -31,6 +31,21 @@ export default function PracticePage() {
   const [pinnedEntryId, setPinnedEntryId] = useState<string | null>(null);
   const [speedRound, setSpeedRound] = useState(0);
   const [voiceRegion] = useState<VoiceRegion>("zh-CN");
+  const [phrasebookHydrated, setPhrasebookHydrated] = useState(() =>
+    typeof window !== "undefined"
+      ? usePhrasebookStore.persist.hasHydrated()
+      : false,
+  );
+
+  useEffect(() => {
+    if (usePhrasebookStore.persist.hasHydrated()) {
+      setPhrasebookHydrated(true);
+      return;
+    }
+    return usePhrasebookStore.persist.onFinishHydration(() => {
+      setPhrasebookHydrated(true);
+    });
+  }, []);
 
   const queue = useMemo(
     () => buildPracticeQueue(items, mode, tagFilter),
@@ -44,8 +59,9 @@ export default function PracticePage() {
     items,
     pinnedEntryId,
   );
-  const dueCount = getDueCount();
-  const speedCount = getSpeedCount();
+  const dueCount = phrasebookHydrated ? getDueCount() : 0;
+  const speedCount = phrasebookHydrated ? getSpeedCount() : 0;
+  const savedCount = phrasebookHydrated ? items.length : 0;
   const chunkStatus =
     current && mode === "all" ? parentChunkStatus(items, current) : null;
 
@@ -128,7 +144,7 @@ export default function PracticePage() {
           onClick={() => handleModeChange("due")}
           data-testid="mode-due"
         >
-          Due today ({dueCount})
+          Due today ({phrasebookHydrated ? dueCount : "…"})
         </Button>
         <Button
           type="button"
@@ -137,7 +153,7 @@ export default function PracticePage() {
           onClick={() => handleModeChange("speed")}
           data-testid="mode-speed"
         >
-          Speed ({speedCount})
+          Speed ({phrasebookHydrated ? speedCount : "…"})
         </Button>
         <Button
           type="button"
@@ -146,7 +162,7 @@ export default function PracticePage() {
           onClick={() => handleModeChange("all")}
           data-testid="mode-all"
         >
-          All saved ({items.length})
+          All saved ({phrasebookHydrated ? savedCount : "…"})
         </Button>
         <input
           value={tagFilter}

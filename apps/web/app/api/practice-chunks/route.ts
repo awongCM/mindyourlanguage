@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       sourceText: body.sourceText.trim(),
       translation: body.translation.trim(),
       voiceRegion,
+      characterSet: body.characterSet,
     })
     return NextResponse.json({ items })
   } catch (err) {

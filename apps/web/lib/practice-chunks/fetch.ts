@@ -1,4 +1,5 @@
 import type {
+  CharacterSet,
   PracticeChunkSuggestion,
   VoiceRegion,
 } from '@mindyourlanguage/shared'
@@ -17,7 +18,9 @@ export async function fetchPracticeChunks(input: {
   sourceText: string
   translation: string
   voiceRegion?: VoiceRegion
+  characterSet?: CharacterSet
 }): Promise<PracticeChunkSuggestion[]> {
+  const characterSet = input.characterSet ?? 'simplified'
   const content = await fetchOpenAiJsonContent({
     model: defaultOpenAiModel(
       process.env.PRACTICE_CHUNKS_MODEL,
@@ -32,7 +35,7 @@ export async function fetchPracticeChunks(input: {
           'practice units (~15–20 Chinese characters, one sense unit each). ' +
           `Keep fixed phrases together when they belong as one unit. Use ${voiceRegionLabel(
             input.voiceRegion,
-          )} wording. ` +
+          )} wording and ${characterSet === 'traditional' ? 'traditional' : 'simplified'} characters. ` +
           'Cover the full translation without large leftover gaps. ' +
           'Do not return the full paragraph as one item. ' +
           'For each unit provide matching English for that clause. ' +

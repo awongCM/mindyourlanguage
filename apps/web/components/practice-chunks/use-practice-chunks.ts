@@ -19,17 +19,20 @@ export function usePracticeChunks(
 ) {
   const [items, setItems] = useState<PracticeChunkSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
+  const [suggestEmpty, setSuggestEmpty] = useState(false);
   const requestIdRef = useRef(0);
 
   function clear() {
     requestIdRef.current += 1;
     setItems([]);
     setLoading(false);
+    setSuggestEmpty(false);
   }
 
   async function load(sourceText: string, translation: string) {
     const requestId = ++requestIdRef.current;
     setItems([]);
+    setSuggestEmpty(false);
     setLoading(true);
 
     try {
@@ -47,14 +50,20 @@ export function usePracticeChunks(
 
       if (!response.ok) {
         setItems([]);
+        if (requestId === requestIdRef.current) setSuggestEmpty(true);
         return;
       }
 
       const data = (await response.json()) as PracticeChunksResponse;
       if (requestId !== requestIdRef.current) return;
-      setItems(data.items ?? []);
+      const nextItems = data.items ?? [];
+      setItems(nextItems);
+      setSuggestEmpty(nextItems.length === 0);
     } catch {
-      if (requestId === requestIdRef.current) setItems([]);
+      if (requestId === requestIdRef.current) {
+        setItems([]);
+        setSuggestEmpty(true);
+      }
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
@@ -113,7 +122,8 @@ export function usePracticeChunks(
   return {
     items,
     loading,
-    visible: loading || items.length > 0,
+    suggestEmpty,
+    visible: loading || items.length > 0 || suggestEmpty,
     clear,
     load,
     saveSelected,

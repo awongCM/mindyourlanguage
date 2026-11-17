@@ -428,7 +428,17 @@ export default function Home() {
             }
           />
           {isEnglishToChinese && practiceChunks.visible ? (
-            <PracticeChunksCard
+            <>
+              {practiceChunks.suggestEmpty && !practiceChunks.loading ? (
+                <p
+                  className="text-sm text-muted-foreground"
+                  data-testid="practice-chunks-empty"
+                >
+                  Couldn&apos;t split this phrase into practice chunks. Try
+                  again later or save the full phrase.
+                </p>
+              ) : null}
+              <PracticeChunksCard
               items={practiceChunks.items}
               loading={practiceChunks.loading}
               characterSet={characterSet}
@@ -439,6 +449,7 @@ export default function Home() {
                 practiceChunks.saveSelected(selected, parent);
               }}
             />
+            </>
           ) : null}
           {isEnglishToChinese && learnables.visible ? (
             <LearnableSuggestionsCard
