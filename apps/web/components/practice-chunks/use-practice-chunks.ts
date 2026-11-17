@@ -76,14 +76,29 @@ export function usePracticeChunks(
       return;
     }
 
-    const { savedChunkCount } = savePracticeChunksToPhrasebook({
+    const { savedChunkCount, skippedChunkCount } = savePracticeChunksToPhrasebook({
       parent,
       chunks: valid,
       characterSet,
     });
 
-    if (savedChunkCount === 0) {
-      toast.success("Phrase saved; those chunks are already in your phrasebook");
+    if (savedChunkCount === 0 && skippedChunkCount > 0) {
+      toast.success(
+        skippedChunkCount === 1
+          ? "Phrase saved; that chunk is already linked to this phrase"
+          : `Phrase saved; ${skippedChunkCount} chunks are already linked to this phrase`,
+      );
+      clear();
+      return;
+    }
+
+    if (skippedChunkCount > 0) {
+      toast.success(
+        savedChunkCount === 1
+          ? `Saved phrase and 1 practice chunk (${skippedChunkCount} skipped, already linked)`
+          : `Saved phrase and ${savedChunkCount} practice chunks (${skippedChunkCount} skipped, already linked)`,
+      );
+      clear();
       return;
     }
 

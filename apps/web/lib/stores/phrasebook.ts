@@ -69,6 +69,21 @@ export function isChineseAlreadySaved(
   );
 }
 
+/** Whether this parent already has a child card with the same Chinese text. */
+export function isChunkSavedForParent(
+  items: PhrasebookEntry[],
+  chinese: string,
+  parentId: string,
+): boolean {
+  const key = normalizeChineseKey(chinese);
+  if (!key) return false;
+  return items.some(
+    (item) =>
+      item.parentId === parentId &&
+      normalizeChineseKey(item.translation) === key,
+  );
+}
+
 export function filterPhrasebookByTag(
   items: PhrasebookEntry[],
   tagFilter: string,

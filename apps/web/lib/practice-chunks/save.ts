@@ -6,7 +6,7 @@ import type {
 import { createInitialPracticeStats } from '@/lib/practice/srs'
 import {
   createPhrasebookEntry,
-  isChineseAlreadySaved,
+  isChunkSavedForParent,
   usePhrasebookStore,
 } from '@/lib/stores/phrasebook'
 import { phrasebookFieldsFromChunk } from './parse'
@@ -24,7 +24,11 @@ export function savePracticeChunksToPhrasebook(input: {
   parent: PracticeChunkParentInput
   chunks: PracticeChunkSuggestion[]
   characterSet: CharacterSet
-}): { parentId: string; savedChunkCount: number } {
+}): {
+  parentId: string
+  savedChunkCount: number
+  skippedChunkCount: number
+} {
   const { add } = usePhrasebookStore.getState()
   const items = usePhrasebookStore.getState().items
 
@@ -44,8 +48,11 @@ export function savePracticeChunksToPhrasebook(input: {
   }
 
   let savedChunkCount = 0
+  let skippedChunkCount = 0
   for (const chunk of input.chunks) {
-    if (isChineseAlreadySaved(usePhrasebookStore.getState().items, chunk.chinese)) {
+    const currentItems = usePhrasebookStore.getState().items
+    if (isChunkSavedForParent(currentItems, chunk.chinese, parentId!)) {
+      skippedChunkCount += 1
       continue
     }
     add(
@@ -59,5 +66,5 @@ export function savePracticeChunksToPhrasebook(input: {
     savedChunkCount += 1
   }
 
-  return { parentId: parentId!, savedChunkCount }
+  return { parentId: parentId!, savedChunkCount, skippedChunkCount }
 }
