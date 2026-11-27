@@ -46,7 +46,12 @@ export function SpeedDrillCard({
   return (
     <Card data-testid="speed-drill-card">
       <CardHeader>
-        <CardTitle>Speed</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Speed drill
+          <span className="rounded-full bg-secondary px-2 py-0.5 text-label-sm font-normal text-secondary-foreground">
+            Beat the clock
+          </span>
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p
@@ -67,16 +72,22 @@ export function SpeedDrillCard({
               session.submitAttempt();
             }}
           >
-            <p className="text-sm text-muted-foreground" data-testid="speed-pass">
-              Pass {session.passIndex + 1} of {session.passCount} ·{" "}
-              {session.passLimitSeconds} seconds
-            </p>
-            <p
-              className="text-3xl font-semibold tabular-nums text-foreground"
-              data-testid="speed-remaining"
-            >
-              {session.secondsLeft}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p
+                className="rounded-full bg-muted px-3 py-1 text-label-sm text-muted-foreground"
+                data-testid="speed-pass"
+              >
+                Pass {session.passIndex + 1} of {session.passCount} ·{" "}
+                {session.passLimitSeconds} seconds
+              </p>
+              <p
+                className="rounded-full bg-warning-container px-3 py-1 font-mono text-title-md tabular-nums text-on-warning-container"
+                data-testid="speed-remaining"
+                aria-label="Seconds remaining"
+              >
+                {session.secondsLeft}
+              </p>
+            </div>
             <label className="flex flex-col gap-2 text-sm text-muted-foreground">
               Say it aloud, then type the saved Mandarin.
               <Textarea
