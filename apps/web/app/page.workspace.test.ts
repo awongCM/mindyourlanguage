@@ -16,6 +16,19 @@ describe("translate workspace layout", () => {
     expect(source).toContain("lg:sticky");
   });
 
+  it("bounds the sticky study panel and pins it near the top", () => {
+    expect(source).toContain("lg:top-6");
+    expect(source).not.toContain("lg:top-20");
+    expect(source).toContain("lg:max-h-[calc(100dvh-3rem)]");
+    expect(source).toContain("lg:overflow-y-auto");
+  });
+
+  it("wires the save-only handler to onSaveFullOnly (never the toggle)", () => {
+    expect(source).toContain("onSaveFullOnly={handleSaveFull}");
+    expect(source).not.toContain("onSaveFullOnly={handleToggleSave}");
+    expect(source).toContain("Already in phrasebook");
+  });
+
   it("composes the new workspace components", () => {
     expect(source).toContain("<ComposerCard");
     expect(source).toContain("<ResultCard");

@@ -13,8 +13,13 @@ describe("practice workspace layout", () => {
   });
 
   it("bounds the sticky right column so tall content stays reachable", () => {
-    expect(source).toContain("lg:max-h-[calc(100dvh-6rem)]");
+    expect(source).toContain("lg:max-h-[calc(100dvh-3rem)]");
     expect(source).toContain("lg:overflow-y-auto");
+  });
+
+  it("sticks near the top because the desktop header is not sticky", () => {
+    expect(source).toContain("lg:top-6");
+    expect(source).not.toContain("lg:top-20");
   });
 
   it("renders mode selection as segmented tabs in spec order", () => {

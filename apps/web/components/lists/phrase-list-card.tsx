@@ -46,6 +46,7 @@ export function PhraseListCard({
         size="sm"
         className="shrink-0"
         onClick={onRemove}
+        aria-label={`Remove ${heading}`}
       >
         Remove
       </Button>

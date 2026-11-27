@@ -249,6 +249,26 @@ export default function Home() {
     setError(null);
   }
 
+  function buildFullPhraseEntry() {
+    if (!result) return null;
+    return createPhrasebookEntry({
+      translationId: result.id,
+      sourceText,
+      sourceLang: direction.sourceLang,
+      targetLang: direction.targetLang,
+      translation: result.translation,
+      traditional: result.traditional,
+      pinyin: result.pinyin,
+      characterSet,
+      register: result.register,
+      nativeAlternative: result.nativeAlternative,
+      nativeNote: result.nativeNote,
+      dictionaryMatches: result.dictionaryMatches,
+      segments: result.segments,
+      practiceStats: createInitialPracticeStats(),
+    });
+  }
+
   function handleToggleSave() {
     if (!result || !sourceText.trim()) return;
 
@@ -269,24 +289,24 @@ export default function Home() {
       return;
     }
 
-    addPhrasebook(
-      createPhrasebookEntry({
-        translationId: result.id,
-        sourceText,
-        sourceLang: direction.sourceLang,
-        targetLang: direction.targetLang,
-        translation: result.translation,
-        traditional: result.traditional,
-        pinyin: result.pinyin,
-        characterSet,
-        register: result.register,
-        nativeAlternative: result.nativeAlternative,
-        nativeNote: result.nativeNote,
-        dictionaryMatches: result.dictionaryMatches,
-        segments: result.segments,
-        practiceStats: createInitialPracticeStats(),
-      }),
-    );
+    const entry = buildFullPhraseEntry();
+    if (!entry) return;
+    addPhrasebook(entry);
+    toast.success("Saved to phrasebook");
+  }
+
+  // Save-only: never removes an already-saved phrase (or its practice history).
+  function handleSaveFull() {
+    if (!result || !sourceText.trim()) return;
+
+    if (isSaved) {
+      toast.info("Already in phrasebook");
+      return;
+    }
+
+    const entry = buildFullPhraseEntry();
+    if (!entry) return;
+    addPhrasebook(entry);
     toast.success("Saved to phrasebook");
   }
 
@@ -438,7 +458,7 @@ export default function Home() {
 
       <div className="min-w-0 lg:col-span-5">
         {result && availableTabs.length > 0 ? (
-          <div className="lg:sticky lg:top-20">
+          <div className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
             <StudyPanel
               availableTabs={availableTabs}
               tab={effectiveStudyTab}
@@ -453,7 +473,7 @@ export default function Home() {
                 if (!parent) return;
                 practiceChunks.saveSelected(selected, parent);
               }}
-              onSaveFullOnly={handleToggleSave}
+              onSaveFullOnly={handleSaveFull}
               onRetryChunks={handleRetryChunks}
               learnablesLoading={learnables.loading}
               learnableItems={learnables.items}

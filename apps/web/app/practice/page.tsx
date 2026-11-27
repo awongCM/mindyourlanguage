@@ -277,7 +277,7 @@ export default function PracticePage() {
       </div>
 
       <div className="min-w-0 lg:col-span-5">
-        <div className="lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
+        <div className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
           <ReliabilityNeedle />
         </div>
       </div>

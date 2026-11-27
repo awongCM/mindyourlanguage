@@ -38,10 +38,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const hydrated = usePhrasebookHydrated();
   const items = usePhrasebookStore((state) => state.items);
   const getDueCount = usePhrasebookStore((state) => state.getDueCount);
-  const getSpeedCount = usePhrasebookStore((state) => state.getSpeedCount);
+  const getPracticeCount = usePhrasebookStore(
+    (state) => state.getPracticeCount,
+  );
 
   const savedCount = hydrated ? items.length : null;
-  const practiceCount = hydrated ? getDueCount() + getSpeedCount() : null;
+  // Desktop chip: distinct due-or-speed entries. Mobile pill: strictly "due".
+  const practiceCount = hydrated ? getPracticeCount() : null;
+  const dueCount = hydrated ? getDueCount() : null;
 
   const openDrawerFromParam = useCallback((drawer: string) => {
     if (drawer === "phrasebook" || drawer === "history") {
@@ -63,9 +67,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const mobileCountPill =
-    pathname.startsWith("/practice") && practiceCount !== null ? (
+    pathname.startsWith("/practice") && dueCount !== null ? (
       <span className="shrink-0 rounded-full bg-muted px-gutter-sm py-gutter-xs text-label-sm text-muted-foreground tabular-nums">
-        {practiceCount} due
+        {dueCount} due
       </span>
     ) : pathname === "/phrasebook" && savedCount !== null ? (
       <span className="shrink-0 rounded-full bg-muted px-gutter-sm py-gutter-xs text-label-sm text-muted-foreground tabular-nums">
@@ -92,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="flex flex-wrap items-center gap-gutter-sm"
             >
               {LINK_NAV.map((item) => {
-                const active = pathname === item.href;
+                const active = pathname === item.href && openDrawer === null;
                 return (
                   <Link
                     key={item.href}
@@ -129,9 +133,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <AuthHeaderActions />
           </div>
         </div>
-        <div className="mx-auto w-full max-w-7xl px-gutter-lg">
-          <OnboardingSyncHint />
-        </div>
       </header>
 
       {/* Mobile header */}
@@ -147,18 +148,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           {mobileCountPill}
         </div>
-        <OnboardingSyncHint />
       </header>
+
+      {/* Mounted once so the dialog id and role stay unique across breakpoints */}
+      <div className="mx-auto w-full max-w-7xl px-gutter-md lg:px-gutter-lg">
+        <OnboardingSyncHint />
+      </div>
 
       <div className="flex flex-1 flex-col">{children}</div>
 
       {/* Mobile bottom tab bar */}
       <nav
         aria-label="Mobile navigation"
-        className="sticky bottom-0 z-20 grid grid-cols-4 gap-gutter-xs border-t border-border bg-card px-gutter-sm py-gutter-xs lg:hidden"
+        className="sticky bottom-0 z-20 grid grid-cols-4 gap-gutter-xs border-t border-border bg-card px-gutter-sm pt-gutter-xs pb-[max(0.25rem,env(safe-area-inset-bottom))] lg:hidden"
       >
         {TABS.map((tab) => {
-          const active = pathname === tab.href;
+          const active = pathname === tab.href && openDrawer === null;
           return (
             <Link
               key={tab.href}

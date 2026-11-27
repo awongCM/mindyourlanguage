@@ -34,7 +34,10 @@ test.describe('app shell — mobile', () => {
 
   test('switcher moves between phrasebook and history', async ({ page }) => {
     await page.goto('/phrasebook')
-    await page.getByRole('tab', { name: /History/ }).click()
+    await page
+      .getByRole('navigation', { name: 'Saved lists' })
+      .getByRole('link', { name: /History/ })
+      .click()
     await expect(page).toHaveURL(/\/history$/)
     await expect(page.getByText('No translations yet')).toBeVisible()
   })

@@ -214,6 +214,36 @@ describe("usePhrasebookStore", () => {
     expect(useReviewEventsStore.getState().events).toHaveLength(0);
   });
 
+  it("counts an entry that is both due and speed-ready once", () => {
+    usePhrasebookStore.setState({ items: [] });
+    const now = new Date("2026-08-02T10:00:00.000Z");
+    const make = (translationId: string, repetitions: number) =>
+      createPhrasebookEntry({
+        translationId,
+        sourceText: `Hello ${translationId}`,
+        sourceLang: "en",
+        targetLang: "zh",
+        translation: `你好${translationId}`,
+        characterSet: "simplified",
+        dictionaryMatches: [],
+        segments: [],
+        practiceStats: {
+          easeFactor: 2.5,
+          intervalDays: 0,
+          repetitions,
+          nextReviewAt: now.toISOString(),
+        },
+      });
+
+    usePhrasebookStore.getState().add(make("a", 1)); // due and speed-ready
+    usePhrasebookStore.getState().add(make("b", 0)); // due only
+
+    const state = usePhrasebookStore.getState();
+    expect(state.getDueCount(now)).toBe(2);
+    expect(state.getSpeedCount(now)).toBe(1);
+    expect(state.getPracticeCount(now)).toBe(2);
+  });
+
   it("appends a review event when grading", () => {
     const entry = createPhrasebookEntry({
       translationId: "abc",

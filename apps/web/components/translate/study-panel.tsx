@@ -104,7 +104,7 @@ function DictionaryCards({
                 }`}
               >
                 <p className="flex flex-wrap items-baseline gap-2">
-                  <span className="text-title-md text-foreground">
+                  <span lang="zh" className="text-title-md text-foreground">
                     {displayForCharacterSet(entry.simplified, characterSet)}
                   </span>
                   <span
@@ -115,7 +115,7 @@ function DictionaryCards({
                   </span>
                 </p>
                 {showTraditional && entry.traditional !== entry.simplified ? (
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p lang="zh-Hant" className="mt-1 text-sm text-muted-foreground">
                     繁 {entry.traditional}
                   </p>
                 ) : null}
@@ -197,7 +197,7 @@ export function StudyPanel({
     if (activeEntrySource !== "passage" || !activeEntryKey) return;
     if (tab !== "dictionary") return;
     document
-      .getElementById(`dict-card-${CSS.escape(activeEntryKey)}`)
+      .getElementById(`dict-card-${activeEntryKey}`)
       ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [activeEntryKey, activeEntrySource, tab]);
 

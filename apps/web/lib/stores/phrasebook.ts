@@ -39,6 +39,8 @@ interface PhrasebookStore {
   recordSpeedSession: (id: string, now?: Date) => void;
   getDueCount: (now?: Date) => number;
   getSpeedCount: (now?: Date) => number;
+  /** Distinct entries that are due OR speed-ready (no double counting). */
+  getPracticeCount: (now?: Date) => number;
 }
 
 export function phrasebookEntryKey(
@@ -172,6 +174,19 @@ export const usePhrasebookStore = create<PhrasebookStore>()(
         return getSpeedEntries(items, now).filter(
           (entry) => isEnToZh(entry) && !isLockedParent(items, entry),
         ).length;
+      },
+      getPracticeCount: (now = new Date()) => {
+        const items = get().items;
+        const ids = new Set<string>();
+        for (const entry of [
+          ...getDueEntries(items, now),
+          ...getSpeedEntries(items, now),
+        ]) {
+          if (isEnToZh(entry) && !isLockedParent(items, entry)) {
+            ids.add(entry.id);
+          }
+        }
+        return ids.size;
       },
     }),
     { name: "myl-phrasebook" },

@@ -53,8 +53,7 @@ export function SavedListsScreen({ view }: SavedListsScreenProps) {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-gutter-md px-gutter-md py-gutter-md pb-section">
-      <div
-        role="tablist"
+      <nav
         aria-label="Saved lists"
         className="flex items-center gap-gutter-xs rounded-full bg-muted p-gutter-xs"
       >
@@ -62,8 +61,7 @@ export function SavedListsScreen({ view }: SavedListsScreenProps) {
           <Link
             key={tab.id}
             href={tab.href}
-            role="tab"
-            aria-selected={view === tab.id}
+            aria-current={view === tab.id ? "page" : undefined}
             className={`flex-1 rounded-full py-gutter-xs text-center text-label-sm tabular-nums transition-colors duration-state-change ease-state-change ${
               view === tab.id
                 ? "bg-card text-foreground"
@@ -73,7 +71,7 @@ export function SavedListsScreen({ view }: SavedListsScreenProps) {
             {tab.label}
           </Link>
         ))}
-      </div>
+      </nav>
 
       {view === "phrasebook" ? (
         <input

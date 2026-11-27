@@ -21,6 +21,11 @@ describe("PhraseListCard", () => {
     expect(html).toContain("Remove");
   });
 
+  it("gives each Remove button a unique accessible name", () => {
+    const html = renderToStaticMarkup(createElement(PhraseListCard, base));
+    expect(html).toContain('aria-label="Remove 认识"');
+  });
+
   it("renders optional meta line when provided", () => {
     const html = renderToStaticMarkup(
       createElement(PhraseListCard, { ...base, meta: "Tags: greeting" }),

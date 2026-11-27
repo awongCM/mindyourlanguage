@@ -40,4 +40,22 @@ describe("AppShell structure", () => {
   it("routes drawer restore through the restore search param", () => {
     expect(shell).toContain("/?restore=");
   });
+
+  it("mounts OnboardingSyncHint exactly once", () => {
+    expect(shell.match(/<OnboardingSyncHint \/>/g)).toHaveLength(1);
+  });
+
+  it("pads the bottom tab bar for the device safe area", () => {
+    expect(shell).toContain("env(safe-area-inset-bottom)");
+  });
+
+  it("does not highlight a route chip while a drawer is open", () => {
+    expect(shell).toContain("pathname === item.href && openDrawer === null");
+    expect(shell).toContain("pathname === tab.href && openDrawer === null");
+  });
+
+  it("shows the due count (not the due+speed sum) in the mobile pill", () => {
+    expect(shell).toContain("{dueCount} due");
+    expect(shell).toContain("getPracticeCount");
+  });
 });

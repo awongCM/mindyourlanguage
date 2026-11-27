@@ -73,6 +73,18 @@ describe("StudyPanel dictionary cards", () => {
     expect(html).toContain('data-active="true"');
   });
 
+  it("marks dictionary headwords as Chinese", () => {
+    expect(renderPanel()).toContain('lang="zh"');
+  });
+
+  it("does not CSS-escape the card id used by getElementById", () => {
+    const source = readFileSync(
+      new URL("./study-panel.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(source).not.toContain("CSS.escape");
+  });
+
   it("keeps traditional forms behind a toggle", () => {
     const html = renderPanel();
     expect(html).toContain("繁 Traditional");
