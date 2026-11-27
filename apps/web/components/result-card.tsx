@@ -121,7 +121,7 @@ const PANEL_ID_TRANSLATION = "result-panel-translation";
 const PANEL_ID_NATIVE = "result-panel-native";
 
 /** Slow-playback speeds offered in the footer dropdown; 0.75 preserves the original default. */
-const SPEECH_RATES = [0.5, 0.75, 1] as const;
+const SPEECH_RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5] as const;
 const DEFAULT_SPEECH_RATE = 0.75;
 
 /** Callers should pass `key={result.id}` so the register tab resets per result. */

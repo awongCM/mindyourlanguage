@@ -67,10 +67,12 @@ describe("ResultCard footer", () => {
     "utf8",
   );
 
-  it("offers Play plus a playback-speed dropdown (0.5x / 0.75x / 1x, default 0.75x)", () => {
+  it("offers Play plus a playback-speed dropdown (0.25x-1.5x, default 0.75x)", () => {
     expect(source).toContain('aria-label="Playback speed"');
     expect(source).toContain('data-testid="playback-speed-trigger"');
-    expect(source).toContain("const SPEECH_RATES = [0.5, 0.75, 1] as const");
+    expect(source).toContain(
+      "const SPEECH_RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5] as const",
+    );
     expect(source).toContain("const DEFAULT_SPEECH_RATE = 0.75");
     expect(source).toContain("setPlaybackRate(rate)");
     expect(source).toContain("aria-label={`Play at ${rate} speed`}");
