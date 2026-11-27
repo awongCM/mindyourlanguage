@@ -14,8 +14,11 @@ test.describe('translate flow (mocked)', () => {
     await page.getByRole('button', { name: 'Translate' }).click()
 
     await expect(page.getByTestId('result-translation')).toHaveText('你好，很高兴认识你。')
-    await expect(page.getByRole('button', { name: 'Play Mainland' })).toBeEnabled()
-    await expect(page.getByRole('button', { name: 'Play Taiwan' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Play at 0.75 speed' })).toBeEnabled()
+
+    const dictionaryTab = page.getByTestId('study-tab-dictionary')
+    if (await dictionaryTab.isVisible()) await dictionaryTab.click()
     await expect(page.getByText('to know (a person)')).toBeVisible()
   })
 
@@ -43,6 +46,17 @@ test.describe('translate flow (mocked)', () => {
     await expect(page.getByTestId('source-chinese-text')).toContainText('刘颖璇')
     await expect(page.getByTestId('spoken-pinyin')).toBeVisible()
     await expect(page.getByText('to hear of')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Play Mainland' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Play at 0.75 speed' })).toBeEnabled()
+  })
+
+  test('switches between translation and native alternative registers', async ({ page }) => {
+    await enterSourceText(page)
+    await page.getByRole('button', { name: 'Translate' }).click()
+    await expect(page.getByTestId('result-translation')).toHaveText('你好，很高兴认识你。')
+
+    await page.getByTestId('native-register-tab').click()
+    await expect(page.getByTestId('native-panel')).toContainText('你好，幸会。')
+    await expect(page.getByTestId('native-panel')).toContainText('More concise greeting.')
   })
 })

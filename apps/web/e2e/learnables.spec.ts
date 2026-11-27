@@ -14,13 +14,11 @@ test.describe('learnable suggestions (mocked)', () => {
     await enterSourceText(page)
     await page.getByRole('button', { name: 'Translate' }).click()
 
+    await page.getByTestId('study-tab-learnables').click()
     const suggestions = page.getByTestId('learnable-suggestions')
     await expect(suggestions).toBeVisible()
     await expect(suggestions.getByText('认识', { exact: true })).toBeVisible()
     await expect(suggestions.getByText('to get to know')).toBeVisible()
-    await expect(
-      page.getByText('Or pick a few new bits to learn below.'),
-    ).toBeVisible()
 
     await page.getByTestId('save-selected-learnables').click()
 
