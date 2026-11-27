@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export type RestoreResult = "restored" | "pending" | "missing";
 
@@ -24,18 +24,26 @@ interface RestoreParamSyncProps {
  * wrap it in `useCallback` with stale or empty deps, or pending restores will never be
  * retried.
  *
- * `onRestore` must be idempotent: a retry can invoke it more than once for the same
- * id before the param strip settles.
+ * `onRestore` is invoked at most once per id after it resolves to "restored" or
+ * "missing": `onRestore`'s identity changes on every render, and a restore sets state,
+ * so without that guard the effect would loop until `router.replace` lands.
+ * It may still run several times while the result is "pending".
  */
 export function RestoreParamSync({ onRestore }: RestoreParamSyncProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const param = searchParams.get("restore");
+  const handledRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!param) return;
+    if (!param) {
+      handledRef.current = null;
+      return;
+    }
+    if (handledRef.current === param) return;
     const result = onRestore(param);
     if (result === "restored" || result === "missing") {
+      handledRef.current = param;
       router.replace("/", { scroll: false });
     }
   }, [param, onRestore, router]);
