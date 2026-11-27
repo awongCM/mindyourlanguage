@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Commissioner,
+  Crimson_Pro,
+  Source_Code_Pro,
+} from "next/font/google";
 import { AuthHeaderActions } from "@/components/auth-header-actions";
 import { CloudPersistence } from "@/components/cloud-persistence";
 import { OnboardingSyncHint } from "@/components/onboarding-sync-hint";
@@ -7,14 +11,22 @@ import { AppSessionProvider } from "@/components/session-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-sans",
+const displayFont = Crimson_Pro({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["600"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sansFont = Commissioner({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const monoFont = Source_Code_Pro({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["500"],
 });
 
 export const metadata: Metadata = {
@@ -36,7 +48,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${displayFont.variable} ${sansFont.variable} ${monoFont.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AppSessionProvider>
