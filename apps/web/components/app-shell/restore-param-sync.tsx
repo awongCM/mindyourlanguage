@@ -12,6 +12,10 @@ interface RestoreParamSyncProps {
 /**
  * Consumes `?restore=<id>` from the URL and delegates restoration to `onRestore`.
  *
+ * Restoration runs once per appearance of the param: after a "restored" or
+ * "missing" result the param is stripped, and the guard resets as soon as the
+ * param disappears, so a later `?restore=<same id>` is handled again.
+ *
  * `onRestore` returns `"restored" | "pending" | "missing"`.
  * - `"restored"`: target applied; strip `?restore=` via `router.replace("/")`.
  * - `"missing"`: id not found; strip the param.
@@ -24,10 +28,11 @@ interface RestoreParamSyncProps {
  * wrap it in `useCallback` with stale or empty deps, or pending restores will never be
  * retried.
  *
- * `onRestore` is invoked at most once per id after it resolves to "restored" or
- * "missing": `onRestore`'s identity changes on every render, and a restore sets state,
- * so without that guard the effect would loop until `router.replace` lands.
- * It may still run several times while the result is "pending".
+ * Within a single appearance of the param, `onRestore` is invoked at most once
+ * after it resolves to "restored" or "missing": `onRestore`'s identity changes on
+ * every render, and a restore sets state, so without that guard the effect would
+ * loop until `router.replace` lands. It may still run several times while the
+ * result is "pending".
  */
 export function RestoreParamSync({ onRestore }: RestoreParamSyncProps) {
   const searchParams = useSearchParams();

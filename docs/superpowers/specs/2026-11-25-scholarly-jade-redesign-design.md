@@ -97,3 +97,16 @@ Two-column `lg:grid-cols-12` inside `max-w-7xl`. `page.tsx` decomposes into `Com
 - Dark mode (tokens documented, no mocks, future pass).
 - Phrasebook edit UI, Try First, shadowing player (dropped).
 - Any backend/API, SRS, or persistence changes.
+
+## Implementation notes / deviations
+
+Decisions made during implementation that supersede the text above (each is documented in the phase plans):
+
+- **Shadowing player kept.** `ShadowingPlayer` stays in both drill cards (`PracticeDrillCard`, `SpeedDrillCard`) instead of being dropped; Try First itself is still removed.
+- **Whole-passage pinyin toggle.** The reading passage offers a single "Pinyin" chip that reveals the whole passage's pinyin below the text, instead of per-sentence pinyin.
+- **繁 Traditional toggle.** The dictionary cards hide traditional forms behind a "繁 Traditional" toggle in the study panel, replacing the "Trad. & CL" treatment.
+- **Phases 2 + 5 merged.** The app shell (Phase 2) and the Phrasebook / History mobile screens (Phase 5) shipped together, since the bottom tab bar and the saved-lists screens share the same routes and restore flow.
+- **No auth controls in the mobile header.** The mobile header shows only the title and the count pill (e.g. "6 due"); sign-in/out controls stay in the desktop header. This was a human decision.
+- **Light mode only is enforced.** `dark:` variants were removed from the shadcn primitives and the Toaster is pinned to the light theme, so the OS dark mode no longer affects any component.
+- **Practice count.** The desktop "Practice (N)" chip counts distinct entries that are due or speed-ready (no double counting); the mobile pill shows the due count only.
+
