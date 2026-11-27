@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { PracticeDrillCard } from "@/components/practice-drill-card";
 import { PracticeQueueList } from "@/components/practice-queue-list";
 import { ReliabilityNeedle } from "@/components/reliability-needle";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/practice/practice-queue";
 import { getDueEntries } from "@/lib/practice/srs";
 import { usePhrasebookStore } from "@/lib/stores/phrasebook";
+import { usePhrasebookHydrated } from "@/lib/stores/use-phrasebook-hydrated";
 import type { ReviewGrade, VoiceRegion } from "@mindyourlanguage/shared";
 
 const PRACTICE_PANEL_ID = "practice-panel";
@@ -43,21 +44,7 @@ export default function PracticePage() {
   const [pinnedEntryId, setPinnedEntryId] = useState<string | null>(null);
   const [speedRound, setSpeedRound] = useState(0);
   const [voiceRegion] = useState<VoiceRegion>("zh-CN");
-  const [phrasebookHydrated, setPhrasebookHydrated] = useState(() =>
-    typeof window !== "undefined"
-      ? usePhrasebookStore.persist.hasHydrated()
-      : false,
-  );
-
-  useEffect(() => {
-    if (usePhrasebookStore.persist.hasHydrated()) {
-      setPhrasebookHydrated(true);
-      return;
-    }
-    return usePhrasebookStore.persist.onFinishHydration(() => {
-      setPhrasebookHydrated(true);
-    });
-  }, []);
+  const phrasebookHydrated = usePhrasebookHydrated();
 
   const queue = useMemo(
     () => buildPracticeQueue(items, mode, tagFilter),

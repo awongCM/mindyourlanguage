@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import {
   getReliabilitySummary,
   type WeeklyReliabilityBucket,
 } from "@/lib/practice/reliability";
 import { usePhrasebookStore } from "@/lib/stores/phrasebook";
+import { usePhrasebookHydrated } from "@/lib/stores/use-phrasebook-hydrated";
 import { useReviewEventsStore } from "@/lib/stores/review-events";
 import {
   getReliabilityLiveSummary,
@@ -93,11 +94,7 @@ export function ReliabilityNeedle() {
   const phrasebookItems = usePhrasebookStore((state) => state.items);
   const getDueCount = usePhrasebookStore((state) => state.getDueCount);
   const getSpeedCount = usePhrasebookStore((state) => state.getSpeedCount);
-  const [phrasebookHydrated, setPhrasebookHydrated] = useState(() =>
-    typeof window !== "undefined"
-      ? usePhrasebookStore.persist.hasHydrated()
-      : false,
-  );
+  const phrasebookHydrated = usePhrasebookHydrated();
   const summary = useMemo(() => getReliabilitySummary(events), [events]);
   const { sevenDay, thirtyDay, weekly } = summary;
   const liveSummary = useMemo(
@@ -113,17 +110,6 @@ export function ReliabilityNeedle() {
       setHasHydrated(true);
     });
   }, [setHasHydrated]);
-
-  useEffect(() => {
-    if (usePhrasebookStore.persist.hasHydrated()) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync phrasebook persist hydration before tile counts
-      setPhrasebookHydrated(true);
-      return;
-    }
-    return usePhrasebookStore.persist.onFinishHydration(() => {
-      setPhrasebookHydrated(true);
-    });
-  }, []);
 
   if (!hasHydrated) {
     return (
