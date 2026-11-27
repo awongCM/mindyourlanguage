@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-import { Bookmark, Copy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bookmark, Copy, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ShadowingPlayer } from "@/components/shadowing-player";
+import { displayForCharacterSet } from "@/lib/characters";
+import { registerLabel } from "@/lib/native-alternative-shared";
 import { cancelSpeech, speakChinese } from "@/lib/speech";
 import {
   Card,
@@ -59,7 +60,7 @@ function PinyinBlock({ result }: { result: TranslateResponse }) {
   if (!result.pinyin) return null;
 
   return (
-    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+    <div className="flex flex-col gap-1 font-mono text-mono-sm text-muted-foreground">
       <p lang="zh-Latn">
         <span className="mr-2 font-medium text-foreground/70">
           Syllable pinyin
@@ -78,7 +79,11 @@ function PinyinBlock({ result }: { result: TranslateResponse }) {
   );
 }
 
-function SegmentList({ segments }: { segments: TranslateResponse["segments"] }) {
+function SegmentList({
+  segments,
+}: {
+  segments: TranslateResponse["segments"];
+}) {
   if (segments.length === 0) return null;
 
   return (
@@ -90,7 +95,7 @@ function SegmentList({ segments }: { segments: TranslateResponse["segments"] }) 
         >
           <span className="font-medium text-foreground">{segment.text}</span>
           {segment.pinyin ? (
-            <span className="ml-1.5 text-muted-foreground">
+            <span className="ml-1.5 font-mono text-mono-sm text-muted-foreground">
               {segment.pinyin}
             </span>
           ) : null}
@@ -99,6 +104,8 @@ function SegmentList({ segments }: { segments: TranslateResponse["segments"] }) 
     </ul>
   );
 }
+
+type RegisterTab = "translation" | "native";
 
 export function ResultCard({
   result,
@@ -120,6 +127,14 @@ export function ResultCard({
     : displayText;
   const audioText = isChineseSource ? chineseText : displayText;
 
+  const hasNative = Boolean(result.nativeAlternative && result.register);
+  const [tab, setTab] = useState<RegisterTab>("translation");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset register tab when result changes
+    setTab("translation");
+  }, [result.id]);
+
   useEffect(() => {
     return () => cancelSpeech();
   }, []);
@@ -133,12 +148,20 @@ export function ResultCard({
     }
   }
 
-  async function handlePlay(region: VoiceRegion) {
+  async function play(text: string, rate?: number) {
     try {
-      const { usedRegionFallback } = await speakChinese(audioText, region);
+      const speechOpts =
+        rate === 0.75
+          ? { rate: 0.75 }
+          : typeof rate === "number"
+            ? { rate }
+            : {};
+      const { usedRegionFallback } = await speakChinese(text, voiceRegion, {
+        ...speechOpts,
+      });
       if (usedRegionFallback) {
         toast.info(
-          region === "zh-TW"
+          voiceRegion === "zh-TW"
             ? "Taiwan voice unavailable — using the closest Chinese voice on this device."
             : "Mainland voice unavailable — using the closest Chinese voice on this device.",
         );
@@ -148,82 +171,128 @@ export function ResultCard({
     }
   }
 
-  function handleStop() {
-    cancelSpeech();
-  }
+  const nativeText = result.nativeAlternative
+    ? displayForCharacterSet(result.nativeAlternative, characterSet)
+    : null;
+  const playText = tab === "native" && nativeText ? nativeText : audioText;
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Translation</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <p
-          data-testid="result-translation"
-          className="break-anywhere text-lg leading-relaxed text-foreground"
-        >
-          {displayText}
-        </p>
-
-        {isChineseSource ? (
+      <CardHeader className="flex flex-col gap-3">
+        {hasNative ? (
           <div
-            className="flex flex-col gap-3 border-t border-border pt-4"
-            data-testid="source-chinese-block"
+            role="tablist"
+            aria-label="Translation registers"
+            className="flex w-fit gap-1 rounded-full bg-muted p-1"
           >
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Mandarin source
-            </p>
-            <p
-              data-testid="source-chinese-text"
-              className="break-anywhere text-lg leading-relaxed text-foreground"
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "translation"}
+              onClick={() => setTab("translation")}
+              className={`rounded-full px-3 py-1 text-sm transition-colors ${
+                tab === "translation"
+                  ? "bg-card font-medium text-foreground shadow-sm"
+                  : "text-muted-foreground"
+              }`}
             >
-              {chineseText}
-            </p>
-            <PinyinBlock result={result} />
-            <SegmentList segments={result.segments} />
+              Translation · 中性
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "native"}
+              onClick={() => setTab("native")}
+              data-testid="native-register-tab"
+              className={`rounded-full px-3 py-1 text-sm transition-colors ${
+                tab === "native"
+                  ? "bg-card font-medium text-foreground shadow-sm"
+                  : "text-muted-foreground"
+              }`}
+            >
+              Native alternative ·{" "}
+              {registerLabel(result.register ?? "neutral")}
+            </button>
           </div>
         ) : (
-          <>
-            <PinyinBlock result={result} />
-            <SegmentList segments={result.segments} />
-          </>
+          <CardTitle>Translation</CardTitle>
         )}
-
-        {showPlayButtons ? (
-          <ShadowingPlayer
-            text={audioText}
-            segments={result.segments}
-            region={voiceRegion}
-          />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {/* Both panels stay mounted so state (and static markup) survives tab switches. */}
+        {nativeText ? (
+          <div
+            role="tabpanel"
+            data-testid="native-panel"
+            className={tab === "native" ? "flex flex-col gap-3" : "hidden"}
+          >
+            <p className="break-anywhere text-reading-lg text-foreground">
+              {nativeText}
+            </p>
+            {result.nativeNote ? (
+              <p className="text-sm text-muted-foreground">
+                {result.nativeNote}
+              </p>
+            ) : null}
+          </div>
         ) : null}
+        <div
+          role="tabpanel"
+          className={
+            tab === "native" && nativeText ? "hidden" : "flex flex-col gap-4"
+          }
+        >
+          <p
+            data-testid="result-translation"
+            className="break-anywhere text-reading-lg text-foreground"
+          >
+            {displayText}
+          </p>
+
+          {isChineseSource ? (
+            <div
+              className="flex flex-col gap-3 border-t border-border pt-4"
+              data-testid="source-chinese-block"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Mandarin source
+              </p>
+              <p
+                data-testid="source-chinese-text"
+                className="break-anywhere text-reading-lg text-foreground"
+              >
+                {chineseText}
+              </p>
+              <PinyinBlock result={result} />
+              <SegmentList segments={result.segments} />
+            </div>
+          ) : (
+            <>
+              <PinyinBlock result={result} />
+              <SegmentList segments={result.segments} />
+            </>
+          )}
+        </div>
       </CardContent>
       <CardFooter className="flex flex-wrap gap-2 max-sm:grid max-sm:grid-cols-2">
         {showPlayButtons ? (
           <>
             <Button
               type="button"
-              variant="outline"
               className="touch-target-sm max-sm:text-sm"
-              onClick={() => handlePlay("zh-CN")}
+              onClick={() => play(playText)}
             >
-              Play Mainland
+              <Play />
+              Play
             </Button>
             <Button
               type="button"
               variant="outline"
               className="touch-target-sm max-sm:text-sm"
-              onClick={() => handlePlay("zh-TW")}
+              aria-label="Play at 0.75 speed"
+              onClick={() => play(playText, 0.75)}
             >
-              Play Taiwan
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="touch-target-sm max-sm:col-span-2 max-sm:text-sm"
-              onClick={handleStop}
-              data-testid="stop-audio"
-            >
-              Stop
+              0.75×
             </Button>
           </>
         ) : null}
@@ -231,7 +300,7 @@ export function ResultCard({
           <Button
             type="button"
             variant={isSaved ? "secondary" : "outline"}
-            className="touch-target-sm max-sm:col-span-2 max-sm:text-sm"
+            className="touch-target-sm max-sm:text-sm"
             onClick={onToggleSave}
           >
             <Bookmark />
@@ -241,7 +310,7 @@ export function ResultCard({
         <Button
           type="button"
           variant="outline"
-          className="touch-target-sm max-sm:col-span-2 max-sm:text-sm"
+          className="touch-target-sm max-sm:text-sm"
           onClick={handleCopy}
         >
           <Copy />
