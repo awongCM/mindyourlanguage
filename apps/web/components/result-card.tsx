@@ -112,6 +112,7 @@ const TAB_ID_NATIVE = "result-tab-native";
 const PANEL_ID_TRANSLATION = "result-panel-translation";
 const PANEL_ID_NATIVE = "result-panel-native";
 
+/** Callers should pass `key={result.id}` so the register tab resets per result. */
 export function ResultCard({
   result,
   characterSet,
@@ -161,11 +162,6 @@ export function ResultCard({
     setTab(next);
     (next === "translation" ? translationTabRef : nativeTabRef).current?.focus();
   }
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset register tab when result changes
-    setTab("translation");
-  }, [result.id]);
 
   useEffect(() => {
     return () => cancelSpeech();
