@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { PracticeDrillCard } from "@/components/practice-drill-card";
 import { ReliabilityNeedle } from "@/components/reliability-needle";
 import { SpeedDrillCard } from "@/components/speed-drill-card";
@@ -114,26 +113,6 @@ export default function PracticePage() {
 
   return (
     <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-1 flex-col gap-6 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            Practice
-          </h1>
-          <p className="mt-1 hidden text-sm text-muted-foreground sm:block">
-            Recall phrases before they fade, then speed up the ones you already
-            know until the card can rest.
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="touch-target-sm max-sm:text-sm"
-          asChild
-        >
-          <Link href="/">Translate</Link>
-        </Button>
-      </div>
-
       <ReliabilityNeedle />
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">

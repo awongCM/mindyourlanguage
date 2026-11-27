@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { HistoryDrawer } from "@/components/history-drawer";
+import { RestoreParamSync } from "@/components/app-shell/restore-param-sync";
 import { ComparisonPanel } from "@/components/comparison-panel";
 import { GroundingPanel } from "@/components/grounding-panel";
 import { LearnableSuggestionsCard } from "@/components/learnables/learnable-suggestions-card";
@@ -16,7 +15,6 @@ import {
 } from "@/lib/practice/chunk-lock";
 import type { PracticeChunkParentInput } from "@/lib/practice-chunks";
 import { NativeAlternativeCard } from "@/components/native-alternative-card";
-import { PhrasebookDrawer } from "@/components/phrasebook-drawer";
 import { ResultCard } from "@/components/result-card";
 import { TryFirstPanel } from "@/components/try-first-panel";
 import { Toggles } from "@/components/toggles";
@@ -24,7 +22,6 @@ import {
   TranslatorForm,
   type TranslateDirection,
 } from "@/components/translator-form";
-import { Button } from "@/components/ui/button";
 import {
   createInitialPracticeStats,
 } from "@/lib/practice/srs";
@@ -39,6 +36,7 @@ import {
   translationRecordToResponse,
 } from "@/lib/to-translation-record";
 import { cancelSpeech } from "@/lib/speech";
+import { findRestoreTarget } from "@/lib/restore-target";
 import type {
   CharacterSet,
   PhrasebookEntry,
@@ -79,8 +77,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<TranslateResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [phrasebookOpen, setPhrasebookOpen] = useState(false);
 
   const addHistory = useHistoryStore((state) => state.add);
   const historyItems = useHistoryStore((state) => state.items);
@@ -187,6 +183,22 @@ export default function Home() {
     setSourceText(entry.sourceText);
     setResult(phrasebookEntryToResponse(entry));
     setError(null);
+  }
+
+  function restoreById(id: string): "restored" | "pending" | "missing" {
+    const target = findRestoreTarget(phrasebookItems, historyItems, id);
+    if (target?.kind === "phrasebook") {
+      // An explicit restore wins over the one-time "latest history" restore.
+      restoredLatestRef.current = true;
+      restorePhrasebook(target.entry);
+      return "restored";
+    }
+    if (target?.kind === "history") {
+      restoredLatestRef.current = true;
+      restoreRecord(target.record);
+      return "restored";
+    }
+    return usePhrasebookStore.persist.hasHydrated() ? "missing" : "pending";
   }
 
   function handleClear() {
@@ -321,43 +333,9 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-1 flex-col gap-6 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            <span className="sm:hidden">Translate</span>
-            <span className="hidden sm:inline">Mind Your Language</span>
-          </h1>
-          <p className="mt-1 hidden text-sm text-muted-foreground sm:block">
-            From solid intermediate to natural fluency.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="touch-target-sm max-sm:text-sm"
-            asChild
-          >
-            <Link href="/practice">Practice</Link>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="touch-target-sm max-sm:text-sm"
-            onClick={() => setHistoryOpen(true)}
-          >
-            History
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="touch-target-sm max-sm:text-sm"
-            onClick={() => setPhrasebookOpen(true)}
-          >
-            Phrasebook
-          </Button>
-        </div>
-      </div>
+      <Suspense fallback={null}>
+        <RestoreParamSync onRestore={restoreById} />
+      </Suspense>
 
       <Toggles
         characterSet={characterSet}
@@ -478,17 +456,6 @@ export default function Home() {
           <GroundingPanel entries={result.dictionaryMatches} />
         </>
       ) : null}
-
-      <HistoryDrawer
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        onSelect={restoreRecord}
-      />
-      <PhrasebookDrawer
-        open={phrasebookOpen}
-        onOpenChange={setPhrasebookOpen}
-        onSelect={restorePhrasebook}
-      />
     </main>
   );
 }
