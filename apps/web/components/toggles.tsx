@@ -10,6 +10,10 @@ interface TogglesProps {
   onVoiceRegionChange: (v: VoiceRegion) => void;
 }
 
+const GROUP_CLASS = "rounded-full bg-muted p-1";
+const ITEM_CLASS =
+  "rounded-full px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground";
+
 export function Toggles({
   characterSet,
   onCharacterSetChange,
@@ -29,9 +33,14 @@ export function Toggles({
           }
         }}
         aria-label="Character set"
+        className={GROUP_CLASS}
       >
-        <ToggleGroupItem value="simplified">简体</ToggleGroupItem>
-        <ToggleGroupItem value="traditional">繁體</ToggleGroupItem>
+        <ToggleGroupItem value="simplified" className={ITEM_CLASS}>
+          简体
+        </ToggleGroupItem>
+        <ToggleGroupItem value="traditional" className={ITEM_CLASS}>
+          繁體
+        </ToggleGroupItem>
       </ToggleGroup>
 
       <ToggleGroup
@@ -45,9 +54,14 @@ export function Toggles({
           }
         }}
         aria-label="Voice region"
+        className={GROUP_CLASS}
       >
-        <ToggleGroupItem value="zh-CN">CN Voice</ToggleGroupItem>
-        <ToggleGroupItem value="zh-TW">TW Voice</ToggleGroupItem>
+        <ToggleGroupItem value="zh-CN" className={ITEM_CLASS}>
+          CN Voice
+        </ToggleGroupItem>
+        <ToggleGroupItem value="zh-TW" className={ITEM_CLASS}>
+          TW Voice
+        </ToggleGroupItem>
       </ToggleGroup>
     </div>
   );

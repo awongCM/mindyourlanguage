@@ -1,30 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { HistoryDrawer } from "@/components/history-drawer";
-import { ComparisonPanel } from "@/components/comparison-panel";
-import { GroundingPanel } from "@/components/grounding-panel";
-import { LearnableSuggestionsCard } from "@/components/learnables/learnable-suggestions-card";
+import { RestoreParamSync } from "@/components/app-shell/restore-param-sync";
 import { useLearnableSuggestions } from "@/components/learnables/use-learnable-suggestions";
-import { PracticeChunksCard } from "@/components/practice-chunks/practice-chunks-card";
 import { usePracticeChunks } from "@/components/practice-chunks/use-practice-chunks";
 import {
   MIN_CHUNKABLE_ZH_CHARS,
   zhCharLength,
 } from "@/lib/practice/chunk-lock";
 import type { PracticeChunkParentInput } from "@/lib/practice-chunks";
-import { NativeAlternativeCard } from "@/components/native-alternative-card";
-import { PhrasebookDrawer } from "@/components/phrasebook-drawer";
 import { ResultCard } from "@/components/result-card";
-import { TryFirstPanel } from "@/components/try-first-panel";
-import { Toggles } from "@/components/toggles";
+import { ComposerCard } from "@/components/translate/composer-card";
+import { ReadingPassage } from "@/components/translate/reading-passage";
 import {
-  TranslatorForm,
-  type TranslateDirection,
-} from "@/components/translator-form";
-import { Button } from "@/components/ui/button";
+  StudyPanel,
+  type StudyTabId,
+} from "@/components/translate/study-panel";
+import type { TranslateDirection } from "@/components/translator-form";
 import {
   createInitialPracticeStats,
 } from "@/lib/practice/srs";
@@ -39,6 +32,7 @@ import {
   translationRecordToResponse,
 } from "@/lib/to-translation-record";
 import { cancelSpeech } from "@/lib/speech";
+import { findRestoreTarget } from "@/lib/restore-target";
 import type {
   CharacterSet,
   PhrasebookEntry,
@@ -69,8 +63,6 @@ export default function Home() {
   const [voiceRegion, setVoiceRegion] = useState<VoiceRegion>("zh-CN");
   const [includeNativeAlternative, setIncludeNativeAlternative] =
     useState(true);
-  const [tryFirstEnabled, setTryFirstEnabled] = useState(false);
-  const [userAttempt, setUserAttempt] = useState("");
   const [direction, setDirection] = useState<TranslateDirection>({
     sourceLang: "en",
     targetLang: "zh",
@@ -79,8 +71,11 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<TranslateResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [phrasebookOpen, setPhrasebookOpen] = useState(false);
+  const [studyTab, setStudyTab] = useState<StudyTabId>("dictionary");
+  const [activeEntry, setActiveEntry] = useState<{
+    key: string;
+    source: "passage" | "panel";
+  } | null>(null);
 
   const addHistory = useHistoryStore((state) => state.add);
   const historyItems = useHistoryStore((state) => state.items);
@@ -114,10 +109,47 @@ export default function Home() {
       entryMatchesSaved(item, currentPhrasebookCandidate),
     );
 
-  const submittedAttempt = useMemo(() => {
-    if (!isEnglishToChinese || !tryFirstEnabled) return "";
-    return userAttempt.trim();
-  }, [isEnglishToChinese, tryFirstEnabled, userAttempt]);
+  const availableTabs = useMemo<StudyTabId[]>(() => {
+    if (!result) return [];
+    const tabs: StudyTabId[] = [];
+    if (isEnglishToChinese && practiceChunks.visible) tabs.push("chunks");
+    if (isEnglishToChinese && learnables.visible) tabs.push("learnables");
+    if (result.dictionaryMatches.length > 0) tabs.push("dictionary");
+    return tabs;
+  }, [result, isEnglishToChinese, practiceChunks.visible, learnables.visible]);
+
+  // Keep the selected tab valid as results and suggestions come and go.
+  useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.includes(studyTab)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- derive a valid tab from async availability
+      setStudyTab(availableTabs[0]);
+    }
+  }, [availableTabs, studyTab]);
+
+  // Clamp for render so the tablist always has a tabbable tab.
+  const effectiveStudyTab = availableTabs.includes(studyTab)
+    ? studyTab
+    : (availableTabs[0] ?? studyTab);
+
+  const studyCounts: Record<StudyTabId, number> = {
+    chunks: practiceChunks.items.length,
+    learnables: learnables.items.length,
+    dictionary: result?.dictionaryMatches.length ?? 0,
+  };
+
+  function handleActivateFromPassage(key: string) {
+    setActiveEntry({ key, source: "passage" });
+    setStudyTab("dictionary");
+  }
+
+  function handleActivateFromPanel(key: string | null) {
+    setActiveEntry(key ? { key, source: "panel" } : null);
+  }
+
+  function handleRetryChunks() {
+    if (!result || !sourceText.trim()) return;
+    void practiceChunks.load(sourceText, result.translation);
+  }
 
   function buildParentFieldsFromResult(): PracticeChunkParentInput | null {
     if (!result || !sourceText.trim()) return null;
@@ -153,6 +185,7 @@ export default function Home() {
   function restoreRecord(record: TranslationRecord) {
     learnables.clear();
     practiceChunks.clear();
+    setActiveEntry(null);
     setDirection({
       sourceLang: record.sourceLang,
       targetLang: record.targetLang,
@@ -179,6 +212,7 @@ export default function Home() {
   function restorePhrasebook(entry: PhrasebookEntry) {
     learnables.clear();
     practiceChunks.clear();
+    setActiveEntry(null);
     setDirection({
       sourceLang: entry.sourceLang,
       targetLang: entry.targetLang,
@@ -189,14 +223,50 @@ export default function Home() {
     setError(null);
   }
 
+  function restoreById(id: string): "restored" | "pending" | "missing" {
+    const target = findRestoreTarget(phrasebookItems, historyItems, id);
+    if (target?.kind === "phrasebook") {
+      // An explicit restore wins over the one-time "latest history" restore.
+      restoredLatestRef.current = true;
+      restorePhrasebook(target.entry);
+      return "restored";
+    }
+    if (target?.kind === "history") {
+      restoredLatestRef.current = true;
+      restoreRecord(target.record);
+      return "restored";
+    }
+    return usePhrasebookStore.persist.hasHydrated() ? "missing" : "pending";
+  }
+
   function handleClear() {
     cancelSpeech();
     learnables.clear();
     practiceChunks.clear();
+    setActiveEntry(null);
     setSourceText("");
-    setUserAttempt("");
     setResult(null);
     setError(null);
+  }
+
+  function buildFullPhraseEntry() {
+    if (!result) return null;
+    return createPhrasebookEntry({
+      translationId: result.id,
+      sourceText,
+      sourceLang: direction.sourceLang,
+      targetLang: direction.targetLang,
+      translation: result.translation,
+      traditional: result.traditional,
+      pinyin: result.pinyin,
+      characterSet,
+      register: result.register,
+      nativeAlternative: result.nativeAlternative,
+      nativeNote: result.nativeNote,
+      dictionaryMatches: result.dictionaryMatches,
+      segments: result.segments,
+      practiceStats: createInitialPracticeStats(),
+    });
   }
 
   function handleToggleSave() {
@@ -219,24 +289,24 @@ export default function Home() {
       return;
     }
 
-    addPhrasebook(
-      createPhrasebookEntry({
-        translationId: result.id,
-        sourceText,
-        sourceLang: direction.sourceLang,
-        targetLang: direction.targetLang,
-        translation: result.translation,
-        traditional: result.traditional,
-        pinyin: result.pinyin,
-        characterSet,
-        register: result.register,
-        nativeAlternative: result.nativeAlternative,
-        nativeNote: result.nativeNote,
-        dictionaryMatches: result.dictionaryMatches,
-        segments: result.segments,
-        practiceStats: createInitialPracticeStats(),
-      }),
-    );
+    const entry = buildFullPhraseEntry();
+    if (!entry) return;
+    addPhrasebook(entry);
+    toast.success("Saved to phrasebook");
+  }
+
+  // Save-only: never removes an already-saved phrase (or its practice history).
+  function handleSaveFull() {
+    if (!result || !sourceText.trim()) return;
+
+    if (isSaved) {
+      toast.info("Already in phrasebook");
+      return;
+    }
+
+    const entry = buildFullPhraseEntry();
+    if (!entry) return;
+    addPhrasebook(entry);
     toast.success("Saved to phrasebook");
   }
 
@@ -245,6 +315,7 @@ export default function Home() {
     setError(null);
     learnables.clear();
     practiceChunks.clear();
+    setActiveEntry(null);
 
     const body: TranslateRequest = {
       text,
@@ -320,175 +391,101 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-1 flex-col gap-6 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            <span className="sm:hidden">Translate</span>
-            <span className="hidden sm:inline">Mind Your Language</span>
-          </h1>
-          <p className="mt-1 hidden text-sm text-muted-foreground sm:block">
-            From solid intermediate to natural fluency.
+    <main className="mx-auto grid w-full min-w-0 max-w-7xl flex-1 gap-6 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:grid-cols-12">
+      <Suspense fallback={null}>
+        <RestoreParamSync onRestore={restoreById} />
+      </Suspense>
+
+      <div className="flex min-w-0 flex-col gap-6 lg:col-span-7">
+        <ComposerCard
+          characterSet={characterSet}
+          onCharacterSetChange={setCharacterSet}
+          voiceRegion={voiceRegion}
+          onVoiceRegionChange={setVoiceRegion}
+          sourceText={sourceText}
+          onSourceTextChange={setSourceText}
+          onSubmit={handleTranslate}
+          onClear={handleClear}
+          isLoading={isLoading}
+          direction={direction}
+          onDirectionChange={setDirection}
+          showNativeAlternative={isEnglishToChinese}
+          includeNativeAlternative={includeNativeAlternative}
+          onIncludeNativeAlternativeChange={setIncludeNativeAlternative}
+        />
+
+        {error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="touch-target-sm max-sm:text-sm"
-            asChild
-          >
-            <Link href="/practice">Practice</Link>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="touch-target-sm max-sm:text-sm"
-            onClick={() => setHistoryOpen(true)}
-          >
-            History
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="touch-target-sm max-sm:text-sm"
-            onClick={() => setPhrasebookOpen(true)}
-          >
-            Phrasebook
-          </Button>
-        </div>
+        ) : null}
+
+        {result ? (
+          <>
+            <ResultCard
+              key={result.id}
+              result={result}
+              characterSet={characterSet}
+              layout={resultLayout}
+              sourceText={sourceText}
+              showPlayButtons={showPlayButtons}
+              voiceRegion={voiceRegion}
+              isSaved={isSaved}
+              onToggleSave={handleToggleSave}
+              phrasebookHint={
+                isEnglishToChinese &&
+                (learnables.visible || practiceChunks.visible)
+                  ? "Save the full phrase, or pick chunks and new bits in the study panel."
+                  : undefined
+              }
+            />
+            {isEnglishToChinese && result ? (
+              <ReadingPassage
+                text={
+                  characterSet === "traditional" && result.traditional
+                    ? result.traditional
+                    : result.translation
+                }
+                pinyin={result.pinyin}
+                entries={result.dictionaryMatches}
+                activeEntryKey={activeEntry?.key ?? null}
+                onActivateEntry={handleActivateFromPassage}
+              />
+            ) : null}
+          </>
+        ) : null}
       </div>
 
-      <Toggles
-        characterSet={characterSet}
-        onCharacterSetChange={setCharacterSet}
-        voiceRegion={voiceRegion}
-        onVoiceRegionChange={setVoiceRegion}
-      />
-
-      <TranslatorForm
-        sourceText={sourceText}
-        onSourceTextChange={setSourceText}
-        onSubmit={handleTranslate}
-        onClear={handleClear}
-        isLoading={isLoading}
-        direction={direction}
-        onDirectionChange={setDirection}
-      />
-
-      {isEnglishToChinese ? (
-        <>
-          <label className="flex w-fit items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={includeNativeAlternative}
-              onChange={(event) =>
-                setIncludeNativeAlternative(event.target.checked)
-              }
-              className="size-4 rounded border-foreground/20"
-            />
-            Native alternative
-          </label>
-          <TryFirstPanel
-            enabled={tryFirstEnabled}
-            onEnabledChange={setTryFirstEnabled}
-            attempt={userAttempt}
-            onAttemptChange={setUserAttempt}
-            disabled={isLoading}
-          />
-        </>
-      ) : null}
-
-      {error ? (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
-
-      {result ? (
-        <>
-          <ResultCard
-            result={result}
-            characterSet={characterSet}
-            layout={resultLayout}
-            sourceText={sourceText}
-            showPlayButtons={showPlayButtons}
-            voiceRegion={voiceRegion}
-            isSaved={isSaved}
-            onToggleSave={handleToggleSave}
-            phrasebookHint={
-              isEnglishToChinese &&
-              (learnables.visible || practiceChunks.visible)
-                ? practiceChunks.visible && learnables.visible
-                  ? "Save the full phrase, pick practice chunks, or learn a few new bits below."
-                  : practiceChunks.visible
-                    ? "Save the full phrase or confirm practice chunks below."
-                    : "Or pick a few new bits to learn below."
-                : undefined
-            }
-          />
-          {isEnglishToChinese && practiceChunks.visible ? (
-            <>
-              {practiceChunks.suggestEmpty && !practiceChunks.loading ? (
-                <p
-                  className="text-sm text-muted-foreground"
-                  data-testid="practice-chunks-empty"
-                >
-                  Couldn&apos;t split this phrase into practice chunks. Try
-                  again later or save the full phrase.
-                </p>
-              ) : null}
-              <PracticeChunksCard
-              items={practiceChunks.items}
-              loading={practiceChunks.loading}
+      <div className="min-w-0 lg:col-span-5">
+        {result && availableTabs.length > 0 ? (
+          <div className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
+            <StudyPanel
+              availableTabs={availableTabs}
+              tab={effectiveStudyTab}
+              onTabChange={setStudyTab}
+              counts={studyCounts}
               characterSet={characterSet}
-              onSaveFullOnly={handleToggleSave}
-              onSaveSelected={(selected) => {
+              chunksLoading={practiceChunks.loading}
+              chunksSuggestEmpty={practiceChunks.suggestEmpty}
+              chunkItems={practiceChunks.items}
+              onSaveChunksSelected={(selected) => {
                 const parent = buildParentFieldsFromResult();
                 if (!parent) return;
                 practiceChunks.saveSelected(selected, parent);
               }}
+              onSaveFullOnly={handleSaveFull}
+              onRetryChunks={handleRetryChunks}
+              learnablesLoading={learnables.loading}
+              learnableItems={learnables.items}
+              onSaveLearnablesSelected={learnables.saveSelected}
+              dictionaryEntries={result.dictionaryMatches}
+              activeEntryKey={activeEntry?.key ?? null}
+              activeEntrySource={activeEntry?.source ?? null}
+              onActivateEntry={handleActivateFromPanel}
             />
-            </>
-          ) : null}
-          {isEnglishToChinese && learnables.visible ? (
-            <LearnableSuggestionsCard
-              items={learnables.items}
-              loading={learnables.loading}
-              characterSet={characterSet}
-              onSaveSelected={learnables.saveSelected}
-            />
-          ) : null}
-          {submittedAttempt ? (
-            <ComparisonPanel
-              sourceText={sourceText}
-              userAttempt={submittedAttempt}
-              result={result}
-              voiceRegion={voiceRegion}
-            />
-          ) : null}
-          {result.nativeAlternative && result.register ? (
-            <NativeAlternativeCard
-              alternative={result.nativeAlternative}
-              register={result.register}
-              note={result.nativeNote}
-              characterSet={characterSet}
-            />
-          ) : null}
-          <GroundingPanel entries={result.dictionaryMatches} />
-        </>
-      ) : null}
-
-      <HistoryDrawer
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        onSelect={restoreRecord}
-      />
-      <PhrasebookDrawer
-        open={phrasebookOpen}
-        onOpenChange={setPhrasebookOpen}
-        onSelect={restorePhrasebook}
-      />
+          </div>
+        ) : null}
+      </div>
     </main>
   );
 }

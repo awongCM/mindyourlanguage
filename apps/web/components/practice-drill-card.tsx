@@ -44,18 +44,24 @@ export function PracticeDrillCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p
-          className="break-anywhere text-lg leading-relaxed text-foreground"
+          className="break-anywhere text-reading-lg text-foreground"
           data-testid="drill-prompt"
         >
           {entry.sourceText}
         </p>
         {revealed ? (
-          <div className="flex flex-col gap-3" data-testid="drill-answer">
-            <p className="break-anywhere text-xl font-medium text-foreground">
+          <div
+            className="flex flex-col gap-3 rounded-lg bg-muted p-4"
+            data-testid="drill-answer"
+          >
+            <p className="break-anywhere text-reading-lg font-medium text-foreground">
               {entry.translation}
             </p>
             {entry.pinyin ? (
-              <p className="text-sm text-muted-foreground" lang="zh-Latn">
+              <p
+                className="font-mono text-mono-sm text-muted-foreground"
+                lang="zh-Latn"
+              >
                 {entry.pinyin}
               </p>
             ) : null}

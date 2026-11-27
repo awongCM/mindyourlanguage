@@ -91,7 +91,7 @@ v2 is a greenfield rebuild documented in:
 | Characters | 简体 / 繁體 toggle |
 | TTS | Browser Web Speech API — Mainland (`zh-CN`) and Taiwan (`zh-TW`) |
 | History / phrasebook | Local (`localStorage`) until Phase 6 cloud sync |
-| Practice | Try-first translate, phrasebook drill, bite-size practice chunks for long paragraphs, SRS, shadowing, sandhi pinyin, production reliability needle on `/practice` |
+| Practice | Register tabs (neutral vs native alternative) with a reading passage, phrasebook drill, bite-size practice chunks for long paragraphs, SRS, shadowing, sandhi pinyin, production reliability needle on `/practice` |
 | Audience | Intermediate → fluent learners |
 | Deploy | Render web service + Neon Postgres (Phase 6) |
 
