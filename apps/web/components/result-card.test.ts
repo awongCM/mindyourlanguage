@@ -99,3 +99,51 @@ describe("ResultCard footer", () => {
     expect(html).toContain("More concise greeting.");
   });
 });
+
+describe("ResultCard tab ARIA", () => {
+  const source = readFileSync(
+    new URL("./result-card.tsx", import.meta.url),
+    "utf8",
+  );
+
+  it("wires tab id, aria-controls, and panel aria-labelledby in markup", () => {
+    const html = renderToStaticMarkup(
+      createElement(ResultCard, {
+        result: withNative,
+        characterSet: "simplified",
+      }),
+    );
+    expect(html).toContain('id="result-tab-translation"');
+    expect(html).toContain('aria-controls="result-panel-translation"');
+    expect(html).toContain('id="result-tab-native"');
+    expect(html).toContain('aria-controls="result-panel-native"');
+    expect(html).toContain('id="result-panel-translation"');
+    expect(html).toContain('aria-labelledby="result-tab-translation"');
+    expect(html).toContain('id="result-panel-native"');
+    expect(html).toContain('aria-labelledby="result-tab-native"');
+  });
+
+  it("uses roving tabIndex on tabs (selected 0, unselected -1)", () => {
+    expect(source).toMatch(/tabIndex=\{tab === "translation" \? 0 : -1\}/);
+    expect(source).toMatch(/tabIndex=\{tab === "native" \? 0 : -1\}/);
+  });
+
+  it("handles arrow keys on the tablist", () => {
+    expect(source).toMatch(/role="tablist"[\s\S]*onKeyDown/);
+  });
+
+  it("does not render the native panel when register is missing", () => {
+    const html = renderToStaticMarkup(
+      createElement(ResultCard, {
+        result: {
+          ...baseResult,
+          nativeAlternative: "你好，幸会。",
+          nativeNote: "Orphan note.",
+        },
+        characterSet: "simplified",
+      }),
+    );
+    expect(html).not.toContain('data-testid="native-panel"');
+    expect(html).not.toContain("你好，幸会。");
+  });
+});

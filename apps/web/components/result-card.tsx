@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Bookmark, Copy, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -107,6 +107,11 @@ function SegmentList({
 
 type RegisterTab = "translation" | "native";
 
+const TAB_ID_TRANSLATION = "result-tab-translation";
+const TAB_ID_NATIVE = "result-tab-native";
+const PANEL_ID_TRANSLATION = "result-panel-translation";
+const PANEL_ID_NATIVE = "result-panel-native";
+
 export function ResultCard({
   result,
   characterSet,
@@ -129,6 +134,33 @@ export function ResultCard({
 
   const hasNative = Boolean(result.nativeAlternative && result.register);
   const [tab, setTab] = useState<RegisterTab>("translation");
+  const translationTabRef = useRef<HTMLButtonElement>(null);
+  const nativeTabRef = useRef<HTMLButtonElement>(null);
+
+  function handleTabListKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (
+      event.key !== "ArrowRight" &&
+      event.key !== "ArrowLeft" &&
+      event.key !== "Home" &&
+      event.key !== "End"
+    ) {
+      return;
+    }
+    event.preventDefault();
+    if (event.key === "Home") {
+      setTab("translation");
+      translationTabRef.current?.focus();
+      return;
+    }
+    if (event.key === "End") {
+      setTab("native");
+      nativeTabRef.current?.focus();
+      return;
+    }
+    const next: RegisterTab = tab === "translation" ? "native" : "translation";
+    setTab(next);
+    (next === "translation" ? translationTabRef : nativeTabRef).current?.focus();
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset register tab when result changes
@@ -184,11 +216,16 @@ export function ResultCard({
             role="tablist"
             aria-label="Translation registers"
             className="flex w-fit gap-1 rounded-full bg-muted p-1"
+            onKeyDown={handleTabListKeyDown}
           >
             <button
+              ref={translationTabRef}
               type="button"
               role="tab"
+              id={TAB_ID_TRANSLATION}
               aria-selected={tab === "translation"}
+              aria-controls={PANEL_ID_TRANSLATION}
+              tabIndex={tab === "translation" ? 0 : -1}
               onClick={() => setTab("translation")}
               className={`rounded-full px-3 py-1 text-sm transition-colors ${
                 tab === "translation"
@@ -199,9 +236,13 @@ export function ResultCard({
               Translation · 中性
             </button>
             <button
+              ref={nativeTabRef}
               type="button"
               role="tab"
+              id={TAB_ID_NATIVE}
               aria-selected={tab === "native"}
+              aria-controls={PANEL_ID_NATIVE}
+              tabIndex={tab === "native" ? 0 : -1}
               onClick={() => setTab("native")}
               data-testid="native-register-tab"
               className={`rounded-full px-3 py-1 text-sm transition-colors ${
@@ -220,9 +261,11 @@ export function ResultCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {/* Both panels stay mounted so state (and static markup) survives tab switches. */}
-        {nativeText ? (
+        {hasNative && nativeText ? (
           <div
             role="tabpanel"
+            id={PANEL_ID_NATIVE}
+            aria-labelledby={TAB_ID_NATIVE}
             data-testid="native-panel"
             className={tab === "native" ? "flex flex-col gap-3" : "hidden"}
           >
@@ -238,8 +281,12 @@ export function ResultCard({
         ) : null}
         <div
           role="tabpanel"
+          id={PANEL_ID_TRANSLATION}
+          aria-labelledby={hasNative ? TAB_ID_TRANSLATION : undefined}
           className={
-            tab === "native" && nativeText ? "hidden" : "flex flex-col gap-4"
+            tab === "native" && hasNative && nativeText
+              ? "hidden"
+              : "flex flex-col gap-4"
           }
         >
           <p
