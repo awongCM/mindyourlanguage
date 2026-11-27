@@ -53,4 +53,10 @@ describe("ReadingPassage", () => {
   it("returns null for empty text", () => {
     expect(renderPassage({ text: "  " })).toBe("");
   });
+
+  it("marks paragraphs as Chinese and gives tokens a focus-visible style", () => {
+    const html = renderPassage();
+    expect(html).toContain('lang="zh"');
+    expect(html).toContain("focus-visible:ring-2");
+  });
 });

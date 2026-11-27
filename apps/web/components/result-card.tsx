@@ -93,7 +93,9 @@ function SegmentList({
           key={`${segment.text}-${index}`}
           className="rounded-md bg-muted px-2 py-1 text-sm"
         >
-          <span className="font-medium text-foreground">{segment.text}</span>
+          <span lang="zh" className="font-medium text-foreground">
+            {segment.text}
+          </span>
           {segment.pinyin ? (
             <span className="ml-1.5 font-mono text-mono-sm text-muted-foreground">
               {segment.pinyin}
@@ -265,7 +267,10 @@ export function ResultCard({
             data-testid="native-panel"
             className={tab === "native" ? "flex flex-col gap-3" : "hidden"}
           >
-            <p className="break-anywhere text-reading-lg text-foreground">
+            <p
+              lang="zh"
+              className="break-anywhere text-reading-lg text-foreground"
+            >
               {nativeText}
             </p>
             {result.nativeNote ? (
@@ -287,6 +292,7 @@ export function ResultCard({
         >
           <p
             data-testid="result-translation"
+            lang={isChineseSource ? undefined : "zh"}
             className="break-anywhere text-reading-lg text-foreground"
           >
             {displayText}
@@ -302,6 +308,7 @@ export function ResultCard({
               </p>
               <p
                 data-testid="source-chinese-text"
+                lang="zh"
                 className="break-anywhere text-reading-lg text-foreground"
               >
                 {chineseText}

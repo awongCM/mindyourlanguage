@@ -66,4 +66,8 @@ describe("PracticeQueueList", () => {
     expect(source).toContain("bg-secondary");
     expect(source).toContain("bg-warning-container");
   });
+
+  it("marks the Chinese translation line with lang=zh", () => {
+    expect(renderList()).toContain('lang="zh"');
+  });
 });

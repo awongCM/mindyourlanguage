@@ -45,7 +45,10 @@ export function PracticeQueueList({
                 }`}
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium text-foreground">
+                  <span
+                    lang="zh"
+                    className="block truncate font-medium text-foreground"
+                  >
                     {item.translation}
                   </span>
                   <span className="block truncate text-sm text-muted-foreground">

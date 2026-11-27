@@ -46,7 +46,7 @@ function Token({
       data-entry-key={key}
       aria-pressed={active}
       onClick={() => onActivateEntry(key)}
-      className={`rounded-sm px-0.5 underline decoration-dotted underline-offset-4 transition-colors duration-state-change ease-state-change hover:bg-secondary/60 ${
+      className={`rounded-sm px-0.5 underline decoration-dotted underline-offset-4 transition-colors duration-state-change ease-state-change focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:bg-secondary/60 ${
         active ? "bg-secondary font-medium" : ""
       }`}
     >
@@ -96,7 +96,11 @@ export function ReadingPassage({
       </div>
       <div className="flex flex-col gap-2">
         {sentences.map((tokens, sentenceIndex) => (
-          <p key={sentenceIndex} className="text-reading-lg text-foreground">
+          <p
+            key={sentenceIndex}
+            lang="zh"
+            className="text-reading-lg text-foreground"
+          >
             {tokens.map((token, tokenIndex) => (
               <Token
                 key={tokenIndex}
