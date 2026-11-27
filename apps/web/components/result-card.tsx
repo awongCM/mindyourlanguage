@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Bookmark, Copy, Play } from "lucide-react";
+import { Bookmark, Check, ChevronDown, Copy, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { displayForCharacterSet } from "@/lib/characters";
 import { registerLabel } from "@/lib/native-alternative-shared";
 import { cancelSpeech, speakChinese } from "@/lib/speech";
@@ -114,6 +120,10 @@ const TAB_ID_NATIVE = "result-tab-native";
 const PANEL_ID_TRANSLATION = "result-panel-translation";
 const PANEL_ID_NATIVE = "result-panel-native";
 
+/** Slow-playback speeds offered in the footer dropdown; 0.75 preserves the original default. */
+const SPEECH_RATES = [0.5, 0.75, 1] as const;
+const DEFAULT_SPEECH_RATE = 0.75;
+
 /** Callers should pass `key={result.id}` so the register tab resets per result. */
 export function ResultCard({
   result,
@@ -137,6 +147,7 @@ export function ResultCard({
 
   const hasNative = Boolean(result.nativeAlternative && result.register);
   const [tab, setTab] = useState<RegisterTab>("translation");
+  const [playbackRate, setPlaybackRate] = useState<number>(DEFAULT_SPEECH_RATE);
   const translationTabRef = useRef<HTMLButtonElement>(null);
   const nativeTabRef = useRef<HTMLButtonElement>(null);
 
@@ -180,12 +191,7 @@ export function ResultCard({
 
   async function play(text: string, rate?: number) {
     try {
-      const speechOpts =
-        rate === 0.75
-          ? { rate: 0.75 }
-          : typeof rate === "number"
-            ? { rate }
-            : {};
+      const speechOpts = typeof rate === "number" ? { rate } : {};
       const { usedRegionFallback } = await speakChinese(text, voiceRegion, {
         ...speechOpts,
       });
@@ -335,15 +341,40 @@ export function ResultCard({
               <Play />
               Play
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="touch-target-sm max-sm:text-sm"
-              aria-label="Play at 0.75 speed"
-              onClick={() => play(playText, 0.75)}
-            >
-              0.75×
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="touch-target-sm max-sm:text-sm"
+                  aria-label="Playback speed"
+                  data-testid="playback-speed-trigger"
+                >
+                  {playbackRate}×
+                  <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {SPEECH_RATES.map((rate) => (
+                  <DropdownMenuItem
+                    key={rate}
+                    aria-label={`Play at ${rate} speed`}
+                    data-testid={`playback-speed-${rate}`}
+                    onSelect={() => {
+                      setPlaybackRate(rate);
+                      void play(playText, rate);
+                    }}
+                  >
+                    <Check
+                      className={
+                        rate === playbackRate ? "opacity-100" : "opacity-0"
+                      }
+                    />
+                    {rate}×
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         ) : null}
         {onToggleSave ? (

@@ -15,7 +15,7 @@ test.describe('translate flow (mocked)', () => {
 
     await expect(page.getByTestId('result-translation')).toHaveText('你好，很高兴认识你。')
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled()
-    await expect(page.getByRole('button', { name: 'Play at 0.75 speed' })).toBeEnabled()
+    await expect(page.getByTestId('playback-speed-trigger')).toBeEnabled()
 
     const dictionaryTab = page.getByTestId('study-tab-dictionary')
     if (await dictionaryTab.isVisible()) await dictionaryTab.click()
@@ -47,7 +47,22 @@ test.describe('translate flow (mocked)', () => {
     await expect(page.getByTestId('spoken-pinyin')).toBeVisible()
     await expect(page.getByText('to hear of')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled()
-    await expect(page.getByRole('button', { name: 'Play at 0.75 speed' })).toBeEnabled()
+    await expect(page.getByTestId('playback-speed-trigger')).toBeEnabled()
+  })
+
+  test('offers playback speed options in a dropdown', async ({ page }) => {
+    await enterSourceText(page)
+    await page.getByRole('button', { name: 'Translate' }).click()
+    await expect(page.getByTestId('result-translation')).toHaveText('你好，很高兴认识你。')
+
+    const trigger = page.getByTestId('playback-speed-trigger')
+    await expect(trigger).toHaveText(/0\.75×/)
+    await trigger.click()
+    await expect(page.getByRole('menuitem', { name: 'Play at 0.5 speed' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Play at 0.75 speed' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Play at 1 speed' })).toBeVisible()
+    await page.getByRole('menuitem', { name: 'Play at 0.5 speed' }).click()
+    await expect(trigger).toHaveText(/0\.5×/)
   })
 
   test('switches between translation and native alternative registers', async ({ page }) => {

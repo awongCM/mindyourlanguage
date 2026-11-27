@@ -67,12 +67,32 @@ describe("ResultCard footer", () => {
     "utf8",
   );
 
-  it("offers Play at the current region plus a 0.75x button", () => {
-    expect(source).toContain('aria-label="Play at 0.75 speed"');
-    expect(source).toContain("{ rate: 0.75 }");
+  it("offers Play plus a playback-speed dropdown (0.5x / 0.75x / 1x, default 0.75x)", () => {
+    expect(source).toContain('aria-label="Playback speed"');
+    expect(source).toContain('data-testid="playback-speed-trigger"');
+    expect(source).toContain("const SPEECH_RATES = [0.5, 0.75, 1] as const");
+    expect(source).toContain("const DEFAULT_SPEECH_RATE = 0.75");
+    expect(source).toContain("setPlaybackRate(rate)");
+    expect(source).toContain("aria-label={`Play at ${rate} speed`}");
+    expect(source).toContain("data-testid={`playback-speed-${rate}`}");
     expect(source).not.toContain("Play Mainland");
     expect(source).not.toContain("Play Taiwan");
     expect(source).not.toContain("ShadowingPlayer");
+  });
+
+  it("renders the speed dropdown trigger with the default rate", () => {
+    const html = renderToStaticMarkup(
+      createElement(ResultCard, {
+        result: baseResult,
+        characterSet: "simplified",
+        isSaved: false,
+        onToggleSave: () => {},
+        showPlayButtons: true,
+      }),
+    );
+    expect(html).toContain('data-testid="playback-speed-trigger"');
+    expect(html).toContain('aria-label="Playback speed"');
+    expect(html).toContain("0.75×");
   });
 
   it("keeps save and copy actions", () => {
